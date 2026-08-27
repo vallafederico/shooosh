@@ -2,7 +2,7 @@
 
 Executable split of [ROADMAP.md](../../ROADMAP.md). Cloud and local agents take the **lowest numbered file** whose front matter says `status: todo`.
 
-Docs that are not a queue item: [shader contract](../shader-contract.md), [translation](../shader-translation.md), [API](../api.md). Shader ports use the Cursor skills in `.cursor/skills/`.
+Docs that are not a queue item: [shader contract](../shader-contract.md), [translation](../shader-translation.md), [API](../api.md), [site patterns](../site-patterns.md). Skills live in `.cursor/skills/`.
 
 When you finish a task:
 

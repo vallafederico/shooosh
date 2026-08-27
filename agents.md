@@ -24,6 +24,7 @@ Common use cases:
 - [docs/shader-contract.md](./docs/shader-contract.md) — authored language and uniforms
 - [docs/shader-translation.md](./docs/shader-translation.md) — WGSL ↔ GLSL
 - [docs/api.md](./docs/api.md) — public API after the dual renderer
+- [docs/site-patterns.md](./docs/site-patterns.md) — aiuis / Webflow / slider recipes
 - [ROADMAP.md](./ROADMAP.md) — product direction
 - [docs/agent-tasks/](./docs/agent-tasks/) — executable briefs. Pick the lowest unfinished number
 - [readme.md](./readme.md) — human install + short examples
@@ -33,6 +34,9 @@ Cursor skills (read when converting shaders):
 
 - [wgsl-to-glsl](./.cursor/skills/wgsl-to-glsl/SKILL.md)
 - [glsl-to-wgsl](./.cursor/skills/glsl-to-wgsl/SKILL.md)
+- [shooosh-site](./.cursor/skills/shooosh-site/SKILL.md)
+- [shooosh-item](./.cursor/skills/shooosh-item/SKILL.md)
+- [shooosh-post](./.cursor/skills/shooosh-post/SKILL.md)
 
 Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` / `agents.md`.
 

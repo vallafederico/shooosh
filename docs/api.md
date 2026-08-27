@@ -13,6 +13,8 @@ Source of truth: [`package/index.ts`](../package/index.ts). This page is the hum
 
 `acquireLayer()` / `probeRenderer()` return `null` when nothing is available. Leave the page readable.
 
+Site recipes (app-shell canvas, SSR init, Webflow, particles, MSDF): [site-patterns.md](./site-patterns.md).
+
 ## Engine
 
 ```ts

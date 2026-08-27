@@ -17,6 +17,7 @@ Use the focused files below first. Read `llms-full` only when it exists. Do not 
 - [Shader contract](./docs/shader-contract.md): `fn fsMain`, `vUv`, `uUni`, backends, failure policy
 - [Shader translation](./docs/shader-translation.md): WGSL ↔ GLSL 300 es mapping + converters
 - [API summary](./docs/api.md): Dual-renderer public API
+- [Site patterns](./docs/site-patterns.md): App-shell canvas, items, post, Webflow — from aiuis usage
 - [Human readme](./readme.md): Install, short examples
 - [Roadmap](./ROADMAP.md): Direction. Tasks below are the executable split.
 - [Docs index](./docs/README.md)
@@ -56,10 +57,13 @@ See [docs/shader-contract.md](./docs/shader-contract.md). Short form:
 - Full `#version 300 es` GLSL is a WebGL2 escape hatch. Port it with `convertGlslFragmentToWgsl` (skill: `glsl-to-wgsl`).
 - Failed compile must not blank the page.
 
-## Shader skills
+## Skills
 
 - [`.cursor/skills/wgsl-to-glsl`](./.cursor/skills/wgsl-to-glsl/SKILL.md) — WGSL → GLSL 300 es
 - [`.cursor/skills/glsl-to-wgsl`](./.cursor/skills/glsl-to-wgsl/SKILL.md) — GLSL 300 es → WGSL
+- [`.cursor/skills/shooosh-site`](./.cursor/skills/shooosh-site/SKILL.md) — mount a page canvas / layer
+- [`.cursor/skills/shooosh-item`](./.cursor/skills/shooosh-item/SKILL.md) — DOM-tracked quad
+- [`.cursor/skills/shooosh-post`](./.cursor/skills/shooosh-post/SKILL.md) — bloom / grain / `applyEffect`
 
 ## Machine interfaces (target)
 

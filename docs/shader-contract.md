@@ -57,6 +57,16 @@ Force a backend only when debugging: `createEngine(canvas, { backend: "webgpu" }
 
 A bad compile must not blank the page. Keep the last good program (or skip the draw), and surface the log. Never throw through the raf callback.
 
+## Post (`applyEffect`, WebGL2)
+
+Custom post is a **different** entry than `fsMain`:
+
+```glsl
+vec4 applyEffect(vec4 color, vec2 uv, vec2 resolution, vec4 uni[4]) { … }
+```
+
+See [site-patterns.md](./site-patterns.md) and skill `shooosh-post`.
+
 ## Out of contract
 
 - Custom vertex shaders (logged, ignored).
