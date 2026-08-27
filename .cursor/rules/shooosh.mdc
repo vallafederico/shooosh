@@ -7,7 +7,7 @@ alwaysApply: true
 
 You are working on a WGSL-first site GPU library. WebGPU is the preferred backend; WebGL2 is the fallback. Same scene/item/layer API on both.
 
-Before implementing, read `llms.txt`, `agents.md`, and the next `docs/agent-tasks/` file with `status: todo`. Complete one task per run.
+Before implementing, read `llms.txt` and `agents.md`, then the next `docs/agent-tasks/` file with `status: todo`. Complete one task per run.
 
 - Author shaders in WGSL (`fsMain`). GLSL 300 es is an escape hatch only.
 - Do not leak `WebGL2RenderingContext` into new public types.

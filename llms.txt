@@ -13,8 +13,7 @@ Use the focused files below first. Read `llms-full` only when it exists. Do not 
 
 ## Start here
 
-- [Agent readiness](./agents.md): Product identity, runtime policy, and how to pick work
-- [Repo conventions](./AGENTS.md): What to touch, what not to, how to verify
+- [Agent readiness](./agents.md): Product identity, runtime policy, conventions, how to pick work
 - [Human readme](./readme.md): Install, API table, shader contract
 - [Roadmap](./ROADMAP.md): Direction. Tasks below are the executable split.
 
