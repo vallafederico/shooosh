@@ -1,6 +1,6 @@
 # Setups
 
-How to *mount* the engine. The shaders themselves are in `examples/` (plasma, noise, SDF, …).
+How to *mount* the engine. The shaders — each a `createScene` / `createItem` file — are in `examples/` (plasma, noise, SDF, …).
 
 | File | When |
 | --- | --- |

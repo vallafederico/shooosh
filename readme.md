@@ -46,7 +46,7 @@ This is the GitHub landing page. The [docs folder](./docs/README.md) is the docu
 | | |
 | --- | --- |
 | [Getting started](./docs/getting-started.md) | Install, two mounts, first shader |
-| [Examples](./examples/README.md) | Plasma, noise, SDF, warp — run in the harness |
+| [Examples](./examples/README.md) | Using the library: plasma, noise, SDF, mouse, bloom, cards |
 | [API](./docs/api.md) | What to call |
 | [Shader contract](./docs/shader-contract.md) | `fn fsMain`, `vUv`, `uUni` |
 | [Site patterns](./docs/site-patterns.md) | How we mount this on pages |
@@ -75,7 +75,7 @@ Post, textures, objects, particles, and MSDF sampling are **WebGL2-only** today.
 ```
 package/    published library
 docs/       documentation hub (link this from GitHub)
-examples/   copy-paste site setups
+examples/   copy-paste library usage (plasma, items, bloom)
 harness/    vite playground  —  pnpm --filter harness dev
 web/        astro landing
 bin/        esm / cjs / IIFE / msdf CLI

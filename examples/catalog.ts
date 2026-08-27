@@ -1,13 +1,15 @@
 /**
- * Shader example catalog — fragments only, no engine import.
- * The harness and `mount.ts` turn these into live scenes.
+ * Shader example catalog — each entry's `run` calls createScene / createItem.
+ * Fragments stay on the spec so converter tests can read them.
  */
 
 import { domainWarp } from "./domain-warp"
 import { gradient } from "./gradient"
 import { grainBloom } from "./grain-bloom"
+import { grid } from "./grid"
 import { itemFill } from "./item-fill"
 import { mouseLight } from "./mouse-light"
+import { mouseMagnify } from "./mouse-magnify"
 import { plasma } from "./plasma"
 import { sdfRings } from "./sdf-rings"
 import type { ExampleSpec } from "./types"
@@ -19,7 +21,9 @@ export const examples: ExampleSpec[] = [
   valueNoise,
   sdfRings,
   domainWarp,
+  grid,
   mouseLight,
+  mouseMagnify,
   grainBloom,
   itemFill,
 ]

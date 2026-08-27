@@ -1,16 +1,23 @@
 /**
  * Domain warp — noise the sample position, then color by the warped UV.
  *
+ * How to use:
+ *   import { createScene } from "shooosh"
+ *   createScene(canvas, {
+ *     screen: {
+ *       shaders: { fragment },
+ *       onFrame(self, frame) { self.setUni({ value1: frame.now * 0.001 }) },
+ *     },
+ *   })
+ *
  * Liquid / oil / marble backgrounds. value1 = seconds.
  */
 
-import type { ExampleSpec } from "./types"
+import { createScene } from "shooosh"
+import { fromScene } from "./handle"
+import type { ExampleRunOptions, ExampleSpec } from "./types"
 
-export const domainWarp: ExampleSpec = {
-  id: "domain-warp",
-  label: "Domain warp",
-  copy: "Offset UVs with value noise, then color the warped space. Liquid / marble heroes.",
-  fragment: `fn hash21(p: vec2f) -> f32 {
+export const fragment = `fn hash21(p: vec2f) -> f32 {
   return fract(sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453123);
 }
 
@@ -38,5 +45,27 @@ fn fsMain() -> vec4f {
   color = mix(color, acid, smoothstep(0.15, 0.85, bands * 0.5 + 0.5) * 0.7);
   return vec4f(color, 1.0);
 }
-`,
+`
+
+export function run(canvas: HTMLCanvasElement, options: ExampleRunOptions = {}) {
+  const scene = createScene(canvas, {
+    backend: options.backend ?? "auto",
+    dpr: { max: 1.5 },
+    onInitError: options.onInitError,
+    screen: {
+      shaders: { fragment },
+      onFrame(self, frame) {
+        self.setUni({ value1: frame.now * 0.001 })
+      },
+    },
+  })
+  return fromScene(scene)
+}
+
+export const domainWarp: ExampleSpec = {
+  id: "domain-warp",
+  label: "Domain warp",
+  copy: "createScene + noise-warped UVs, then color the warped space. Liquid / marble heroes.",
+  fragment,
+  run: (target, options) => run(target as HTMLCanvasElement, options),
 }

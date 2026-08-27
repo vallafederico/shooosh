@@ -1,17 +1,23 @@
 /**
- * Gradient — UV mix plus a timed brand stripe.
+ * Gradient — vUv as color, one uniform for time.
  *
- * Common first shader: vUv as color, one uniform for time.
- * value1 = seconds.
+ * How to use:
+ *   import { createScene } from "shooosh"
+ *   const scene = createScene(canvas, {
+ *     screen: {
+ *       shaders: { fragment },
+ *       onFrame(self, frame) { self.setUni({ value1: frame.now * 0.001 }) },
+ *     },
+ *   })
+ *
+ * value1 = seconds. Smallest useful fsMain.
  */
 
-import type { ExampleSpec } from "./types"
+import { createScene } from "shooosh"
+import { fromScene } from "./handle"
+import type { ExampleRunOptions, ExampleSpec } from "./types"
 
-export const gradient: ExampleSpec = {
-  id: "gradient",
-  label: "Gradient",
-  copy: "vUv as a gradient. A thin acid stripe pulses on time — the smallest useful fsMain.",
-  fragment: `fn fsMain() -> vec4f {
+export const fragment = `fn fsMain() -> vec4f {
   let t = uUni.values0.x;
   let ink = vec3f(0.047, 0.047, 0.043);
   let acid = vec3f(0.847, 1.0, 0.243);
@@ -21,5 +27,27 @@ export const gradient: ExampleSpec = {
   let pulse = 0.65 + 0.35 * sin(t * 2.0);
   return vec4f(mix(g, acid, band * pulse), 1.0);
 }
-`,
+`
+
+export function run(canvas: HTMLCanvasElement, options: ExampleRunOptions = {}) {
+  const scene = createScene(canvas, {
+    backend: options.backend ?? "auto",
+    dpr: { max: 1.5 },
+    onInitError: options.onInitError,
+    screen: {
+      shaders: { fragment },
+      onFrame(self, frame) {
+        self.setUni({ value1: frame.now * 0.001 })
+      },
+    },
+  })
+  return fromScene(scene)
+}
+
+export const gradient: ExampleSpec = {
+  id: "gradient",
+  label: "Gradient",
+  copy: "createScene + vUv as a gradient. A thin acid stripe pulses on time — the smallest useful fsMain.",
+  fragment,
+  run: (target, options) => run(target as HTMLCanvasElement, options),
 }

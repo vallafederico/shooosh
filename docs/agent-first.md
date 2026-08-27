@@ -76,7 +76,7 @@ Every public module (and the internals an agent opens next) starts with a block 
 
 ### 9. Example gallery
 
-[`examples/`](../examples/README.md) is the live shader set (plasma, value noise, SDF rings, domain warp, mouse light, bloom, card fill). Mount recipes are in `examples/setups/`. Skill: `shooosh-examples`. Prefer these fragments over inventing a look.
+[`examples/`](../examples/README.md) is the live library-usage set (plasma, value noise, SDF rings, domain warp, grid, mouse light, mouse magnify, bloom, card fill). Each file imports `shooosh` and calls `createScene` / `createItem` / `effects` / `createMouseMonad`. Mount recipes are in `examples/setups/`. Skill: `shooosh-examples`. Prefer these over inventing a look.
 
 ## How an agent starts
 

@@ -1,38 +1,47 @@
 # Examples
 
-Real shaders on the public API — the common site-GPU pieces, not mount stubs.
+Each file **uses shooosh** for a common shader look — `createScene`, `createItem`, `effects`, `createMouseMonad`. Not mount stubs. Not fragment-only catalogs.
 
-Author **WGSL `fn fsMain`**. Each file is the fragment plus a one-line “when”. The harness (`pnpm --filter harness dev`) runs the same catalog.
+Author **WGSL `fn fsMain`**. Open a file, copy the `createScene` / `acquireLayer` block and the fragment. The harness (`pnpm --filter harness dev`) runs the same `run()` functions.
 
-| File | What it draws |
-| --- | --- |
-| [gradient.ts](./gradient.ts) | UV gradient + timed brand stripe |
-| [plasma.ts](./plasma.ts) | Polar sines — classic hero |
-| [value-noise.ts](./value-noise.ts) | Hash → value noise → fbm |
-| [sdf-rings.ts](./sdf-rings.ts) | Signed circle, concentric pulses |
-| [domain-warp.ts](./domain-warp.ts) | Noise-warped UVs (marble / liquid) |
-| [mouse-light.ts](./mouse-light.ts) | Pointer spotlight + ripples (`value2`/`value3`) |
-| [grain-bloom.ts](./grain-bloom.ts) | Emissive core + `effects.bloom` / `noise` (WebGL2) |
-| [item-fill.ts](./item-fill.ts) | `createItem` SDF capsule in the element’s `vUv` |
+| File | Uses | What it draws |
+| --- | --- | --- |
+| [gradient.ts](./gradient.ts) | `createScene` | UV gradient + timed brand stripe |
+| [plasma.ts](./plasma.ts) | `createScene` | Polar sines — classic hero |
+| [value-noise.ts](./value-noise.ts) | `createScene` | Hash → value noise → fbm |
+| [sdf-rings.ts](./sdf-rings.ts) | `createScene` | Signed circle, concentric pulses |
+| [domain-warp.ts](./domain-warp.ts) | `createScene` | Noise-warped UVs (marble / liquid) |
+| [grid.ts](./grid.ts) | `createScene` | Graph-paper field |
+| [mouse-light.ts](./mouse-light.ts) | `createScene` + `createMouseMonad` | Pointer spotlight + ripples |
+| [mouse-magnify.ts](./mouse-magnify.ts) | `createScene` + `createMouseMonad` | Lens zoom around the cursor |
+| [grain-bloom.ts](./grain-bloom.ts) | `createScene` + `effects.bloom` / `noise` | Emissive core + post (WebGL2) |
+| [item-fill.ts](./item-fill.ts) | `acquireLayer` + `createItem` | SDF capsule in the element's `vUv` |
 
-`catalog.ts` lists them. `mount.ts` is how the harness (and you) turn a spec into `createScene` / `acquireLayer`.
+Uniforms: `value1` = seconds. Pointer examples write `value2`/`value3` as 0..1 top-origin UV (remap from `createMouseMonad`'s −1..1). Same space as `vUv`.
 
-Uniforms: `value1` = seconds. Pointer examples also write `value2`/`value3` as 0..1 top-origin UV — the same space as `vUv`.
-
-Copy a fragment into a site:
+Copy a look onto a canvas:
 
 ```js
 import { createScene } from "shooosh"
-import { plasma } from "./plasma"
+import { fragment } from "./plasma"
 
 createScene(canvas, {
   screen: {
-    shaders: { fragment: plasma.fragment },
+    shaders: { fragment },
     onFrame(self, frame) {
       self.setUni({ value1: frame.now * 0.001 })
     },
   },
 })
+```
+
+Or call the example's `run`:
+
+```js
+import { run } from "./plasma"
+
+const handle = run(canvas)
+// handle.destroy()
 ```
 
 Mount recipes (Webflow, SSR shell, MSDF bake) live in [setups/](./setups/README.md).

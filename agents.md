@@ -23,7 +23,7 @@ Common use cases:
 - [llms.txt](./llms.txt) — machine index. Start here.
 - [docs/README.md](./docs/README.md) — documentation hub (GitHub link target)
 - [docs/getting-started.md](./docs/getting-started.md) — install + two mounts
-- [examples/](./examples/README.md) — copy-paste site setups
+- [examples/](./examples/README.md) — copy-paste library usage (plasma, noise, SDF, items)
 - [docs/agent-first.md](./docs/agent-first.md) — what we set up for agents
 - [docs/shader-contract.md](./docs/shader-contract.md) — authored language and uniforms
 - [docs/shader-translation.md](./docs/shader-translation.md) — WGSL ↔ GLSL
@@ -82,7 +82,7 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 | `web/` | Astro landing |
 | `bin/` | ESM / CJS / IIFE / `shooosh/msdf` build + `msdf` CLI + publish checks |
 | `docs/` | Documentation hub (GitHub link target) |
-| `examples/` | Live shader examples (plasma, noise, SDF, warp, mouse light) |
+| `examples/` | Library usage examples (createScene / createItem + common shaders) |
 | `docs/agent-tasks/` | Cloud-agent work queue |
 
 ## Links

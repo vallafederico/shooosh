@@ -17,7 +17,7 @@ Use the focused files below first. Read `llms-full` only when it exists. Do not 
 - [Agent readiness](./agents.md): Product identity, runtime policy, conventions, how to pick work
 - [Agent-first](./docs/agent-first.md): What we set up for coding agents
 - [Getting started](./docs/getting-started.md): Install, two mounts
-- [Examples](./examples/README.md): Live shaders — plasma, noise, SDF, warp, mouse light, bloom
+- [Examples](./examples/README.md): Library usage — plasma, noise, SDF, warp, mouse, bloom, cards
 - [Shader contract](./docs/shader-contract.md): `fn fsMain`, `vUv`, `uUni`, backends, failure policy
 - [Shader translation](./docs/shader-translation.md): WGSL ↔ GLSL 300 es mapping + converters
 - [API summary](./docs/api.md): Dual-renderer public API
@@ -82,7 +82,7 @@ These should exist after the matching tasks. Until then, this repo *is* the inte
 
 - `/agents.md` and `/llms.txt` on the hosted showcase (task 06)
 - `shooosh check` CLI (task 05)
-- Example gallery the harness can pull from (`examples/` is the source; harness wiring later)
+- Example gallery the harness already pulls (`examples/` — each file calls createScene / createItem)
 
 ## Optional
 
