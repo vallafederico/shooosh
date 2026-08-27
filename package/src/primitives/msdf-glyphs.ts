@@ -1,3 +1,17 @@
+/**
+ * createMsdfGlyphs — sample a baked font atlas. WebGL2 only today.
+ *
+ * How to use:
+ *   1. Bake with `shooosh/msdf` (`generateFontAtlas` / `pnpm msdf`)
+ *   2. loadTexture(atlas.png) + parse the bmfont JSON
+ *   3. createMsdfGlyphs({ texture, glyphData, distanceRange, … })
+ *
+ * Atlas encoding: 0.5 at the edge, > 0.5 inside. Do not import shooosh/msdf
+ * from this file (Node/Bun only).
+ *
+ * Docs: docs/msdf.md · skill shooosh-msdf
+ */
+
 import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import { getElementClipData } from "./item.utils";
 import { compileProgramAsync, type AsyncProgram } from "../shaders/compile";

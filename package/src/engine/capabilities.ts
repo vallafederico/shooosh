@@ -1,3 +1,16 @@
+/**
+ * probeRenderer — which GPU can this page use?
+ *
+ * How to use:
+ *   const kind = await probeRenderer()                 // "webgpu" | "webgl2" | null
+ *   await probeRenderer({ backend: "webgl2" })         // skip WebGPU
+ *
+ * `null` is valid. Do not throw; leave the page readable.
+ * createEngine / acquireLayer call this; site code rarely needs to.
+ *
+ * Docs: docs/api.md
+ */
+
 export type RendererKind = "webgpu" | "webgl2";
 
 export type ProbeRendererOptions = {

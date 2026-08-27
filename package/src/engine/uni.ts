@@ -1,3 +1,15 @@
+/**
+ * Uniform bag — `setUni({ value1, value2, … })` packed into 16 floats.
+ *
+ * How to use (site):
+ *   item.setUni({ value1: t })  →  WGSL `uUni.values0.x`  /  GLSL `uUni[0].x`
+ * Named uniforms are task 03. Until then keep the valueN packing.
+ *
+ * A write marks the settle loop dirty. Skip setUni when nothing changed.
+ *
+ * Docs: docs/shader-contract.md
+ */
+
 import { getDefaultEngine } from "./engine";
 
 const WATCH_META = Symbol("webgl.uni.watch");

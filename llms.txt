@@ -37,7 +37,7 @@ Use the focused files below first. Read `llms-full` only when it exists. Do not 
 
 ## Public API (current)
 
-Source: `package/index.ts`
+Source: `package/index.ts` (file-level headers = how to use each module)
 
 - `probeRenderer()` → `"webgpu" | "webgl2" | null`
 - `createEngine` (async, `{ backend?: "auto"|"webgpu"|"webgl2" }`) / `initEngine` / `getDefaultEngine` / `setDefaultEngine` / `resolveEngine`

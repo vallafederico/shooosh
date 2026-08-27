@@ -1,3 +1,12 @@
+/**
+ * createMouseTrail — GPU trail texture (post-based). WebGL2 only today.
+ *
+ * How to use: sample the trail texture from a custom post / item shader.
+ * No-op / warn on WebGPU.
+ *
+ * Docs: docs/api.md
+ */
+
 import { getDefaultEngine, resolveEngine, type EnginePostFrame } from "../engine/engine";
 
 type TrailTarget = {

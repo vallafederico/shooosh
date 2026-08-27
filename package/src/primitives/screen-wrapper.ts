@@ -1,3 +1,13 @@
+/**
+ * createScreen — fullscreen plane on the default engine.
+ *
+ * How to use:
+ *   createScreen({ shaders: { fragment: wgsl }, onFrame(self, frame) { … } })
+ * Or pass `screen:` into createScene. Layer defaults to -100 (behind items).
+ *
+ * Docs: docs/getting-started.md · docs/shader-contract.md
+ */
+
 import {
   initScreen,
   type InitScreenOptions,

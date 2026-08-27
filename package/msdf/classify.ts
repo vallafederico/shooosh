@@ -1,3 +1,9 @@
+/**
+ * Classify a path as font (.ttf/.otf/.ttc) or icon (.svg/.png/.webp).
+ *
+ * How to use: generateMsdf / the CLI. `null` means skip.
+ */
+
 import { extname } from "node:path";
 
 export const FONT_EXTENSIONS = [".ttf", ".otf", ".ttc"] as const;

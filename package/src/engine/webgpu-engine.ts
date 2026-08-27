@@ -1,3 +1,15 @@
+/**
+ * WebGPU engine implementation. Not a public import.
+ *
+ * How to use: createEngine() loads this when probeRenderer() is `"webgpu"`.
+ * Screen + item run here. Post, textures, objects, particles, MSDF do not —
+ * those stay on the WebGL2 engine and warn / no-op on this path.
+ *
+ * Do not leak GPUDevice into site-facing types. Shared frame is EngineFrame.
+ *
+ * Docs: docs/shader-contract.md
+ */
+
 import { GpuUnavailableError } from "./errors";
 import { resetCanvasRectCache } from "../primitives/item.utils";
 import {

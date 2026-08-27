@@ -1,3 +1,11 @@
+/**
+ * ParticlesManager — WebGL2 point list. Not a public import.
+ *
+ * How to use: createParticles() wraps this. No-op / warn on WebGPU.
+ *
+ * Docs: docs/site-patterns.md
+ */
+
 import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import { compileProgramAsync, type AsyncProgram } from "../shaders/compile";
 

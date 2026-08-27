@@ -1,3 +1,9 @@
+/**
+ * createObjectGeometry — CPU meshes (rounded box, etc.) for createObject.
+ *
+ * How to use: pass the result as geometry. Not a scene graph.
+ */
+
 export type RoundedBoxParams = {
   type: "roundedBox";
   width: number;

@@ -1,3 +1,12 @@
+/**
+ * WebGPU fullscreen plane. Not a public import.
+ *
+ * How to use: screen/item pick this when backend is webgpu.
+ * Source is wrapWgslFragment — do not pass a full WGSL pipeline module.
+ *
+ * Docs: docs/shader-contract.md
+ */
+
 import { getGpuFrame, GPU_BUFFER_USAGE, type GpuBindGroup } from "../engine/gpu-api";
 import { ensureWatchableUni, type UniWatchController } from "../engine/uni";
 import {

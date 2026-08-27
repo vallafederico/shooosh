@@ -1,3 +1,21 @@
+/**
+ * shooosh — public browser API. Source of truth for what sites may import.
+ *
+ * How to use:
+ *   Dedicated canvas:  createScene(canvas, { screen: { shaders: { fragment: wgsl } } })
+ *   Page-behind layer: const engine = await acquireLayer(); createItem(el, { shaders })
+ *   Probe only:        await probeRenderer() → "webgpu" | "webgl2" | null
+ *
+ * Author shaders as WGSL `fn fsMain() -> vec4f`. `vUv` is top-origin.
+ * `setUni({ value1 })` → `uUni.values0.x` (WGSL) / `uUni[0].x` (GLSL).
+ * Failed compile keeps the last good program — never blank the page.
+ *
+ * Do not: import `shooosh/msdf` from here or a site bundle (Node/Bun only).
+ * Do not: require `frame.gl` from site `onFrame` hooks.
+ *
+ * Docs: docs/api.md · docs/shader-contract.md · docs/getting-started.md
+ */
+
 // Engine
 export {
   createEngine,

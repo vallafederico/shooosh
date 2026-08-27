@@ -1,3 +1,12 @@
+/**
+ * Screen surface — fullscreen plane + optional texture. Not a public import.
+ *
+ * How to use: createScreen() / createScene({ screen }). Picks gpu-plane or
+ * the WebGL2 plane from the default engine.
+ *
+ * Docs: docs/shader-contract.md
+ */
+
 import {
   initFullscreenPlane,
   type FullscreenPlaneController,

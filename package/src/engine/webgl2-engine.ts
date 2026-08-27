@@ -1,3 +1,14 @@
+/**
+ * WebGL2 engine implementation. Not a public import.
+ *
+ * How to use: createEngine() loads this when WebGPU is missing or forced off.
+ * This is the path that still runs post, textures, objects, particles, MSDF.
+ *
+ * Site code still must not require `frame.gl` — it is optional on EngineFrame.
+ *
+ * Docs: docs/api.md
+ */
+
 import { WebGLUnavailableError } from "./errors";
 import { resetCanvasRectCache } from "../primitives/item.utils";
 import {

@@ -1,3 +1,14 @@
+/**
+ * generateMsdf — walk files/dirs, bake fonts + icons.
+ *
+ * How to use:
+ *   await generateMsdf(["fonts", "icons"], { outDir: "public/msdf" })
+ * Default layout: outDir/fonts and outDir/icons. Unknown extensions skip.
+ * A broken file is `{ kind: "error" }`; the rest of the batch continues.
+ *
+ * Docs: docs/msdf.md
+ */
+
 import { readdir, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { classifyMsdfSource } from "./classify";

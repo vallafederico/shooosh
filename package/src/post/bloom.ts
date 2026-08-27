@@ -1,3 +1,9 @@
+/**
+ * Bloom preset source. WebGL2 post chain. Not a public import.
+ *
+ * How to use: effects.bloom({ threshold, intensity, radius }).
+ */
+
 export type BloomEffectOptions = {
   threshold?: number;
   intensity?: number;

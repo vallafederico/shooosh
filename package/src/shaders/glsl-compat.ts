@@ -1,3 +1,12 @@
+/**
+ * convertGlslFragmentToWgsl — GLSL 300 es escape hatch → WGSL `fsMain`.
+ *
+ * How to use: port a `#version 300 es` site shader so WebGPU can run it.
+ * Supported subset only. Skill `glsl-to-wgsl` for anything the converter rejects.
+ *
+ * Docs: docs/shader-translation.md · skill glsl-to-wgsl
+ */
+
 import { isGlsl300 } from "./wgsl-wrap";
 
 const GLSL_TYPES = "void|f32|i32|u32|vec2f|vec3f|vec4f|mat4x4<f32>";

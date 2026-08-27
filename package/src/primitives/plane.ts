@@ -1,3 +1,13 @@
+/**
+ * Fullscreen / item plane (WebGL2 compile + GPU dispatch).
+ *
+ * How to use: createScreen / createItem go through this (or gpu-plane).
+ * Fragment: WGSL `fn fsMain`, or `#version 300 es` as a WebGL2 escape hatch.
+ * Compile failure keeps the last good program and logs — never blank.
+ *
+ * Docs: docs/shader-contract.md
+ */
+
 import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import { createGpuFullscreenPlaneRenderer } from "./gpu-plane";
 import {

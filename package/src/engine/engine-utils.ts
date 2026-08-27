@@ -1,3 +1,13 @@
+/**
+ * Canvas clear color + DPR helpers. Shared by both engines.
+ *
+ * How to use: createEngine({ clearColor, dpr: { max: 1.5 } }).
+ * Marketing pages cap DPR at 1.5–2. Match clearColor to the page paper
+ * if the canvas is opaque.
+ *
+ * Docs: docs/site-patterns.md
+ */
+
 export type ClearColor = {
   r: number;
   g: number;

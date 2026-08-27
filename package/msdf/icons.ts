@@ -1,3 +1,14 @@
+/**
+ * generateIconSdf — SVG/PNG/WebP alpha → single-channel SDF PNG + JSON.
+ *
+ * How to use:
+ *   await generateIconSdf("mark.svg", { outDir, size: 1024, spread: 64 })
+ * SVG defaults: size 1024, spread 64. PNG/WebP: spread 8 (source pixels).
+ * Runtime: createItem + loadTexture.
+ *
+ * Docs: docs/msdf.md
+ */
+
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { loadSharp } from "./optional";

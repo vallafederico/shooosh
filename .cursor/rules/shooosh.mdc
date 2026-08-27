@@ -10,6 +10,7 @@ You are working on a WGSL-first site GPU library. WebGPU is the preferred backen
 Before implementing, read `llms.txt` and `agents.md`, then the next `docs/agent-tasks/` file with `status: todo`. Complete one task per run.
 
 - Author shaders in WGSL (`fsMain`). GLSL 300 es is an escape hatch only. When converting shaders, read `.cursor/skills/wgsl-to-glsl` or `.cursor/skills/glsl-to-wgsl` and `docs/shader-translation.md`. Site mounts/items/post: `docs/site-patterns.md` and the `shooosh-site` / `shooosh-item` / `shooosh-post` skills.
+- Source files carry a top “How to use” header. Read that before adding a second API.
 - Do not leak `WebGL2RenderingContext` into new public types.
 - Shader compile failure: keep last good program, show the log, never blank the page.
 - Do not add tensors, Dawn, Three, or a `frame.pass` scene graph.

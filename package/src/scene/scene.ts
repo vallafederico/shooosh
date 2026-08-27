@@ -1,3 +1,20 @@
+/**
+ * createScene — own a <canvas> (app shell, section hero, SSR-safe init).
+ *
+ * How to use:
+ *   const scene = createScene(canvas, {
+ *     autoInit: false,            // SSR: don't touch GPU in the constructor
+ *     dpr: { max: 1.5 },
+ *     screen: { shaders: { fragment: wgsl } },
+ *   })
+ *   await scene.init()
+ *
+ * After init, createItem / createParticles / post use the default engine.
+ * Teardown: scene.destroy(). Page-behind without a scene object: acquireLayer.
+ *
+ * Docs: docs/getting-started.md · docs/site-patterns.md · skill shooosh-site
+ */
+
 import {
   getDefaultEngine,
   initEngine,

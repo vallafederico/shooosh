@@ -1,3 +1,20 @@
+/**
+ * createPostProcessor — bloom / bw / noise / custom. WebGL2 only today.
+ *
+ * How to use:
+ *   createScene(canvas, { post: [effects.bloom(), effects.noise()] })
+ *   // or
+ *   createPostProcessor().addFragmentEffect({ fragment: `vec4 applyEffect(...)` })
+ *
+ * Custom post is a **different contract** from `fsMain`:
+ *   vec4 applyEffect(vec4 color, vec2 uv, vec2 resolution, vec4 uni[4])
+ * Injected: uTexture (scene), uResolution, uTime, uDelta, uUni[4].
+ *
+ * Skipped on WebGPU until that port exists.
+ *
+ * Docs: docs/site-patterns.md · skill shooosh-post
+ */
+
 import { getDefaultEngine, type EnginePostFrame } from "../engine/engine";
 import { ensureWatchableUni, type UniValues, type UniWatchController } from "../engine/uni";
 import {

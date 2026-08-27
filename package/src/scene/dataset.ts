@@ -1,3 +1,12 @@
+/**
+ * parseSceneDataset — read `data-*` on a canvas into SceneOptions.
+ *
+ * How to use (Webflow / IIFE):
+ *   createScene(canvas, parseSceneDataset(canvas.dataset))
+ *
+ * Docs: docs/site-patterns.md
+ */
+
 import type { EngineOptions } from "../engine/engine";
 import type { CreateScreenOptions } from "../primitives/screen-wrapper";
 import type { SceneEffectPreset } from "../post/effects";

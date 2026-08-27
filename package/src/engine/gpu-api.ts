@@ -1,6 +1,11 @@
 /**
- * Structural WebGPU types so the package compiles without @webgpu/types.
- * Browser objects satisfy these shapes at runtime.
+ * Structural WebGPU types so the package compiles without `@webgpu/types`.
+ *
+ * How to use: engine / gpu-plane / gpu-item import these shapes. Browser
+ * GPUDevice / GPUCanvasContext satisfy them at runtime.
+ *
+ * Do not export this from package/index.ts. Do not add @webgpu/types as a
+ * runtime dependency.
  */
 
 export const GPU_BUFFER_USAGE = {

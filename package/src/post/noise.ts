@@ -1,3 +1,9 @@
+/**
+ * Grain / noise preset source. WebGL2 post chain.
+ *
+ * How to use: effects.noise({ amount, scale }).
+ */
+
 export type NoiseEffectOptions = {
   amount?: number;
   scale?: number;

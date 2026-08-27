@@ -70,6 +70,10 @@ Repeatable how-tos under [`.cursor/skills/`](../.cursor/skills/):
 
 [site-patterns.md](./site-patterns.md) is copied from how we actually ship (aiuis `Canvas` / `GlItem`, Webflow IIFE, smooothy sliders) — not from a generic Three tutorial.
 
+### 8. Source file headers
+
+Every public module (and the internals an agent opens next) starts with a block comment: what the file is, **how to use it**, what not to do, and which doc to read. Start at [`package/index.ts`](../package/index.ts). Do not invent a second API because a file looked undocumented.
+
 ## How an agent starts
 
 1. Read [`llms.txt`](../llms.txt)

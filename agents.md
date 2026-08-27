@@ -32,7 +32,7 @@ Common use cases:
 - [ROADMAP.md](./ROADMAP.md) — product direction
 - [docs/agent-tasks/](./docs/agent-tasks/) — executable briefs. Pick the lowest unfinished number
 - [readme.md](./readme.md) — GitHub landing
-- Source of truth for the public API: [package/index.ts](./package/index.ts)
+- Source of truth for the public API: [package/index.ts](./package/index.ts) — each module has a file-level “how to use” header
 
 Cursor skills (read when converting shaders):
 
@@ -57,7 +57,7 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 
 ## Conventions
 
-- Package source lives in `package/`. Root `package.json` is what npm publishes.
+- Package source lives in `package/`. Root `package.json` is what npm publishes. File-level headers on those modules are agent docs — read them before inventing an API.
 - Harness and web import source via alias (`shooosh` → `package/index.ts`).
 - Zero runtime dependencies on the **browser** entry. Do not add Three, Dawn, or a GPU tensor stack.
 - `shooosh/msdf` is Node/Bun only (`package/msdf/`). Do not import it from `package/index.ts`. Optional deps: `sharp`, `msdf-bmfont-xml`.

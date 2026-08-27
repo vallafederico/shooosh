@@ -1,3 +1,16 @@
+/**
+ * GPU / shader errors. Catch these; do not unmount the canvas.
+ *
+ * How to use:
+ *   GpuUnavailableError     — neither backend started (createEngine)
+ *   WebGLUnavailableError   — WebGL2 context failed
+ *   ShaderCompileError      — compile/link log (keep last good program)
+ *
+ * acquireLayer() returns null instead of throwing GpuUnavailableError.
+ *
+ * Docs: docs/api.md · docs/shader-contract.md
+ */
+
 export class WebGLUnavailableError extends Error {
   constructor(message = "WebGL2 is not available on this canvas.") {
     super(message);

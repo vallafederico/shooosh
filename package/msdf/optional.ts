@@ -1,3 +1,10 @@
+/**
+ * Lazy-load sharp / msdf-bmfont-xml. Throw with an install line if missing.
+ *
+ * How to use: icons call loadSharp(); fonts call loadBmfont(). Never import
+ * those packages from the browser entry.
+ */
+
 export async function loadSharp() {
   try {
     return (await import("sharp")).default;

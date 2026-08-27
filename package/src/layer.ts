@@ -1,13 +1,22 @@
-// Shared fullscreen layer: ONE fixed canvas + engine behind the whole page
-// for DOM-tracked effects (items). Refcounted — the first acquire creates it,
-// the last release tears it down. It becomes the default engine, so
-// createItem()/loadTexture() work against it without passing a handle.
-//
-// The canvas sits at z-index -1 with pointer-events none: elements showing an
-// effect must be transparent where it renders (an opaque body background
-// hides the layer entirely).
-//
-// For an effect scoped to its own <canvas> element use createScene instead.
+/**
+ * Shared page-behind canvas. One engine for the whole document.
+ *
+ * How to use:
+ *   const engine = await acquireLayer()
+ *   if (!engine) return          // no GPU — leave the page readable
+ *   const item = createItem(el, { shaders: { fragment: wgsl } })
+ *   // teardown
+ *   item.destroy()
+ *   releaseLayer()               // pair every acquire
+ *
+ * First acquire creates a fixed, pointer-events:none, z-index:-1 canvas and
+ * sets it as the default engine. Last release tears it down.
+ *
+ * The DOM node must be transparent where the shader should show. An opaque
+ * body background hides the layer. For a canvas you own, use createScene.
+ *
+ * Docs: docs/getting-started.md · docs/site-patterns.md · skill shooosh-site
+ */
 import {
   createEngine,
   getDefaultEngine,

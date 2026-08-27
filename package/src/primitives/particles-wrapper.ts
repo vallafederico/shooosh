@@ -1,3 +1,14 @@
+/**
+ * createParticles — clip-space dots. WebGL2 only today.
+ *
+ * How to use:
+ *   createParticles({ positions, size, color, layer })
+ * `positions` is `[x,y,…]` in clip space. Recreate on resize if count changes;
+ * `setPositions` on scroll is cheaper than destroy/create.
+ *
+ * Docs: docs/site-patterns.md
+ */
+
 import { ParticlesManager, type ParticlesOptions } from "./particles";
 
 export type CreateParticlesOptions = ParticlesOptions;

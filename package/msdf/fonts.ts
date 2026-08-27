@@ -1,3 +1,14 @@
+/**
+ * generateFontAtlas — TTF/OTF → atlas PNG + bmfont JSON.
+ *
+ * How to use:
+ *   await generateFontAtlas("Inter.ttf", { outDir, fontSize: 64, fieldType: "sdf" })
+ * Hairline faces want fontSize: 256. distanceRange (default 8) is uPxRange.
+ * Runtime: createMsdfGlyphs (WebGL2) + loadTexture.
+ *
+ * Docs: docs/msdf.md
+ */
+
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { loadBmfont } from "./optional";

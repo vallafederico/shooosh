@@ -1,3 +1,12 @@
+/**
+ * ItemManager — tracks getBoundingClientRect and draws a quad. Not public.
+ *
+ * How to use: createItem() wraps this. Queues on a raf list until an engine
+ * exists, then picks WebGPU (gpu-item) or WebGL2 (plane compile).
+ *
+ * Docs: docs/site-patterns.md
+ */
+
 import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import type { FullscreenPlaneShaders, FullscreenPlaneTexture } from "./plane";
 import { ensureWatchableUni, type UniValues, type UniWatchController } from "../engine/uni";

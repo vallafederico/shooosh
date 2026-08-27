@@ -1,3 +1,12 @@
+/**
+ * alphaToSdf — RGBA alpha → single-channel distance field.
+ *
+ * How to use: alpha ≥ 128 is inside. Encoded like font atlases: 0.5 at the
+ * edge, > 0.5 inside. Felzenszwalb & Huttenlocher EDT.
+ *
+ * Docs: docs/msdf.md
+ */
+
 // large finite stand-in for "no seed" — literal Infinity yields Inf-Inf = NaN
 // in the hull intersections and zeroes the whole transform
 const FAR = 1e20;

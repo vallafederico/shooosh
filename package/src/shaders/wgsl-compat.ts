@@ -1,3 +1,14 @@
+/**
+ * convertWgslFragmentToGlsl — WGSL `fsMain` → GLSL 300 es (WebGL2 fallback).
+ *
+ * How to use:
+ *   convertWgslFragmentToGlsl(wgsl, { includeUv: true })
+ * Supported subset only. If it rejects, use skill `wgsl-to-glsl` and keep the
+ * result inside the shader contract.
+ *
+ * Docs: docs/shader-translation.md · skill wgsl-to-glsl
+ */
+
 type WgslCompatOptions = {
   includeUv?: boolean;
   includeNormal?: boolean;

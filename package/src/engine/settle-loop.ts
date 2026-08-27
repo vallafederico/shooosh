@@ -1,3 +1,15 @@
+/**
+ * Settle loop — stay hot for SETTLE_MS (250) after the last dirty mark.
+ *
+ * How to use: engines call createSettleLoop({ resize, render }).
+ * Site code: skip `setUni` once values have snapped, or the page never idles
+ * (aiuis MouseDistortion does this).
+ *
+ * Dirty marks: setUni, scroll, pointer, requestFrame.
+ *
+ * Docs: docs/site-patterns.md
+ */
+
 /** How long the loop keeps rendering after the last dirty mark, so lerp tails and layout settle finish. */
 export const SETTLE_MS = 250;
 

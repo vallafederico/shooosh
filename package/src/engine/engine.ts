@@ -1,3 +1,20 @@
+/**
+ * createEngine — pick a backend and return the shared runtime handle.
+ *
+ * How to use:
+ *   const engine = await createEngine(canvas)              // probe WebGPU → WebGL2
+ *   await createEngine(canvas, { backend: "webgl2" })      // force (debug)
+ *   initEngine(canvas) sets the default used by createItem / createScreen
+ *
+ * Site `onFrame` should read `frame.now` / `frame.delta` / `frame.backend` /
+ * `frame.canvas`. `frame.gl` exists only on WebGL2 — do not require it.
+ *
+ * Throws GpuUnavailableError when neither backend starts. Prefer acquireLayer()
+ * (returns null) for page-behind mounts so the page stays readable.
+ *
+ * Docs: docs/api.md
+ */
+
 import { probeRenderer, type RendererKind } from "./capabilities";
 import { GpuUnavailableError } from "./errors";
 import type { ClearColor } from "./engine-utils";

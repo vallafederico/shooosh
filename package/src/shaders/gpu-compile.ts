@@ -1,3 +1,12 @@
+/**
+ * WebGPU pipeline + buffer helpers. Not a public import.
+ *
+ * How to use: gpu-plane / gpu-item call compileGpuPipeline on wrapped WGSL.
+ * Compile failure: keep the last good pipeline, log, do not blank the page.
+ *
+ * Docs: docs/shader-contract.md
+ */
+
 import {
   type GpuBindGroup,
   type GpuDevice,

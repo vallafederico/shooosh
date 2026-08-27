@@ -1,3 +1,14 @@
+/**
+ * MSDF CLI — parse argv and call generateMsdf.
+ *
+ * How to use:
+ *   bun run bin/msdf.ts <input...> --out <dir>
+ *   pnpm msdf -- fonts/Inter.ttf icons/ --out public/msdf
+ *   npx shooosh-msdf …
+ *
+ * Docs: docs/msdf.md
+ */
+
 import { generateMsdf, type GenerateMsdfLayout } from "./batch";
 import type { FontFieldType } from "./fonts";
 

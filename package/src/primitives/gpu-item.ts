@@ -1,3 +1,12 @@
+/**
+ * WebGPU DOM-quad renderer. Not a public import.
+ *
+ * How to use: ItemManager constructs this when engine.backend === "webgpu".
+ * Same item API as the WebGL2 path. Fragment is wrapWgslFragment(fsMain).
+ *
+ * Docs: docs/shader-contract.md
+ */
+
 import type { EngineFrame } from "../engine/engine";
 import { getGpuFrame, GPU_BUFFER_USAGE, type GpuBindGroup, type GpuBuffer } from "../engine/gpu-api";
 import type { UniWatchController } from "../engine/uni";

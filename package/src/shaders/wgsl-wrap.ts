@@ -1,3 +1,15 @@
+/**
+ * Wrap a site fragment into a WebGPU module.
+ *
+ * How to use: pass `fn fsMain() -> vec4f` (no @vertex, no pipeline).
+ * Injects Uni, vsMain, vUv (top-origin), fsEntry. Strips @fragment on fsMain.
+ *
+ * `#version 300 es` is detected and ignored on WebGPU (debug fallback).
+ * Convert those with convertGlslFragmentToWgsl instead.
+ *
+ * Docs: docs/shader-contract.md
+ */
+
 const UNI_AND_VERTEX = `struct Uni {
   values0: vec4f,
   values1: vec4f,
