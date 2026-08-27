@@ -1,0 +1,65 @@
+# shooosh
+
+> WGSL-first site GPU engine. WebGPU when available, WebGL2 fallback. Documentation and tasks are written for coding agents.
+
+Use the focused files below first. Read `llms-full` only when it exists. Do not ingest `node_modules/` or `dist/`.
+
+## When to use shooosh
+
+- A site needs a fullscreen shader, a page-behind layer, or DOM-tracked quads
+- The authored shader language should be WGSL
+- The same code must run on WebGPU or fall back to WebGL2
+- An agent needs to implement or extend the engine without inventing a new scene API
+
+## Start here
+
+- [Agent readiness](./agents.md): Product identity, runtime policy, and how to pick work
+- [Repo conventions](./AGENTS.md): What to touch, what not to, how to verify
+- [Human readme](./readme.md): Install, API table, shader contract
+- [Roadmap](./ROADMAP.md): Direction. Tasks below are the executable split.
+
+## Work queue (do in order)
+
+- [01 WebGPU renderer](./docs/agent-tasks/01-webgpu-renderer.md)
+- [02 Shader files + HMR](./docs/agent-tasks/02-shader-hmr.md)
+- [03 Named uniforms](./docs/agent-tasks/03-named-uniforms.md)
+- [04 WGSL stdlib](./docs/agent-tasks/04-wgsl-stdlib.md)
+- [05 check CLI](./docs/agent-tasks/05-check-cli.md)
+- [06 Agent docs hosting](./docs/agent-tasks/06-agent-docs-hosting.md)
+- [07 Compile overlay](./docs/agent-tasks/07-compile-overlay.md)
+
+## Public API (current)
+
+Source: `package/index.ts`
+
+- `probeRenderer()` → `"webgpu" | "webgl2" | null`
+- `createEngine` / `initEngine` / `getDefaultEngine` / `setDefaultEngine` / `resolveEngine`
+- `createScene` / `Scene` / `parseSceneDataset`
+- `acquireLayer` / `releaseLayer`
+- `createItem` / `createScreen` / `createObject` / `createParticles` / `createMsdfGlyphs`
+- `effects` / `createPostProcessor`
+- `loadTexture` / `loadGlb` / `createFakeHdriCanvas`
+- `convertWgslFragmentToGlsl` — WebGL fallback only
+- `compileProgramAsync` — non-blocking WebGL compile
+- `createMouseMonad` / `createMouseTrail`
+
+## Shader contract
+
+- Author `shaders.fragment` as WGSL with `fn fsMain`.
+- `vUv` is top-origin.
+- Uniforms today: `setUni({ value1 })` → `uUni[0].x` / `uUni.values0.x` (16 floats). Named uniforms are task 03.
+- Full `#version 300 es` GLSL is still accepted as an escape hatch.
+- Failed compile must not blank the page.
+
+## Machine interfaces (target)
+
+These should exist after the matching tasks. Until then, this repo *is* the interface.
+
+- `/agents.md` and `/llms.txt` on the hosted showcase (task 06)
+- `shooosh check` CLI (task 05)
+- Example gallery the harness can pull from (later)
+
+## Optional
+
+- [Source repository](https://github.com/vallafederico/shooosh)
+- [vgpu agent docs](https://vgpu.sh/llms.txt) — inspiration only

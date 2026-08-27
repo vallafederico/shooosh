@@ -106,7 +106,7 @@ return () => {
 
 ## Roadmap
 
-WebGPU renderer (default when the probe succeeds) and shader-file HMR (Vite + Bun). [vgpu](https://github.com/vercel-labs/vgpu) is the DX reference. See [ROADMAP.md](./ROADMAP.md).
+WebGPU renderer (default when the probe succeeds) and shader-file HMR (Vite + Bun). [vgpu](https://github.com/vercel-labs/vgpu) is the DX reference. Agents: [agents.md](./agents.md), [llms.txt](./llms.txt), [docs/agent-tasks/](./docs/agent-tasks/). See [ROADMAP.md](./ROADMAP.md).
 
 ## Publish
 

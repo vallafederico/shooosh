@@ -1,5 +1,7 @@
 # Roadmap
 
+Executable queue for agents: [docs/agent-tasks/](./docs/agent-tasks/). Start at `01`. Manifest: [agents.md](./agents.md) · index: [llms.txt](./llms.txt).
+
 Site-native GPU runtime: scenes, a shared page layer, DOM-tracked items. **WGSL is the shading language.** The engine **prefers WebGPU** and **falls back to WebGL2** when the adapter or device is missing. Same `createScene` / `createItem` / `acquireLayer` API on both backends.
 
 [vgpu](https://github.com/vercel-labs/vgpu) is the reference for shader DX (file imports, named uniforms, in-place HMR, stdlib, `check` CLI) — not for tensors, Dawn, or their frame/pass graph.
