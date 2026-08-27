@@ -13,6 +13,11 @@ export {
   type RenderTarget,
 } from "./src/engine/engine";
 export { WebGLUnavailableError, ShaderCompileError } from "./src/engine/errors";
+export {
+  probeRenderer,
+  type RendererKind,
+  type ProbeRendererOptions,
+} from "./src/engine/capabilities";
 
 // Scene (declarative entry)
 export { Scene, createScene, type SceneOptions } from "./src/scene/scene";

@@ -51,6 +51,7 @@ async function runTests() {
         "acquireLayer",
         "effects",
         "convertWgslFragmentToGlsl",
+        "probeRenderer",
       ]) {
         if (module[name] == null) {
           throw new Error(`ESM build missing ${name}`)
@@ -76,6 +77,7 @@ async function runTests() {
         "createItem",
         "acquireLayer",
         "convertWgslFragmentToGlsl",
+        "probeRenderer",
       ]) {
         if (!content.includes(token)) {
           throw new Error(`Type definitions missing ${token}`)

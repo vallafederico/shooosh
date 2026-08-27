@@ -1,6 +1,6 @@
 # shooosh
 
-Native WebGL2 engine with WGSL fragment shaders. This is the package already used across our sites — scenes, a shared page-behind layer, DOM-tracked items, and a small post stack.
+WGSL-first site engine. **WebGPU when the browser can, WebGL2 when it can’t.** Same API either way: scenes, a shared page-behind layer, DOM-tracked items, and a small post stack.
 
 ```shell
 pnpm i shooosh
@@ -12,14 +12,13 @@ import { createScene } from "shooosh"
 createScene(canvas, {
   screen: {
     shaders: {
-      fragment: `#version 300 es
-precision highp float;
-in vec2 vUv;
-uniform vec4 uUni[4];
-out vec4 outColor;
-void main() {
-  outColor = vec4(vUv, 0.5 + 0.5 * sin(uUni[0].x), 1.0);
-}`,
+      fragment: `
+@fragment
+fn fsMain() -> vec4f {
+  let t = uUni.values0.x;
+  return vec4f(vUv, 0.5 + 0.5 * sin(t), 1.0);
+}
+`,
     },
     onFrame(self, frame) {
       self.setUni({ value1: frame.now * 0.001 })
@@ -33,6 +32,8 @@ void main() {
 ```
 
 The IIFE build attaches `window.Shooosh`.
+
+Today the live renderer is WebGL2 (WGSL is converted to GLSL). The WebGPU backend is the next track — see [ROADMAP.md](./ROADMAP.md). `probeRenderer()` already reports which backend the browser can run.
 
 ## Repo
 
@@ -55,7 +56,8 @@ pnpm build:package
 
 | Name | Description |
 | --- | --- |
-| `createEngine` | WebGL2 context, layered `onRender`, `onPostRender`, settle-aware raf. |
+| `probeRenderer` | `"webgpu"` if the adapter is there, else `"webgl2"`, else `null`. |
+| `createEngine` | Context + layered `onRender` / `onPostRender`, settle-aware raf. WebGL2 today. |
 | `createScene` | Owns a canvas: optional fullscreen `screen`, post presets, items. |
 | `acquireLayer` / `releaseLayer` | Shared fixed canvas behind the page. Refcounted. |
 | `createItem` | DOM-tracked quad. IntersectionObserver-gated. `uUni` vec4[4]. |
@@ -63,16 +65,17 @@ pnpm build:package
 | `createObject` / `createParticles` / `createMsdfGlyphs` | 3D / particle / MSDF primitives. |
 | `effects` | `bloom`, `bw`, `noise`, `custom` post presets. |
 | `loadTexture` / `loadGlb` | Texture (cover/contain UV) and mesh-only GLB. |
-| `convertWgslFragmentToGlsl` | WGSL subset → GLSL 300 es. |
+| `convertWgslFragmentToGlsl` | Fallback path: WGSL subset → GLSL 300 es. |
 
 ### Shaders
 
-Pass `shaders.fragment`:
+**Author in WGSL.** Pass `shaders.fragment` as `fsMain`.
 
-- Full GLSL 300 es (`#version 300 es` … `out vec4 outColor`) is used as-is.
-- Otherwise it is treated as WGSL and converted. Prefer GLSL for anything beyond a simple `fsMain`.
+- On WebGPU (upcoming): the source is used as-is.
+- On WebGL2 (current): it is converted to GLSL 300 es.
+- Full GLSL 300 es (`#version 300 es`) still works as an escape hatch for existing sites.
 
-`vUv` is top-origin. Item / screen uniforms are 16 floats: `setUni({ value1 })` → `uUni[0].x`.
+`vUv` is top-origin. Item / screen uniforms are 16 floats: `setUni({ value1 })` → `uUni[0].x` / `uUni.values0.x`.
 
 ### Layer vs scene
 
@@ -85,7 +88,7 @@ const engine = acquireLayer()
 if (!engine) return
 
 const item = createItem(element, {
-  shaders: { fragment: glsl },
+  shaders: { fragment: wgsl },
   onFrame(self, frame) {
     self.setUni({ value1: frame.now * 0.001 })
   },
@@ -99,11 +102,11 @@ return () => {
 
 `createScene` is for a dedicated `<canvas>` — fullscreen shaders, section-scoped work, or scene-wide post.
 
-`acquireLayer()` returns `null` when WebGL2 is missing. Leave the page readable.
+`acquireLayer()` / `probeRenderer()` return `null` when no GPU backend is available. Leave the page readable.
 
 ## Roadmap
 
-Shader-file imports and in-place HMR (Vite + Bun) are next. [vgpu](https://github.com/vercel-labs/vgpu) is the DX reference — named uniforms, a small shader stdlib, `check` CLI — not a WebGPU rewrite. See [ROADMAP.md](./ROADMAP.md).
+WebGPU renderer (default when the probe succeeds) and shader-file HMR (Vite + Bun). [vgpu](https://github.com/vercel-labs/vgpu) is the DX reference. See [ROADMAP.md](./ROADMAP.md).
 
 ## Publish
 

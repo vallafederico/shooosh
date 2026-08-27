@@ -6,10 +6,10 @@ import "../styles/global.css"
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>shooosh — native WebGL2 / WGSL for sites</title>
+    <title>shooosh — WGSL, WebGPU with WebGL2 fallback</title>
     <meta
       name="description"
-      content="The WebGL2 engine used across our sites. Scenes, DOM-tracked items, WGSL fragments, post-processing."
+      content="WGSL-first site engine. WebGPU when available, WebGL2 when not. Scenes, DOM-tracked items, post-processing."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -29,11 +29,11 @@ import "../styles/global.css"
           </nav>
         </header>
         <div class="copy">
-          <h1>native<br />webgl / wgsl</h1>
+          <h1>native<br />wgsl / webgpu</h1>
           <p class="lede">
-            The engine already running on our sites. One canvas or a page-behind
-            layer, DOM-tracked quads, and a small post stack. Fragments in GLSL
-            300 es or a WGSL subset.
+            The engine already running on our sites. WebGPU when the browser
+            can, WebGL2 when it can’t. One canvas or a page-behind layer,
+            DOM-tracked quads, and a small post stack. Author in WGSL.
           </p>
           <pre>pnpm i shooosh</pre>
         </div>
