@@ -314,7 +314,7 @@ export function createFullscreenPlaneRenderer(
 
   return {
     geometry,
-    render(nextFrame: FullscreenPlaneRenderFrame) {
+    render(nextFrame: { canvas: HTMLCanvasElement }) {
       if (!program) {
         program = asyncProgram.poll();
         if (!program) return; // shader still compiling — skip this frame
@@ -403,6 +403,7 @@ export function initFullscreenPlane(
         return;
       }
     }
+    if (!renderer) return;
     if (controller) {
       config.onFrame?.(controller, frame);
     }

@@ -11,7 +11,11 @@ export const GPU_BUFFER_USAGE = {
 } as const;
 
 export type GpuQueue = {
-  writeBuffer: (buffer: GpuBuffer, offset: number, data: BufferSource) => void;
+  writeBuffer: (
+    buffer: GpuBuffer,
+    offset: number,
+    data: ArrayBufferView | ArrayBuffer,
+  ) => void;
   submit: (commandBuffers: unknown[]) => void;
 };
 
