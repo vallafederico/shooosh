@@ -13,15 +13,17 @@ Use the focused files below first. Read `llms-full` only when it exists. Do not 
 
 ## Start here
 
+- [Docs hub](./docs/README.md): GitHub documentation folder
 - [Agent readiness](./agents.md): Product identity, runtime policy, conventions, how to pick work
+- [Agent-first](./docs/agent-first.md): What we set up for coding agents
+- [Getting started](./docs/getting-started.md): Install, two mounts
 - [Shader contract](./docs/shader-contract.md): `fn fsMain`, `vUv`, `uUni`, backends, failure policy
 - [Shader translation](./docs/shader-translation.md): WGSL ↔ GLSL 300 es mapping + converters
 - [API summary](./docs/api.md): Dual-renderer public API
 - [Site patterns](./docs/site-patterns.md): App-shell canvas, items, post, Webflow — from aiuis usage
 - [MSDF generators](./docs/msdf.md): Node/Bun font atlas + icon SDF (`shooosh/msdf`)
-- [Human readme](./readme.md): Install, short examples
+- [Human readme](./readme.md): GitHub landing
 - [Roadmap](./ROADMAP.md): Direction. Tasks below are the executable split.
-- [Docs index](./docs/README.md)
 
 ## Work queue (do in order)
 

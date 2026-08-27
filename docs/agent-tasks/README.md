@@ -1,8 +1,10 @@
 # Agent tasks
 
+[Documentation](../README.md) · [Agent-first](../agent-first.md)
+
 Executable split of [ROADMAP.md](../../ROADMAP.md). Cloud and local agents take the **lowest numbered file** whose front matter says `status: todo`.
 
-Docs that are not a queue item: [shader contract](../shader-contract.md), [translation](../shader-translation.md), [API](../api.md), [site patterns](../site-patterns.md), [MSDF generators](../msdf.md). Skills live in `.cursor/skills/`.
+Docs that are not a queue item: [getting started](../getting-started.md), [shader contract](../shader-contract.md), [translation](../shader-translation.md), [API](../api.md), [site patterns](../site-patterns.md), [MSDF generators](../msdf.md). Skills live in `.cursor/skills/`.
 
 When you finish a task:
 

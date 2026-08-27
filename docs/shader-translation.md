@@ -1,5 +1,7 @@
 # Shader translation (WGSL ↔ GLSL 300 es)
 
+[Documentation](./README.md)
+
 Use this when a site shader must move between the authored language (WGSL) and the WebGL2 escape hatch (GLSL 300 es).
 
 Prefer the library functions when the source is in the **supported subset**. Use the agent skills for anything the converters reject — then keep the result inside the [shader contract](./shader-contract.md).

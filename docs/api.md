@@ -1,5 +1,7 @@
 # Public API
 
+[Documentation](./README.md)
+
 Source of truth: [`package/index.ts`](../package/index.ts). This page is the human/agent summary after the WebGPU renderer.
 
 ## Choose a path

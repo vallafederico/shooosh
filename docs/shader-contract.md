@@ -1,5 +1,7 @@
 # Shader contract
 
+[Documentation](./README.md)
+
 Author **WGSL**. GLSL 300 es is a WebGL2 escape hatch only.
 
 This is the site-facing fragment contract for `createScreen` / `createItem` (and `createScene({ screen })`). Both backends consume the same source string.

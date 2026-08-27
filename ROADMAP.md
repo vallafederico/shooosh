@@ -1,6 +1,6 @@
 # Roadmap
 
-Executable queue for agents: [docs/agent-tasks/](./docs/agent-tasks/). Start at `01`. Manifest: [agents.md](./agents.md) · index: [llms.txt](./llms.txt).
+Executable queue for agents: [docs/agent-tasks/](./docs/agent-tasks/). Start at `01`. Docs hub: [docs/](./docs/README.md) · manifest: [agents.md](./agents.md) · index: [llms.txt](./llms.txt) · [agent-first](./docs/agent-first.md).
 
 Site-native GPU runtime: scenes, a shared page layer, DOM-tracked items. **WGSL is the shading language.** The engine **prefers WebGPU** and **falls back to WebGL2** when the adapter or device is missing. Same `createScene` / `createItem` / `acquireLayer` API on both backends.
 
@@ -24,7 +24,7 @@ GLSL 300 es (`#version 300 es`) remains accepted as an escape hatch for current 
 - WGSL `fsMain` on WebGPU; WGSL ↔ GLSL converters + agent skills
 - Post presets, loaders, particles / objects / MSDF (WebGL2)
 - Vite harness + Astro `/web` (`?backend=` + backend label)
-- Agent docs: `llms.txt`, shader contract/translation/API, `docs/site-patterns.md` (aiuis / Webflow recipes)
+- Agent docs: `llms.txt`, `agents.md`, `docs/` hub, `docs/agent-first.md`, site-patterns (aiuis / Webflow)
 - Skills: WGSL ↔ GLSL, site mount, item, post, MSDF bake
 - Node/Bun `shooosh/msdf`: font atlases + icon SDFs (`pnpm msdf`)
 

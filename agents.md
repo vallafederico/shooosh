@@ -21,6 +21,9 @@ Common use cases:
 ## Documentation surfaces
 
 - [llms.txt](./llms.txt) — machine index. Start here.
+- [docs/README.md](./docs/README.md) — documentation hub (GitHub link target)
+- [docs/getting-started.md](./docs/getting-started.md) — install + two mounts
+- [docs/agent-first.md](./docs/agent-first.md) — what we set up for agents
 - [docs/shader-contract.md](./docs/shader-contract.md) — authored language and uniforms
 - [docs/shader-translation.md](./docs/shader-translation.md) — WGSL ↔ GLSL
 - [docs/api.md](./docs/api.md) — public API after the dual renderer
@@ -28,7 +31,7 @@ Common use cases:
 - [docs/msdf.md](./docs/msdf.md) — Node/Bun font + icon SDF generators
 - [ROADMAP.md](./ROADMAP.md) — product direction
 - [docs/agent-tasks/](./docs/agent-tasks/) — executable briefs. Pick the lowest unfinished number
-- [readme.md](./readme.md) — human install + short examples
+- [readme.md](./readme.md) — GitHub landing
 - Source of truth for the public API: [package/index.ts](./package/index.ts)
 
 Cursor skills (read when converting shaders):
@@ -76,7 +79,7 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 | `harness/` | Vite playground |
 | `web/` | Astro landing |
 | `bin/` | ESM / CJS / IIFE / `shooosh/msdf` build + `msdf` CLI + publish checks |
-| `docs/` | Shader contract, translation, API summary |
+| `docs/` | Documentation hub (GitHub link target) |
 | `docs/agent-tasks/` | Cloud-agent work queue |
 
 ## Links

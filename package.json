@@ -31,7 +31,7 @@
   "bugs": {
     "url": "https://github.com/vallafederico/shooosh/issues"
   },
-  "homepage": "https://github.com/vallafederico/shooosh#readme",
+  "homepage": "https://github.com/vallafederico/shooosh/tree/main/docs",
   "keywords": [
     "webgl",
     "webgl2",
@@ -66,6 +66,7 @@
     "dist/",
     "package/msdf/",
     "bin/msdf.mjs",
+    "docs/",
     "package.json",
     "readme.md",
     "LICENSE"

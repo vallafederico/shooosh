@@ -1,5 +1,7 @@
 # MSDF / SDF generators
 
+[Documentation](./README.md)
+
 Node and Bun utilities for the atlases `createMsdfGlyphs` and SDF icon quads consume. **Not part of the browser package.** Do not import `shooosh/msdf` from a site bundle — it needs `sharp` and `msdf-bmfont-xml`.
 
 ```js
