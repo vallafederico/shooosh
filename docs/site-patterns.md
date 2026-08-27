@@ -4,7 +4,7 @@
 
 How we actually use this engine on marketing and product sites. Source of the recipes: **aiuis** (`@ssscript/webgl` — `Canvas`, `GlItem`, `SdfImage`, `MsdfText`, `MouseDistortion`, `ParticleGrid`), plus Webflow IIFE embeds and slider sync (smooothy).
 
-Author shaders as WGSL `fn fsMain`. See [shader-contract.md](./shader-contract.md).
+Author shaders as WGSL `fn fsMain`. See [shader-contract.md](./shader-contract.md). Copy-paste setups: [examples/](../examples/README.md).
 
 ## Pick a mount
 

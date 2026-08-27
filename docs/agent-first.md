@@ -74,6 +74,10 @@ Repeatable how-tos under [`.cursor/skills/`](../.cursor/skills/):
 
 Every public module (and the internals an agent opens next) starts with a block comment: what the file is, **how to use it**, what not to do, and which doc to read. Start at [`package/index.ts`](../package/index.ts). Do not invent a second API because a file looked undocumented.
 
+### 9. Example gallery
+
+[`examples/`](../examples/README.md) is the copy-paste set (hero, page layer, app shell, post, magnify, particles, Webflow, MSDF bake, framework wrappers). Skill: `shooosh-examples`. Prefer these over inventing a mount.
+
 ## How an agent starts
 
 1. Read [`llms.txt`](../llms.txt)

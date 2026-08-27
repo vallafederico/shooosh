@@ -23,6 +23,7 @@ Common use cases:
 - [llms.txt](./llms.txt) — machine index. Start here.
 - [docs/README.md](./docs/README.md) — documentation hub (GitHub link target)
 - [docs/getting-started.md](./docs/getting-started.md) — install + two mounts
+- [examples/](./examples/README.md) — copy-paste site setups
 - [docs/agent-first.md](./docs/agent-first.md) — what we set up for agents
 - [docs/shader-contract.md](./docs/shader-contract.md) — authored language and uniforms
 - [docs/shader-translation.md](./docs/shader-translation.md) — WGSL ↔ GLSL
@@ -42,6 +43,7 @@ Cursor skills (read when converting shaders):
 - [shooosh-item](./.cursor/skills/shooosh-item/SKILL.md)
 - [shooosh-post](./.cursor/skills/shooosh-post/SKILL.md)
 - [shooosh-msdf](./.cursor/skills/shooosh-msdf/SKILL.md)
+- [shooosh-examples](./.cursor/skills/shooosh-examples/SKILL.md)
 
 Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` / `agents.md`.
 
@@ -80,6 +82,7 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 | `web/` | Astro landing |
 | `bin/` | ESM / CJS / IIFE / `shooosh/msdf` build + `msdf` CLI + publish checks |
 | `docs/` | Documentation hub (GitHub link target) |
+| `examples/` | Copy-paste site setups (hero, layer, post, Webflow, MSDF) |
 | `docs/agent-tasks/` | Cloud-agent work queue |
 
 ## Links

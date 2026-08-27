@@ -11,6 +11,7 @@ This folder is what [the GitHub repo](https://github.com/vallafederico/shooosh) 
 | | |
 | --- | --- |
 | [Getting started](./getting-started.md) | Install, two mounts, first `fsMain` |
+| [Examples](../examples/README.md) | Copy-paste site setups (hero, layer, post, Webflow, …) |
 | [API](./api.md) | What to call (`createScene`, `acquireLayer`, `createItem`, …) |
 | [Shader contract](./shader-contract.md) | `fn fsMain`, `vUv`, `uUni`, backends, failure policy |
 
@@ -33,7 +34,7 @@ The repo is the agent interface until the site hosts the same files ([task 06](.
 | [`/agents.md`](../agents.md) | Readiness manifest and working rules |
 | [Agent tasks](./agent-tasks/) | Numbered queue. Lowest `status: todo` wins |
 
-Cursor skills: [wgsl-to-glsl](../.cursor/skills/wgsl-to-glsl/SKILL.md), [glsl-to-wgsl](../.cursor/skills/glsl-to-wgsl/SKILL.md), [shooosh-site](../.cursor/skills/shooosh-site/SKILL.md), [shooosh-item](../.cursor/skills/shooosh-item/SKILL.md), [shooosh-post](../.cursor/skills/shooosh-post/SKILL.md), [shooosh-msdf](../.cursor/skills/shooosh-msdf/SKILL.md).
+Cursor skills: [wgsl-to-glsl](../.cursor/skills/wgsl-to-glsl/SKILL.md), [glsl-to-wgsl](../.cursor/skills/glsl-to-wgsl/SKILL.md), [shooosh-site](../.cursor/skills/shooosh-site/SKILL.md), [shooosh-item](../.cursor/skills/shooosh-item/SKILL.md), [shooosh-post](../.cursor/skills/shooosh-post/SKILL.md), [shooosh-msdf](../.cursor/skills/shooosh-msdf/SKILL.md), [shooosh-examples](../.cursor/skills/shooosh-examples/SKILL.md).
 
 ## Source of truth
 

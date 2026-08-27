@@ -17,6 +17,7 @@ Use the focused files below first. Read `llms-full` only when it exists. Do not 
 - [Agent readiness](./agents.md): Product identity, runtime policy, conventions, how to pick work
 - [Agent-first](./docs/agent-first.md): What we set up for coding agents
 - [Getting started](./docs/getting-started.md): Install, two mounts
+- [Examples](./examples/README.md): Copy-paste site setups (hero, layer, post, Webflow, MSDF)
 - [Shader contract](./docs/shader-contract.md): `fn fsMain`, `vUv`, `uUni`, backends, failure policy
 - [Shader translation](./docs/shader-translation.md): WGSL ↔ GLSL 300 es mapping + converters
 - [API summary](./docs/api.md): Dual-renderer public API
@@ -73,6 +74,7 @@ See [docs/shader-contract.md](./docs/shader-contract.md). Short form:
 - [`.cursor/skills/shooosh-item`](./.cursor/skills/shooosh-item/SKILL.md) — DOM-tracked quad
 - [`.cursor/skills/shooosh-post`](./.cursor/skills/shooosh-post/SKILL.md) — bloom / grain / `applyEffect`
 - [`.cursor/skills/shooosh-msdf`](./.cursor/skills/shooosh-msdf/SKILL.md) — bake font/icon SDFs (Node/Bun)
+- [`.cursor/skills/shooosh-examples`](./.cursor/skills/shooosh-examples/SKILL.md) — copy a setup from `examples/`
 
 ## Machine interfaces (target)
 
@@ -80,7 +82,7 @@ These should exist after the matching tasks. Until then, this repo *is* the inte
 
 - `/agents.md` and `/llms.txt` on the hosted showcase (task 06)
 - `shooosh check` CLI (task 05)
-- Example gallery the harness can pull from (later)
+- Example gallery the harness can pull from (`examples/` is the source; harness wiring later)
 
 ## Optional
 

@@ -1,5 +1,5 @@
 {
-  "exclude": ["dist", "web", "harness"],
+  "exclude": ["dist", "web", "harness", "examples"],
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],

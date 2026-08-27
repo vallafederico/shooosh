@@ -71,7 +71,7 @@ Edit a `.wgsl` (also `.frag` / `.glsl` for legacy) and the live program swaps. F
 ## Later
 
 - Stronger WGSL ↔ GLSL converters (samplers, structs, preprocessor)
-- Example gallery the harness can pull from
+- Example gallery: [`examples/`](./examples/README.md) is the source; harness can pull from it later
 - Bundle budget on the IIFE build
 - Headless / mock adapter for CI (optional; not Dawn-in-the-package)
 
