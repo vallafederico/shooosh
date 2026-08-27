@@ -1,0 +1,14 @@
+{
+  "name": "shooosh",
+  "type": "module",
+  "main": "./dist/cjs.js",
+  "module": "./dist/esm.js",
+  "unpkg": "./dist/shooosh.min.js",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "import": "./index.ts",
+      "default": "./index.ts"
+    }
+  }
+}

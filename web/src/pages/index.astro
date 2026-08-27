@@ -1,0 +1,84 @@
+---
+import "../styles/global.css"
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>shooosh — native WebGL2 / WGSL for sites</title>
+    <meta
+      name="description"
+      content="The WebGL2 engine used across our sites. Scenes, DOM-tracked items, WGSL fragments, post-processing."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
+    />
+  </head>
+  <body>
+    <section class="hero">
+      <canvas id="scene"></canvas>
+      <div class="frame">
+        <header>
+          <span>shooosh</span>
+          <nav>
+            <a href="https://www.npmjs.com/package/shooosh">npm</a>
+            <a href="https://github.com/vallafederico/shooosh">github</a>
+          </nav>
+        </header>
+        <div class="copy">
+          <h1>native<br />webgl / wgsl</h1>
+          <p class="lede">
+            The engine already running on our sites. One canvas or a page-behind
+            layer, DOM-tracked quads, and a small post stack. Fragments in GLSL
+            300 es or a WGSL subset.
+          </p>
+          <pre>pnpm i shooosh</pre>
+        </div>
+        <footer>
+          <span>0.0.1</span>
+          <span>createScene · createItem · acquireLayer</span>
+        </footer>
+      </div>
+    </section>
+
+    <script>
+      import { createScene } from "shooosh"
+
+      const fragment = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform vec4 uUni[4];
+out vec4 outColor;
+
+void main() {
+  float t = uUni[0].x;
+  vec2 p = vUv * 2.0 - 1.0;
+  float r = length(p);
+  float a = atan(p.y, p.x);
+  float bands = sin(r * 12.0 - t * 1.4 + sin(a * 4.0 + t * 0.7));
+  vec3 ink = vec3(0.047, 0.047, 0.043);
+  vec3 acid = vec3(0.847, 1.0, 0.243);
+  vec3 paper = vec3(0.925, 0.906, 0.863);
+  vec3 color = mix(ink, paper, 0.07 + 0.1 * r);
+  color = mix(color, acid, smoothstep(0.15, 0.9, bands * 0.5 + 0.5) * (1.0 - r * 0.5));
+  outColor = vec4(color, 1.0);
+}
+`
+
+      const canvas = document.querySelector<HTMLCanvasElement>("#scene")
+      if (canvas) {
+        createScene(canvas, {
+          screen: {
+            shaders: { fragment },
+            onFrame(self, frame) {
+              self.setUni({ value1: frame.now * 0.001 })
+            },
+          },
+        })
+      }
+    </script>
+  </body>
+</html>

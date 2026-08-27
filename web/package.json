@@ -1,0 +1,17 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev --host",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "shooosh": "workspace:*"
+  },
+  "devDependencies": {
+    "astro": "^5.13.2"
+  }
+}

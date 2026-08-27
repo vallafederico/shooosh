@@ -1,0 +1,63 @@
+{
+  "name": "shooosh",
+  "author": "vallafederico",
+  "version": "0.0.1",
+  "description": "Native WebGL2 engine with WGSL fragment shaders for sites — scenes, DOM-tracked items, and post-processing.",
+  "type": "module",
+  "main": "./dist/cjs.js",
+  "module": "./dist/esm.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/shooosh.min.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm.js",
+      "require": "./dist/cjs.js",
+      "default": "./dist/esm.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vallafederico/shooosh.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vallafederico/shooosh/issues"
+  },
+  "homepage": "https://github.com/vallafederico/shooosh#readme",
+  "keywords": [
+    "webgl",
+    "webgl2",
+    "webgpu",
+    "wgsl",
+    "glsl",
+    "shader",
+    "canvas",
+    "post-processing",
+    "bloom"
+  ],
+  "scripts": {
+    "build": "pnpm run -w --parallel /^build:.*/",
+    "build:package": "bun run bin/build.ts",
+    "build:web": "pnpm --filter web build",
+    "test": "bun test package",
+    "test:build": "bun run bin/test-build.ts",
+    "dev": "pnpm run -w --parallel /^dev:.*/",
+    "dev:harness": "pnpm --filter harness dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:package": "bun run bin/dev.ts",
+    "pub": "npm version patch && pnpm run build:package && npm publish",
+    "release:patch": "npm version patch && pnpm run build:package && npm publish",
+    "release:minor": "npm version minor && pnpm run build:package && npm publish",
+    "release:major": "npm version major && pnpm run build:package && npm publish"
+  },
+  "files": [
+    "dist/",
+    "package.json",
+    "readme.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "bun-plugin-dts": "^0.3.0"
+  }
+}
