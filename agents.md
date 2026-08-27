@@ -21,10 +21,18 @@ Common use cases:
 ## Documentation surfaces
 
 - [llms.txt](./llms.txt) — machine index. Start here.
-- [ROADMAP.md](./ROADMAP.md) — product direction.
-- [docs/agent-tasks/](./docs/agent-tasks/) — executable briefs. Pick the lowest unfinished number.
-- [readme.md](./readme.md) — human install + API table.
+- [docs/shader-contract.md](./docs/shader-contract.md) — authored language and uniforms
+- [docs/shader-translation.md](./docs/shader-translation.md) — WGSL ↔ GLSL
+- [docs/api.md](./docs/api.md) — public API after the dual renderer
+- [ROADMAP.md](./ROADMAP.md) — product direction
+- [docs/agent-tasks/](./docs/agent-tasks/) — executable briefs. Pick the lowest unfinished number
+- [readme.md](./readme.md) — human install + short examples
 - Source of truth for the public API: [package/index.ts](./package/index.ts)
+
+Cursor skills (read when converting shaders):
+
+- [wgsl-to-glsl](./.cursor/skills/wgsl-to-glsl/SKILL.md)
+- [glsl-to-wgsl](./.cursor/skills/glsl-to-wgsl/SKILL.md)
 
 Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` / `agents.md`.
 
@@ -32,7 +40,7 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 
 1. Read `llms.txt`, then this file, then the next file in `docs/agent-tasks/` whose status is `todo`.
 2. Do **one** task per run. Mark it `done` in that file’s front matter when finished. Do not start the next task unless the current one is complete and tests pass.
-3. Author new shaders in WGSL (`fsMain`). Do not add GLSL except as a fallback converter target or a site escape hatch.
+3. Author new shaders in WGSL (`fsMain`). Do not add GLSL except as a fallback converter target or a site escape hatch. When porting shaders, read the `wgsl-to-glsl` / `glsl-to-wgsl` skills and prefer `convertWgslFragmentToGlsl` / `convertGlslFragmentToWgsl`.
 4. Do not leak `WebGL2RenderingContext` into new public types. Shared frame types stay backend-agnostic.
 5. Never blank the page on shader failure — keep the last good program, surface the log.
 6. Out of scope: tensors, neural nets, Dawn-in-the-package, vgpu’s `frame.pass` graph.
@@ -55,10 +63,12 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 | `package/src/scene/` | `createScene` |
 | `package/src/primitives/` | screen, item, object, particles, msdf |
 | `package/src/post/` | bloom, bw, noise, custom |
-| `package/src/shaders/` | compile + wgsl-compat |
+| `package/src/shaders/` | compile, WGSL wrap, WGSL ↔ GLSL converters |
+| `.cursor/skills/` | Agent skills: WGSL ↔ GLSL |
 | `harness/` | Vite playground |
 | `web/` | Astro landing |
 | `bin/` | ESM / CJS / IIFE build + publish checks |
+| `docs/` | Shader contract, translation, API summary |
 | `docs/agent-tasks/` | Cloud-agent work queue |
 
 ## Links

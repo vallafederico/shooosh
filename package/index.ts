@@ -68,6 +68,8 @@ export { createFakeHdriCanvas, type CreateFakeHdriOptions } from "./src/loaders/
 export { ensureWatchableUni, type UniValues } from "./src/engine/uni";
 export { compileProgramAsync, type AsyncProgram } from "./src/shaders/compile";
 export { convertWgslFragmentToGlsl } from "./src/shaders/wgsl-compat";
+export { convertGlslFragmentToWgsl } from "./src/shaders/glsl-compat";
+export { isGlsl300 } from "./src/shaders/wgsl-wrap";
 
 // Input helpers
 export {

@@ -21,9 +21,10 @@ GLSL 300 es (`#version 300 es`) remains accepted as an escape hatch for current 
 
 - Publishable package (`esm` / `cjs` / IIFE / types)
 - Dual renderer: WebGPU default, WebGL2 fallback (`createEngine` / `createScene` / `acquireLayer` / `createItem` / `createScreen`)
-- WGSL `fsMain` on WebGPU; converter only on the WebGL path
+- WGSL `fsMain` on WebGPU; WGSL ↔ GLSL converters + agent skills
 - Post presets, loaders, particles / objects / MSDF (WebGL2)
 - Vite harness + Astro `/web` (`?backend=` + backend label)
+- Agent docs: `llms.txt`, `docs/shader-contract.md`, `docs/shader-translation.md`, `docs/api.md`
 
 ## Next — remaining GPU ports
 
@@ -67,7 +68,7 @@ Edit a `.wgsl` (also `.frag` / `.glsl` for legacy) and the live program swaps. F
 
 ## Later
 
-- Stronger WGSL → GLSL converter for the fallback path
+- Stronger WGSL ↔ GLSL converters (samplers, structs, preprocessor)
 - Example gallery the harness can pull from
 - Bundle budget on the IIFE build
 - Headless / mock adapter for CI (optional; not Dawn-in-the-package)

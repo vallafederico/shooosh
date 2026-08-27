@@ -14,8 +14,12 @@ Use the focused files below first. Read `llms-full` only when it exists. Do not 
 ## Start here
 
 - [Agent readiness](./agents.md): Product identity, runtime policy, conventions, how to pick work
-- [Human readme](./readme.md): Install, API table, shader contract
+- [Shader contract](./docs/shader-contract.md): `fn fsMain`, `vUv`, `uUni`, backends, failure policy
+- [Shader translation](./docs/shader-translation.md): WGSL ↔ GLSL 300 es mapping + converters
+- [API summary](./docs/api.md): Dual-renderer public API
+- [Human readme](./readme.md): Install, short examples
 - [Roadmap](./ROADMAP.md): Direction. Tasks below are the executable split.
+- [Docs index](./docs/README.md)
 
 ## Work queue (do in order)
 
@@ -38,17 +42,24 @@ Source: `package/index.ts`
 - `createItem` / `createScreen` / `createObject` / `createParticles` / `createMsdfGlyphs`
 - `effects` / `createPostProcessor`
 - `loadTexture` / `loadGlb` / `createFakeHdriCanvas`
-- `convertWgslFragmentToGlsl` — WebGL fallback only
+- `convertWgslFragmentToGlsl` / `convertGlslFragmentToWgsl` / `isGlsl300`
 - `compileProgramAsync` — non-blocking WebGL compile
 - `createMouseMonad` / `createMouseTrail`
 
 ## Shader contract
 
+See [docs/shader-contract.md](./docs/shader-contract.md). Short form:
+
 - Author `shaders.fragment` as WGSL with `fn fsMain`.
 - `vUv` is top-origin.
-- Uniforms today: `setUni({ value1 })` → `uUni[0].x` / `uUni.values0.x` (16 floats). Named uniforms are task 03.
-- Full `#version 300 es` GLSL is still accepted as an escape hatch.
+- Uniforms today: `setUni({ value1 })` → `uUni.values0.x` / `uUni[0].x` (16 floats). Named uniforms are task 03.
+- Full `#version 300 es` GLSL is a WebGL2 escape hatch. Port it with `convertGlslFragmentToWgsl` (skill: `glsl-to-wgsl`).
 - Failed compile must not blank the page.
+
+## Shader skills
+
+- [`.cursor/skills/wgsl-to-glsl`](./.cursor/skills/wgsl-to-glsl/SKILL.md) — WGSL → GLSL 300 es
+- [`.cursor/skills/glsl-to-wgsl`](./.cursor/skills/glsl-to-wgsl/SKILL.md) — GLSL 300 es → WGSL
 
 ## Machine interfaces (target)
 

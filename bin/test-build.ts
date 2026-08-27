@@ -51,6 +51,7 @@ async function runTests() {
         "acquireLayer",
         "effects",
         "convertWgslFragmentToGlsl",
+        "convertGlslFragmentToWgsl",
         "probeRenderer",
       ]) {
         if (module[name] == null) {
@@ -77,6 +78,7 @@ async function runTests() {
         "createItem",
         "acquireLayer",
         "convertWgslFragmentToGlsl",
+        "convertGlslFragmentToWgsl",
         "probeRenderer",
       ]) {
         if (!content.includes(token)) {

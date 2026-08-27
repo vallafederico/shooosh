@@ -54,28 +54,33 @@ pnpm build:package
 
 ## API
 
+Full table: [docs/api.md](./docs/api.md). Shader rules: [docs/shader-contract.md](./docs/shader-contract.md).
+
 | Name | Description |
 | --- | --- |
 | `probeRenderer` | `"webgpu"` if the adapter is there, else `"webgl2"`, else `null`. |
 | `createEngine` | Async. Probe WebGPU, else WebGL2. Layered `onRender` / `onPostRender`, settle-aware raf. |
 | `createScene` | Owns a canvas: optional fullscreen `screen`, post presets, items. |
-| `acquireLayer` / `releaseLayer` | Shared fixed canvas behind the page. Refcounted. |
-| `createItem` | DOM-tracked quad. IntersectionObserver-gated. `uUni` vec4[4]. |
+| `acquireLayer` / `releaseLayer` | Shared fixed canvas behind the page. Refcounted. Async acquire. |
+| `createItem` | DOM-tracked quad. `uUni` vec4[4]. |
 | `createScreen` | Fullscreen plane on the current default engine. |
-| `createObject` / `createParticles` / `createMsdfGlyphs` | 3D / particle / MSDF primitives. |
-| `effects` | `bloom`, `bw`, `noise`, `custom` post presets. |
-| `loadTexture` / `loadGlb` | Texture (cover/contain UV) and mesh-only GLB. |
-| `convertWgslFragmentToGlsl` | Fallback path: WGSL subset → GLSL 300 es. |
+| `createObject` / `createParticles` / `createMsdfGlyphs` | 3D / particle / MSDF primitives (WebGL2 today). |
+| `effects` | `bloom`, `bw`, `noise`, `custom` post presets (WebGL2 today). |
+| `loadTexture` / `loadGlb` | Texture and mesh-only GLB (WebGL2 today). |
+| `convertWgslFragmentToGlsl` | WGSL subset → GLSL 300 es (WebGL fallback). |
+| `convertGlslFragmentToWgsl` | GLSL 300 es → WGSL `fsMain` (port an escape-hatch shader). |
 
 ### Shaders
 
-**Author in WGSL.** Pass `shaders.fragment` as `fsMain`.
+**Author in WGSL.** Pass `shaders.fragment` as `fn fsMain`.
 
 - On WebGPU: the source is wrapped (`Uni`, `vUv`, `vsMain`) and run as-is.
 - On WebGL2: it is converted to GLSL 300 es.
-- Full GLSL 300 es (`#version 300 es`) still works as an escape hatch on WebGL2.
+- Full GLSL 300 es (`#version 300 es`) still works as an escape hatch on WebGL2. Port it with `convertGlslFragmentToWgsl` so WebGPU can run it.
 
-`vUv` is top-origin. Item / screen uniforms are 16 floats: `setUni({ value1 })` → `uUni[0].x` / `uUni.values0.x`.
+`vUv` is top-origin. Item / screen uniforms are 16 floats: `setUni({ value1 })` → `uUni.values0.x` / `uUni[0].x`.
+
+Agents porting shaders should use the Cursor skills in `.cursor/skills/wgsl-to-glsl` and `.cursor/skills/glsl-to-wgsl`. Mapping: [docs/shader-translation.md](./docs/shader-translation.md).
 
 ### Layer vs scene
 
@@ -106,7 +111,7 @@ return () => {
 
 ## Roadmap
 
-WebGPU renderer (default when the probe succeeds) and shader-file HMR (Vite + Bun). [vgpu](https://github.com/vercel-labs/vgpu) is the DX reference. Agents: [agents.md](./agents.md), [llms.txt](./llms.txt), [docs/agent-tasks/](./docs/agent-tasks/). See [ROADMAP.md](./ROADMAP.md).
+WebGPU renderer (default when the probe succeeds) and shader-file HMR (Vite + Bun). [vgpu](https://github.com/vercel-labs/vgpu) is the DX reference. Agents: [agents.md](./agents.md), [llms.txt](./llms.txt), [docs/](./docs/README.md), [docs/agent-tasks/](./docs/agent-tasks/). See [ROADMAP.md](./ROADMAP.md).
 
 ## Publish
 
