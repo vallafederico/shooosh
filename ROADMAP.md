@@ -25,7 +25,8 @@ GLSL 300 es (`#version 300 es`) remains accepted as an escape hatch for current 
 - Post presets, loaders, particles / objects / MSDF (WebGL2)
 - Vite harness + Astro `/web` (`?backend=` + backend label)
 - Agent docs: `llms.txt`, shader contract/translation/API, `docs/site-patterns.md` (aiuis / Webflow recipes)
-- Skills: WGSL ↔ GLSL, site mount, item, post
+- Skills: WGSL ↔ GLSL, site mount, item, post, MSDF bake
+- Node/Bun `shooosh/msdf`: font atlases + icon SDFs (`pnpm msdf`)
 
 ## Next — remaining GPU ports
 

@@ -9,6 +9,11 @@
       "types": "./index.ts",
       "import": "./index.ts",
       "default": "./index.ts"
+    },
+    "./msdf": {
+      "types": "./msdf/index.ts",
+      "import": "./msdf/index.ts",
+      "default": "./msdf/index.ts"
     }
   }
 }

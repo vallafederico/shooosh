@@ -41,6 +41,7 @@ IIFE attaches `window.Shooosh`.
 | [API](./docs/api.md) | What to call |
 | [Shader contract](./docs/shader-contract.md) | `fn fsMain`, `vUv`, `uUni` |
 | [Site patterns](./docs/site-patterns.md) | How we actually mount this on pages |
+| [MSDF](./docs/msdf.md) | Node/Bun font + icon SDF generators |
 | [WGSL ↔ GLSL](./docs/shader-translation.md) | Fallback converter + mapping |
 | [Roadmap](./ROADMAP.md) | What’s next |
 | [Agents](./llms.txt) | `llms.txt` / `agents.md` / skills |
@@ -131,6 +132,24 @@ Full table in [docs/api.md](./docs/api.md).
 
 `createEngine` and `acquireLayer` are async. `acquireLayer()` / `probeRenderer()` returning `null` is valid.
 
+# Fonts and icons (Node / Bun)
+
+Bake SDF atlases with `shooosh/msdf`. Do not import this from the site bundle.
+
+```shell
+pnpm add -D sharp msdf-bmfont-xml
+pnpm msdf -- fonts/Inter.ttf icons/ --out public/msdf
+```
+
+```js
+import { generateMsdf, generateFontAtlas, generateIconSdf } from "shooosh/msdf"
+
+await generateFontAtlas("fonts/Inter.ttf", { outDir: "public/msdf/fonts" })
+await generateIconSdf("icons/mark.svg", { outDir: "public/msdf/icons" })
+```
+
+Fonts default to `fieldType: "sdf"` — `"msdf"` beads on thin outlines. SVG icons raster at 1024 / spread 64. Details: [docs/msdf.md](./docs/msdf.md).
+
 # Repo
 
 ```
@@ -138,7 +157,7 @@ package/    published library
 harness/    vite playground  —  pnpm --filter harness dev
 web/        astro landing
 docs/       contract, API, site patterns
-bin/        esm / cjs / IIFE
+bin/        esm / cjs / IIFE / msdf CLI
 ```
 
 ```shell

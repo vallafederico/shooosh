@@ -25,6 +25,7 @@ Common use cases:
 - [docs/shader-translation.md](./docs/shader-translation.md) — WGSL ↔ GLSL
 - [docs/api.md](./docs/api.md) — public API after the dual renderer
 - [docs/site-patterns.md](./docs/site-patterns.md) — aiuis / Webflow / slider recipes
+- [docs/msdf.md](./docs/msdf.md) — Node/Bun font + icon SDF generators
 - [ROADMAP.md](./ROADMAP.md) — product direction
 - [docs/agent-tasks/](./docs/agent-tasks/) — executable briefs. Pick the lowest unfinished number
 - [readme.md](./readme.md) — human install + short examples
@@ -37,6 +38,7 @@ Cursor skills (read when converting shaders):
 - [shooosh-site](./.cursor/skills/shooosh-site/SKILL.md)
 - [shooosh-item](./.cursor/skills/shooosh-item/SKILL.md)
 - [shooosh-post](./.cursor/skills/shooosh-post/SKILL.md)
+- [shooosh-msdf](./.cursor/skills/shooosh-msdf/SKILL.md)
 
 Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` / `agents.md`.
 
@@ -54,7 +56,8 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 
 - Package source lives in `package/`. Root `package.json` is what npm publishes.
 - Harness and web import source via alias (`shooosh` → `package/index.ts`).
-- Zero runtime dependencies. Do not add Three, Dawn, or a GPU tensor stack.
+- Zero runtime dependencies on the **browser** entry. Do not add Three, Dawn, or a GPU tensor stack.
+- `shooosh/msdf` is Node/Bun only (`package/msdf/`). Do not import it from `package/index.ts`. Optional deps: `sharp`, `msdf-bmfont-xml`.
 - `acquireLayer()` / `probeRenderer()` returning `null` is valid. Callers no-op; the page stays readable.
 - Do not commit `dist/`, `node_modules/`, `.env*`, or `.npmrc`.
 
@@ -63,6 +66,7 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 | Path | What |
 | --- | --- |
 | `package/` | Published library source |
+| `package/msdf/` | Node/Bun SDF generators (`shooosh/msdf`) — not the browser entry |
 | `package/src/engine/` | async `createEngine` (WebGPU default, WebGL2 fallback), `probeRenderer` |
 | `package/src/scene/` | `createScene` |
 | `package/src/primitives/` | screen, item, object, particles, msdf |
@@ -71,7 +75,7 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 | `.cursor/skills/` | Agent skills: WGSL ↔ GLSL |
 | `harness/` | Vite playground |
 | `web/` | Astro landing |
-| `bin/` | ESM / CJS / IIFE build + publish checks |
+| `bin/` | ESM / CJS / IIFE / `shooosh/msdf` build + `msdf` CLI + publish checks |
 | `docs/` | Shader contract, translation, API summary |
 | `docs/agent-tasks/` | Cloud-agent work queue |
 

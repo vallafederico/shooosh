@@ -23,7 +23,13 @@ async function runTests() {
 
   const results = await Promise.all([
     test("Build files exist", () => {
-      for (const file of ["esm.js", "cjs.js", "shooosh.min.js", "index.d.ts"]) {
+      for (const file of [
+        "esm.js",
+        "cjs.js",
+        "shooosh.min.js",
+        "index.d.ts",
+        "msdf/index.js",
+      ]) {
         if (!existsSync(join(distDir, file))) {
           throw new Error(`Missing build file: ${file}`)
         }
@@ -83,6 +89,31 @@ async function runTests() {
       ]) {
         if (!content.includes(token)) {
           throw new Error(`Type definitions missing ${token}`)
+        }
+      }
+    }),
+
+    test("Node msdf build exports the generator API", async () => {
+      const module = await import(join(distDir, "msdf/index.js"))
+      for (const name of [
+        "alphaToSdf",
+        "generateIconSdf",
+        "generateFontAtlas",
+        "generateMsdf",
+        "runMsdfCli",
+        "ASCII_CHARSET",
+      ]) {
+        if (module[name] == null) {
+          throw new Error(`msdf build missing ${name}`)
+        }
+      }
+    }),
+
+    test("browser ESM does not include the Node msdf toolchain", () => {
+      const esm = readFileSync(join(distDir, "esm.js"), "utf-8")
+      for (const token of ["msdf-bmfont-xml", "generateFontAtlas", "generateIconSdf"]) {
+        if (esm.includes(token)) {
+          throw new Error(`browser build leaked shooosh/msdf (${token})`)
         }
       }
     }),

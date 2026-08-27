@@ -96,6 +96,15 @@ aiuis mouse-magnify: lerp pointer to UV, write radius/strength into `uUni[0]`, s
 
 `createItem` + `loadTexture` (or `createMsdfGlyphs`). The quad still tracks a DOM box; the fragment samples an atlas. aiuis `SdfImage` / `MsdfText` set `value2`/`value4` to CSS pixel size on resize. This path is why textures and MSDF are on the follow-up GPU checklist.
 
+Bake the atlases with `shooosh/msdf` (Node/Bun — not the site bundle):
+
+```shell
+pnpm add -D sharp msdf-bmfont-xml
+pnpm msdf -- fonts/Inter.ttf icons/logo.svg --out public/msdf
+```
+
+Fonts default to `fieldType: "sdf"` (hairline faces want `fontSize: 256`). Icons: SVG raster 1024 / spread 64; PNG spread 8. See [msdf.md](./msdf.md).
+
 ## Webflow / IIFE
 
 ```html

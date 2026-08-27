@@ -18,6 +18,7 @@ Use the focused files below first. Read `llms-full` only when it exists. Do not 
 - [Shader translation](./docs/shader-translation.md): WGSL ↔ GLSL 300 es mapping + converters
 - [API summary](./docs/api.md): Dual-renderer public API
 - [Site patterns](./docs/site-patterns.md): App-shell canvas, items, post, Webflow — from aiuis usage
+- [MSDF generators](./docs/msdf.md): Node/Bun font atlas + icon SDF (`shooosh/msdf`)
 - [Human readme](./readme.md): Install, short examples
 - [Roadmap](./ROADMAP.md): Direction. Tasks below are the executable split.
 - [Docs index](./docs/README.md)
@@ -47,6 +48,11 @@ Source: `package/index.ts`
 - `compileProgramAsync` — non-blocking WebGL compile
 - `createMouseMonad` / `createMouseTrail`
 
+Node / Bun only (`shooosh/msdf`, not the browser entry):
+
+- `generateMsdf` / `generateFontAtlas` / `generateIconSdf` / `alphaToSdf`
+- CLI: `pnpm msdf -- <inputs> --out <dir>` / `npx shooosh-msdf`
+
 ## Shader contract
 
 See [docs/shader-contract.md](./docs/shader-contract.md). Short form:
@@ -64,6 +70,7 @@ See [docs/shader-contract.md](./docs/shader-contract.md). Short form:
 - [`.cursor/skills/shooosh-site`](./.cursor/skills/shooosh-site/SKILL.md) — mount a page canvas / layer
 - [`.cursor/skills/shooosh-item`](./.cursor/skills/shooosh-item/SKILL.md) — DOM-tracked quad
 - [`.cursor/skills/shooosh-post`](./.cursor/skills/shooosh-post/SKILL.md) — bloom / grain / `applyEffect`
+- [`.cursor/skills/shooosh-msdf`](./.cursor/skills/shooosh-msdf/SKILL.md) — bake font/icon SDFs (Node/Bun)
 
 ## Machine interfaces (target)
 

@@ -13,7 +13,7 @@ Source of truth: [`package/index.ts`](../package/index.ts). This page is the hum
 
 `acquireLayer()` / `probeRenderer()` return `null` when nothing is available. Leave the page readable.
 
-Site recipes (app-shell canvas, SSR init, Webflow, particles, MSDF): [site-patterns.md](./site-patterns.md).
+Site recipes (app-shell canvas, SSR init, Webflow, particles, MSDF): [site-patterns.md](./site-patterns.md). Bake font/icon atlases: [msdf.md](./msdf.md).
 
 ## Engine
 
@@ -80,6 +80,26 @@ These no-op, warn, or throw a readable error on WebGPU:
 - `loadTexture` / `loadGlb`
 - `createObject` / `createParticles` / `createMsdfGlyphs`
 - `createMouseTrail` (post-based)
+
+## Node / Bun — `shooosh/msdf`
+
+Not exported from the browser entry. Needs optional `sharp` (icons) and `msdf-bmfont-xml` (fonts).
+
+```ts
+import { generateMsdf, generateFontAtlas, generateIconSdf } from "shooosh/msdf"
+
+await generateMsdf(["fonts", "icons"], { outDir: "public/msdf" })
+// CLI: pnpm msdf -- fonts/Inter.ttf icons/ --out public/msdf
+```
+
+| | |
+| --- | --- |
+| `generateFontAtlas` | TTF/OTF → atlas PNG + bmfont JSON (`fieldType: "sdf"` default) |
+| `generateIconSdf` | SVG/PNG → single-channel SDF PNG + `{ type, width, height, spread }` |
+| `generateMsdf` | walk files/dirs; writes `outDir/fonts` + `outDir/icons` |
+| `alphaToSdf` | RGBA alpha → 0.5-at-edge distance field |
+
+Full flags and defaults: [msdf.md](./msdf.md).
 
 ## Errors
 

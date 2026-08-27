@@ -33,6 +33,16 @@ async function run() {
         minify: true,
         sourcemap: "none",
       }),
+      build({
+        entrypoints: ["./package/msdf/index.ts"],
+        outdir: "./dist/msdf",
+        format: "esm",
+        target: "node",
+        naming: "index.js",
+        minify: false,
+        sourcemap: "external",
+        external: ["sharp", "msdf-bmfont-xml"],
+      }),
     ])
 
     const testProcess = spawn({
