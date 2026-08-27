@@ -1,17 +1,8 @@
 /**
- * Framework wrapper shape — aiuis Canvas + GlItem, same idea in React.
+ * Solid / React lifecycle. Keep the Scene outside the canvas component
+ * so HMR does not remount the engine. Pair with a shader from examples/.
  *
- * When: Solid / React / Astro island owns the GPU canvas.
- * Do not remount the engine on HMR — keep the Scene handle outside the
- * canvas component (a store / module singleton).
- *
- * 1. Root canvas: autoInit false, await init(), set loaded.
- * 2. Item: createItem(ref) on mount, destroy() on cleanup.
- * 3. Optional onItem(item) so the parent can setUni from scroll / a slider.
- *
- * This file is the lifecycle, not a Solid/React dependency.
- *
- * Docs: docs/site-patterns.md · skill shooosh-site · skill shooosh-item
+ * Docs: docs/site-patterns.md
  */
 
 import {
@@ -21,7 +12,6 @@ import {
   type Scene,
 } from "shooosh"
 
-/** Module singleton so HMR does not create a second engine. */
 let scene: Scene | null = null
 
 export async function mountCanvas(canvas: HTMLCanvasElement) {

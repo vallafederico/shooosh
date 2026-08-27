@@ -76,4 +76,4 @@ Author **WGSL**. `fn fsMain() -> vec4f`. `vUv` is top-origin.
 
 A failed compile keeps the last good program and logs. It does not blank the page.
 
-Full contract: [shader-contract.md](./shader-contract.md). Site recipes: [site-patterns.md](./site-patterns.md). Copy-paste setups: [examples/](../examples/README.md).
+Full contract: [shader-contract.md](./shader-contract.md). Site recipes: [site-patterns.md](./site-patterns.md). Live shaders: [examples/](../examples/README.md).

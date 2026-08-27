@@ -90,7 +90,7 @@ nav button[aria-current="true"] {
   background: var(--bg);
 }
 
-#stage[data-demo="items"] {
+#stage[data-demo="item-fill"] {
   background: transparent;
 }
 

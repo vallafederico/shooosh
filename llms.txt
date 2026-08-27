@@ -17,7 +17,7 @@ Use the focused files below first. Read `llms-full` only when it exists. Do not 
 - [Agent readiness](./agents.md): Product identity, runtime policy, conventions, how to pick work
 - [Agent-first](./docs/agent-first.md): What we set up for coding agents
 - [Getting started](./docs/getting-started.md): Install, two mounts
-- [Examples](./examples/README.md): Copy-paste site setups (hero, layer, post, Webflow, MSDF)
+- [Examples](./examples/README.md): Live shaders — plasma, noise, SDF, warp, mouse light, bloom
 - [Shader contract](./docs/shader-contract.md): `fn fsMain`, `vUv`, `uUni`, backends, failure policy
 - [Shader translation](./docs/shader-translation.md): WGSL ↔ GLSL 300 es mapping + converters
 - [API summary](./docs/api.md): Dual-renderer public API

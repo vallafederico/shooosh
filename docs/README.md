@@ -11,7 +11,7 @@ This folder is what [the GitHub repo](https://github.com/vallafederico/shooosh) 
 | | |
 | --- | --- |
 | [Getting started](./getting-started.md) | Install, two mounts, first `fsMain` |
-| [Examples](../examples/README.md) | Copy-paste site setups (hero, layer, post, Webflow, …) |
+| [Examples](../examples/README.md) | Live shaders: plasma, noise, SDF, warp, mouse light, … |
 | [API](./api.md) | What to call (`createScene`, `acquireLayer`, `createItem`, …) |
 | [Shader contract](./shader-contract.md) | `fn fsMain`, `vUv`, `uUni`, backends, failure policy |
 

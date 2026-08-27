@@ -1,16 +1,10 @@
 /**
  * Bake font atlases + icon SDFs. Node / Bun only.
  *
- * When: you need assets for createMsdfGlyphs or an SDF logo quad.
- * Do not import shooosh/msdf from a site bundle.
- *
- *   pnpm add -D sharp msdf-bmfont-xml
- *   bun run examples/bake-msdf.ts
+ *   bun run examples/setups/bake-msdf.ts public/msdf fonts icons
  *   pnpm msdf -- fonts/Inter.ttf icons/ --out public/msdf
  *
- * Fonts default to fieldType "sdf". Hairline faces want fontSize 256.
- *
- * Docs: docs/msdf.md · skill shooosh-msdf
+ * Docs: docs/msdf.md
  */
 
 import { generateMsdf } from "shooosh/msdf"

@@ -46,7 +46,7 @@ This is the GitHub landing page. The [docs folder](./docs/README.md) is the docu
 | | |
 | --- | --- |
 | [Getting started](./docs/getting-started.md) | Install, two mounts, first shader |
-| [Examples](./examples/README.md) | Copy-paste site setups |
+| [Examples](./examples/README.md) | Plasma, noise, SDF, warp — run in the harness |
 | [API](./docs/api.md) | What to call |
 | [Shader contract](./docs/shader-contract.md) | `fn fsMain`, `vUv`, `uUni` |
 | [Site patterns](./docs/site-patterns.md) | How we mount this on pages |

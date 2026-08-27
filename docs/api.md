@@ -15,7 +15,7 @@ Source of truth: [`package/index.ts`](../package/index.ts). This page is the hum
 
 `acquireLayer()` / `probeRenderer()` return `null` when nothing is available. Leave the page readable.
 
-Site recipes (app-shell canvas, SSR init, Webflow, particles, MSDF): [site-patterns.md](./site-patterns.md). Copy-paste setups: [examples/](../examples/README.md). Bake font/icon atlases: [msdf.md](./msdf.md).
+Site recipes (app-shell canvas, SSR init, Webflow, particles, MSDF): [site-patterns.md](./site-patterns.md). Live shaders: [examples/](../examples/README.md). Bake font/icon atlases: [msdf.md](./msdf.md).
 
 ## Engine
 

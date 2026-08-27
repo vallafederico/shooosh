@@ -1,13 +1,10 @@
 <!--
-  Webflow / IIFE embed — no bundler.
+  Webflow / IIFE embed — no bundler. Drop in a Designer embed.
 
-  When: a Designer embed, or any page that cannot import ESM from node_modules.
-  Backend: WebGPU → WebGL2. window.Shooosh is the same public API.
+  Pair with a shader from examples/ (this one is the gradient).
+  releaseLayer() on Webflow page teardown if you use acquireLayer.
 
-  One shared layer per page. Call releaseLayer() on Webflow page teardown or
-  the canvas leaks across transitions.
-
-  Docs: docs/site-patterns.md · skill shooosh-site
+  Docs: docs/site-patterns.md
 -->
 <canvas
   data-shooosh
@@ -28,7 +25,12 @@
         fragment: `
 fn fsMain() -> vec4f {
   let t = uUni.values0.x;
-  return vec4f(vUv, 0.5 + 0.5 * sin(t), 1.0);
+  let ink = vec3f(0.047, 0.047, 0.043);
+  let acid = vec3f(0.847, 1.0, 0.243);
+  let paper = vec3f(0.925, 0.906, 0.863);
+  let g = mix(ink, paper, vUv.y);
+  let band = smoothstep(0.46, 0.5, vUv.x) * (1.0 - smoothstep(0.5, 0.54, vUv.x));
+  return vec4f(mix(g, acid, band * (0.65 + 0.35 * sin(t * 2.0))), 1.0);
 }
 `,
       },

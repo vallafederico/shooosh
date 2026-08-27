@@ -1,28 +1,28 @@
 ---
 name: shooosh-examples
-description: Copy a shooosh site setup from examples/. Use when the user wants a hero canvas, page-behind layer, app shell, post stack, mouse magnify, particles, Webflow embed, MSDF bake, or Solid/React wrappers.
+description: Copy a shooosh shader example (plasma, noise, SDF, domain warp, mouse light, bloom) or a mount setup. Use when the user wants a common site-GPU look or a Webflow/SSR shell.
 ---
 
-# Copy a setup
+# Copy an example
 
-Read [examples/README.md](../../../examples/README.md) and pick **one** file. Do not invent a second scene API.
+Read [examples/README.md](../../../examples/README.md). Prefer a **shader** from that table, not a new scene API.
 
-| Need | File |
+| Look | File |
 | --- | --- |
-| Dedicated hero canvas | `examples/fullscreen-scene.ts` |
-| Page-behind + DOM quads | `examples/page-layer.ts` |
-| App layout / SSR canvas | `examples/app-shell.ts` |
-| Bloom + grain | `examples/post-stack.ts` (WebGL2) |
-| Pointer magnify | `examples/mouse-magnify.ts` (WebGL2) |
-| Dot grid | `examples/particle-grid.ts` (WebGL2) |
-| Webflow / no bundler | `examples/webflow-embed.html` |
-| Bake font/icon SDFs | `examples/bake-msdf.ts` (Node) |
-| Solid / React lifecycle | `examples/framework-wrappers.ts` |
+| UV gradient + stripe | `examples/gradient.ts` |
+| Polar hero | `examples/plasma.ts` |
+| Grain / fog / paper | `examples/value-noise.ts` |
+| Circle SDF / rings | `examples/sdf-rings.ts` |
+| Marble / liquid warp | `examples/domain-warp.ts` |
+| Pointer spotlight | `examples/mouse-light.ts` |
+| Bloom + grain | `examples/grain-bloom.ts` (WebGL2 post) |
+| Card / DOM fill | `examples/item-fill.ts` |
+
+Mount-only (Webflow, bake, React/Solid): [examples/setups/](../../../examples/setups/README.md).
 
 ## Always
 
-- Author WGSL `fn fsMain`. Post custom uses `applyEffect`, not `fsMain`.
-- `acquireLayer()` may return `null` — leave the page readable.
-- Pair acquire with `releaseLayer()`. `scene.destroy()` / `item.destroy()` on teardown.
+- Author WGSL `fn fsMain`. `value1` = seconds. Pointer UV = `value2`/`value3` (top-origin).
+- Stay in the converter subset so WebGL2 can run it (`docs/shader-translation.md`).
+- Post custom uses `applyEffect`, not `fsMain`.
 - Do not import `shooosh/msdf` from the site bundle.
-- Do not add Three or require `frame.gl`.

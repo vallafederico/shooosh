@@ -1,21 +1,40 @@
 # Examples
 
-Copy-paste setups from how we actually ship sites (aiuis, Webflow, sliders). **Not a scene graph.** Author WGSL `fn fsMain`. Imports are the public `shooosh` package — drop a file into a site and adjust the canvas / element.
+Real shaders on the public API — the common site-GPU pieces, not mount stubs.
 
-Agents: read this table, then open the file. Each file starts with when to use it, which backend, and teardown.
+Author **WGSL `fn fsMain`**. Each file is the fragment plus a one-line “when”. The harness (`pnpm --filter harness dev`) runs the same catalog.
 
-| File | When | Backend |
-| --- | --- | --- |
-| [fullscreen-scene.ts](./fullscreen-scene.ts) | Section hero / dedicated canvas | WebGPU → WebGL2 |
-| [page-layer.ts](./page-layer.ts) | Shared canvas behind the page + DOM quads | WebGPU → WebGL2 |
-| [app-shell.ts](./app-shell.ts) | App layout owns one canvas (SSR-safe, aiuis `Canvas`) | WebGPU → WebGL2 |
-| [post-stack.ts](./post-stack.ts) | Bloom + grain on a scene | WebGL2 (skipped on WebGPU) |
-| [mouse-magnify.ts](./mouse-magnify.ts) | Custom post `applyEffect` + settle-loop idle | WebGL2 |
-| [particle-grid.ts](./particle-grid.ts) | Clip-space dots | WebGL2 |
-| [webflow-embed.html](./webflow-embed.html) | IIFE / Webflow embed | WebGPU → WebGL2 |
-| [bake-msdf.ts](./bake-msdf.ts) | Node/Bun font + icon atlas bake | Node (not the site bundle) |
-| [framework-wrappers.ts](./framework-wrappers.ts) | Solid / React mount shape | either |
+| File | What it draws |
+| --- | --- |
+| [gradient.ts](./gradient.ts) | UV gradient + timed brand stripe |
+| [plasma.ts](./plasma.ts) | Polar sines — classic hero |
+| [value-noise.ts](./value-noise.ts) | Hash → value noise → fbm |
+| [sdf-rings.ts](./sdf-rings.ts) | Signed circle, concentric pulses |
+| [domain-warp.ts](./domain-warp.ts) | Noise-warped UVs (marble / liquid) |
+| [mouse-light.ts](./mouse-light.ts) | Pointer spotlight + ripples (`value2`/`value3`) |
+| [grain-bloom.ts](./grain-bloom.ts) | Emissive core + `effects.bloom` / `noise` (WebGL2) |
+| [item-fill.ts](./item-fill.ts) | `createItem` SDF capsule in the element’s `vUv` |
 
-Docs: [getting started](../docs/getting-started.md) · [site patterns](../docs/site-patterns.md) · [shader contract](../docs/shader-contract.md) · skill `shooosh-site` / `shooosh-item` / `shooosh-post` / `shooosh-msdf`.
+`catalog.ts` lists them. `mount.ts` is how the harness (and you) turn a spec into `createScene` / `acquireLayer`.
 
-Do not add Three. Do not require `frame.gl`. `acquireLayer()` returning `null` is valid.
+Uniforms: `value1` = seconds. Pointer examples also write `value2`/`value3` as 0..1 top-origin UV — the same space as `vUv`.
+
+Copy a fragment into a site:
+
+```js
+import { createScene } from "shooosh"
+import { plasma } from "./plasma"
+
+createScene(canvas, {
+  screen: {
+    shaders: { fragment: plasma.fragment },
+    onFrame(self, frame) {
+      self.setUni({ value1: frame.now * 0.001 })
+    },
+  },
+})
+```
+
+Mount recipes (Webflow, SSR shell, MSDF bake) live in [setups/](./setups/README.md).
+
+Docs: [shader contract](../docs/shader-contract.md) · [site patterns](../docs/site-patterns.md) · skill `shooosh-examples`.

@@ -82,7 +82,7 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 | `web/` | Astro landing |
 | `bin/` | ESM / CJS / IIFE / `shooosh/msdf` build + `msdf` CLI + publish checks |
 | `docs/` | Documentation hub (GitHub link target) |
-| `examples/` | Copy-paste site setups (hero, layer, post, Webflow, MSDF) |
+| `examples/` | Live shader examples (plasma, noise, SDF, warp, mouse light) |
 | `docs/agent-tasks/` | Cloud-agent work queue |
 
 ## Links
