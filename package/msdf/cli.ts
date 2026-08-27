@@ -160,6 +160,7 @@ export async function runMsdfCli(argv: string[]): Promise<number> {
   let fonts = 0;
   let icons = 0;
   let skipped = 0;
+  let failed = 0;
   for (const result of results) {
     if (result.kind === "font") {
       fonts += 1;
@@ -167,6 +168,9 @@ export async function runMsdfCli(argv: string[]): Promise<number> {
     } else if (result.kind === "icon") {
       icons += 1;
       console.log(`icon  ${result.source} → ${result.result.pngPath}`);
+    } else if (result.kind === "error") {
+      failed += 1;
+      console.log(`fail  ${result.source} (${result.reason})`);
     } else {
       skipped += 1;
       console.log(`skip  ${result.source} (${result.reason})`);
@@ -178,6 +182,8 @@ export async function runMsdfCli(argv: string[]): Promise<number> {
     return 1;
   }
 
-  console.log(`done  ${fonts} font(s), ${icons} icon(s), ${skipped} skipped`);
-  return 0;
+  console.log(
+    `done  ${fonts} font(s), ${icons} icon(s), ${skipped} skipped, ${failed} failed`,
+  );
+  return failed > 0 ? 1 : 0;
 }

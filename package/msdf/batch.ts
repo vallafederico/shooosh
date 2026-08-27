@@ -37,7 +37,8 @@ export type MsdfJobResult =
       source: string;
       result: Awaited<ReturnType<typeof generateIconSdf>>;
     }
-  | { kind: "skip"; source: string; reason: string };
+  | { kind: "skip"; source: string; reason: string }
+  | { kind: "error"; source: string; reason: string };
 
 const SKIP_DIR = new Set(["node_modules", ".git", "dist"]);
 
@@ -122,17 +123,25 @@ export async function generateMsdf(
       });
       continue;
     }
-    if (kind === "font") {
+    try {
+      if (kind === "font") {
+        results.push({
+          kind: "font",
+          source,
+          result: await generateFontAtlas(source, fonts),
+        });
+      } else {
+        results.push({
+          kind: "icon",
+          source,
+          result: await generateIconSdf(source, icons),
+        });
+      }
+    } catch (error) {
       results.push({
-        kind: "font",
+        kind: "error",
         source,
-        result: await generateFontAtlas(source, fonts),
-      });
-    } else {
-      results.push({
-        kind: "icon",
-        source,
-        result: await generateIconSdf(source, icons),
+        reason: error instanceof Error ? error.message : String(error),
       });
     }
   }

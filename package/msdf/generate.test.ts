@@ -26,6 +26,19 @@ const hasSharp = await canImport("sharp");
 const hasBmfont = await canImport("msdf-bmfont-xml");
 const fontPath = SAMPLE_FONTS.find((path) => existsSync(path));
 
+test("generateMsdf records a broken font as an error and continues", async () => {
+  const root = await mkdtemp(join(tmpdir(), "shooosh-msdf-bad-"));
+  const bad = join(root, "broken.ttf");
+  const notes = join(root, "notes.txt");
+  await writeFile(bad, "not a font");
+  await writeFile(notes, "hello");
+  const results = await generateMsdf([root], { outDir: join(root, "out") });
+  expect(results.some((r) => r.kind === "skip" && r.source === notes)).toBe(true);
+  const fail = results.find((r) => r.kind === "error" && r.source === bad);
+  expect(fail?.kind).toBe("error");
+  expect(fail && fail.kind === "error" ? fail.reason.length : 0).toBeGreaterThan(0);
+});
+
 test("generateMsdf skips unknown extensions without calling generators", async () => {
   const root = await mkdtemp(join(tmpdir(), "shooosh-msdf-skip-"));
   const notes = join(root, "notes.txt");

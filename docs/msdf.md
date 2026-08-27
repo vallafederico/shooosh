@@ -57,7 +57,7 @@ pnpm msdf -- <input...> --out <dir> [options]
   --charset         characters to include
 ```
 
-Unknown flags fail. Unknown extensions are skipped. A run with no fonts or icons exits `1`.
+Unknown flags fail. Unknown extensions are skipped. A broken font or icon is recorded and the rest of the batch continues; the CLI exits `1` if anything failed or nothing was generated.
 
 ## Programmatic
 
