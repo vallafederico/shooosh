@@ -24,7 +24,8 @@ GLSL 300 es (`#version 300 es`) remains accepted as an escape hatch for current 
 - WGSL `fsMain` on WebGPU; WGSL ↔ GLSL converters + agent skills
 - Post presets, loaders, particles / objects / MSDF (WebGL2)
 - Vite harness + Astro `/web` (`?backend=` + backend label)
-- Agent docs: `llms.txt`, `docs/shader-contract.md`, `docs/shader-translation.md`, `docs/api.md`
+- Agent docs: `llms.txt`, shader contract/translation/API, `docs/site-patterns.md` (aiuis / Webflow recipes)
+- Skills: WGSL ↔ GLSL, site mount, item, post
 
 ## Next — remaining GPU ports
 
