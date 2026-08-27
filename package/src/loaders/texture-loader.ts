@@ -185,6 +185,11 @@ export class TextureLoader {
     }
 
     const gl = webglController.gl;
+    if (!gl) {
+      throw new Error(
+        "loadTexture requires the WebGL2 backend. Texture upload is not implemented on WebGPU yet.",
+      );
+    }
     const bitmap = await toImageBitmap(source);
     const width = Math.max(1, bitmap.width);
     const height = Math.max(1, bitmap.height);

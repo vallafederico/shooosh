@@ -12,25 +12,46 @@ import {
   createEngine,
   getDefaultEngine,
   setDefaultEngine,
+  type EngineOptions,
   type WebGLEngine,
 } from "./engine/engine";
+
+export type AcquireLayerOptions = {
+  backend?: EngineOptions["backend"];
+};
 
 let layer: { engine: WebGLEngine; canvas: HTMLCanvasElement } | null = null;
 let refs = 0;
 let unavailable = false;
+let inflight: Promise<WebGLEngine | null> | null = null;
 
 /**
  * Get the shared layer engine, creating it on first use. Returns null when
- * WebGL2 is unavailable — callers must no-op gracefully. Pair every acquire
- * with a releaseLayer() in the module's teardown.
+ * no GPU backend is available — callers must no-op gracefully. Pair every
+ * acquire with a releaseLayer() in the module's teardown.
  */
-export function acquireLayer(): WebGLEngine | null {
+export async function acquireLayer(
+  options: AcquireLayerOptions = {},
+): Promise<WebGLEngine | null> {
   if (unavailable) return null;
   if (layer) {
     refs += 1;
     return layer.engine;
   }
 
+  if (!inflight) {
+    inflight = instantiateLayer(options).finally(() => {
+      inflight = null;
+    });
+  }
+
+  const engine = await inflight;
+  if (!engine) return null;
+  refs += 1;
+  return engine;
+}
+
+async function instantiateLayer(options: AcquireLayerOptions) {
   const canvas = document.createElement("canvas");
   canvas.setAttribute("data-shooosh-layer", "");
   canvas.style.cssText =
@@ -38,11 +59,13 @@ export function acquireLayer(): WebGLEngine | null {
   document.body.appendChild(canvas);
 
   try {
-    const engine = createEngine(canvas, { dpr: { max: 2 } });
+    const engine = await createEngine(canvas, {
+      dpr: { max: 2 },
+      backend: options.backend,
+    });
     if (!getDefaultEngine()) setDefaultEngine(engine);
     engine.start();
     layer = { engine, canvas };
-    refs = 1;
     return engine;
   } catch {
     canvas.remove();

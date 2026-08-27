@@ -1,6 +1,6 @@
 ---
 id: 01
-status: todo
+status: done
 title: WebGPU renderer (default when probe succeeds)
 ---
 
@@ -40,4 +40,10 @@ pnpm --filter harness dev   # screen + items demos; backend label visible
 
 ## Done
 
-_Fill in when complete._
+`createEngine` is async and defaults to `probeRenderer()`. WebGPU runs `fn fsMain` as-is (wrapped with `Uni` + `vUv` + `vsMain`). WebGL2 is unchanged, including the GLSL `#version 300 es` escape hatch. Screen and item render on both backends. Harness shows `backend · webgpu|webgl2` and honors `?backend=`.
+
+Verify: `bun test package` · `bun run bin/build.ts` · harness screen + items.
+
+### Follow-up (skipped to keep this reviewable)
+
+Post stack, `loadTexture`, objects, particles, and MSDF stay WebGL2-only. On WebGPU they no-op / warn / throw a readable error. Port those next if a site path needs them.

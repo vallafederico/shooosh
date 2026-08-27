@@ -51,7 +51,7 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 | Path | What |
 | --- | --- |
 | `package/` | Published library source |
-| `package/src/engine/` | `createEngine` (WebGL2 today), `probeRenderer` |
+| `package/src/engine/` | async `createEngine` (WebGPU default, WebGL2 fallback), `probeRenderer` |
 | `package/src/scene/` | `createScene` |
 | `package/src/primitives/` | screen, item, object, particles, msdf |
 | `package/src/post/` | bloom, bw, noise, custom |

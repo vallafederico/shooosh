@@ -12,7 +12,7 @@ export {
   type ClearColor,
   type RenderTarget,
 } from "./src/engine/engine";
-export { WebGLUnavailableError, ShaderCompileError } from "./src/engine/errors";
+export { WebGLUnavailableError, GpuUnavailableError, ShaderCompileError } from "./src/engine/errors";
 export {
   probeRenderer,
   type RendererKind,
@@ -102,4 +102,4 @@ export {
 } from "./src/primitives/msdf-glyphs";
 
 // Shared page layer
-export { acquireLayer, releaseLayer } from "./src/layer";
+export { acquireLayer, releaseLayer, type AcquireLayerOptions } from "./src/layer";

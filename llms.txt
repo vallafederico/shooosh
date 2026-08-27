@@ -32,7 +32,7 @@ Use the focused files below first. Read `llms-full` only when it exists. Do not 
 Source: `package/index.ts`
 
 - `probeRenderer()` → `"webgpu" | "webgl2" | null`
-- `createEngine` / `initEngine` / `getDefaultEngine` / `setDefaultEngine` / `resolveEngine`
+- `createEngine` (async, `{ backend?: "auto"|"webgpu"|"webgl2" }`) / `initEngine` / `getDefaultEngine` / `setDefaultEngine` / `resolveEngine`
 - `createScene` / `Scene` / `parseSceneDataset`
 - `acquireLayer` / `releaseLayer`
 - `createItem` / `createScreen` / `createObject` / `createParticles` / `createMsdfGlyphs`

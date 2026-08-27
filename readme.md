@@ -33,7 +33,7 @@ fn fsMain() -> vec4f {
 
 The IIFE build attaches `window.Shooosh`.
 
-Today the live renderer is WebGL2 (WGSL is converted to GLSL). The WebGPU backend is the next track — see [ROADMAP.md](./ROADMAP.md). `probeRenderer()` already reports which backend the browser can run.
+`createEngine` probes WebGPU first and falls back to WebGL2. Force a backend with `{ backend: "webgpu" | "webgl2" }` or the harness `?backend=` query.
 
 ## Repo
 
@@ -57,7 +57,7 @@ pnpm build:package
 | Name | Description |
 | --- | --- |
 | `probeRenderer` | `"webgpu"` if the adapter is there, else `"webgl2"`, else `null`. |
-| `createEngine` | Context + layered `onRender` / `onPostRender`, settle-aware raf. WebGL2 today. |
+| `createEngine` | Async. Probe WebGPU, else WebGL2. Layered `onRender` / `onPostRender`, settle-aware raf. |
 | `createScene` | Owns a canvas: optional fullscreen `screen`, post presets, items. |
 | `acquireLayer` / `releaseLayer` | Shared fixed canvas behind the page. Refcounted. |
 | `createItem` | DOM-tracked quad. IntersectionObserver-gated. `uUni` vec4[4]. |
@@ -71,9 +71,9 @@ pnpm build:package
 
 **Author in WGSL.** Pass `shaders.fragment` as `fsMain`.
 
-- On WebGPU (upcoming): the source is used as-is.
-- On WebGL2 (current): it is converted to GLSL 300 es.
-- Full GLSL 300 es (`#version 300 es`) still works as an escape hatch for existing sites.
+- On WebGPU: the source is wrapped (`Uni`, `vUv`, `vsMain`) and run as-is.
+- On WebGL2: it is converted to GLSL 300 es.
+- Full GLSL 300 es (`#version 300 es`) still works as an escape hatch on WebGL2.
 
 `vUv` is top-origin. Item / screen uniforms are 16 floats: `setUni({ value1 })` → `uUni[0].x` / `uUni.values0.x`.
 
@@ -84,7 +84,7 @@ Most site effects sit on the shared layer:
 ```js
 import { acquireLayer, createItem, releaseLayer } from "shooosh"
 
-const engine = acquireLayer()
+const engine = await acquireLayer()
 if (!engine) return
 
 const item = createItem(element, {

@@ -153,6 +153,14 @@ function createMsdfGlyphsRenderer(
   options: MsdfGlyphsOptions,
 ): MsdfGlyphsRenderer {
   const gl = frame.gl;
+  if (!gl) {
+    return {
+      render() {},
+      setGlyphData() {},
+      setUni() {},
+      destroy() {},
+    };
+  }
   const sp = ensureSharedProgram(gl);
 
   let glyphData = options.glyphData;
@@ -374,6 +382,7 @@ function attachManager(mgr: MsdfGlyphsManager) {
       if (mgr.canvas !== frame.canvas) return;
 
       if (!mgr.renderer) {
+        if (!frame.gl) return;
         mgr.renderer = createMsdfGlyphsRenderer(mgr.element, frame, mgr.options);
         // Apply any queued updates that arrived before the renderer existed
         if (Object.keys(mgr.pendingUni).length > 0) {

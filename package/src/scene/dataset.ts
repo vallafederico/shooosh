@@ -16,6 +16,8 @@ export type SceneOptions = {
   /** Engine options passed to createEngine. */
   dpr?: EngineOptions["dpr"];
   clearColor?: EngineOptions["clearColor"];
+  /** Default `"auto"` probes WebGPU first, then WebGL2. */
+  backend?: EngineOptions["backend"];
   onInitError?: (error: unknown) => void;
 };
 

@@ -1,4 +1,5 @@
-import { getDefaultEngine, resolveEngine, type EngineFrame } from "../engine/engine";
+import { getDefaultEngine, type EngineFrame } from "../engine/engine";
+import { createGpuFullscreenPlaneRenderer } from "./gpu-plane";
 import {
   ensureWatchableUni,
   type UniValues,
@@ -17,7 +18,10 @@ export type FullscreenPlaneGeometry = {
   subdivisionsY: number;
 };
 
-export type FullscreenPlaneRenderFrame = Pick<EngineFrame, "canvas" | "gl">;
+export type FullscreenPlaneRenderFrame = {
+  canvas: HTMLCanvasElement;
+  gl: WebGL2RenderingContext;
+};
 
 export type FullscreenPlaneTexture = {
   view?: unknown;
@@ -71,7 +75,7 @@ export type FullscreenPlaneController = {
 
 export type FullscreenPlaneRenderer = {
   readonly geometry: FullscreenPlaneGeometry;
-  render: (frame: FullscreenPlaneRenderFrame) => void;
+  render: (frame: { canvas: HTMLCanvasElement }) => void;
   destroy: () => void;
 };
 
@@ -387,7 +391,17 @@ export function initFullscreenPlane(
 
   const renderFromFrame = (frame: EngineFrame) => {
     if (!renderer) {
-      renderer = createFullscreenPlaneRenderer(frame, config, uni);
+      if (frame.backend === "webgpu") {
+        renderer = createGpuFullscreenPlaneRenderer(config, uni);
+      } else if (frame.gl) {
+        renderer = createFullscreenPlaneRenderer(
+          { canvas: frame.canvas, gl: frame.gl },
+          config,
+          uni,
+        );
+      } else {
+        return;
+      }
     }
     if (controller) {
       config.onFrame?.(controller, frame);

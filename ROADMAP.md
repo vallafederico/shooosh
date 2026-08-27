@@ -20,20 +20,14 @@ GLSL 300 es (`#version 300 es`) remains accepted as an escape hatch for current 
 ## Now
 
 - Publishable package (`esm` / `cjs` / IIFE / types)
-- WebGL2 renderer: `createEngine` / `createScene` / `acquireLayer` / `createItem`
-- WGSL subset → GLSL for the fallback path
-- Post presets, loaders, particles / objects / MSDF
-- Vite harness + Astro `/web`
+- Dual renderer: WebGPU default, WebGL2 fallback (`createEngine` / `createScene` / `acquireLayer` / `createItem` / `createScreen`)
+- WGSL `fsMain` on WebGPU; converter only on the WebGL path
+- Post presets, loaders, particles / objects / MSDF (WebGL2)
+- Vite harness + Astro `/web` (`?backend=` + backend label)
 
-## Next — WebGPU renderer
+## Next — remaining GPU ports
 
-Same scene/item/layer surface. WebGPU is the default when the probe succeeds.
-
-- `probeRenderer()` → `"webgpu" | "webgl2" | null`
-- Shared frame types that do not leak `WebGL2RenderingContext` into site code
-- Fullscreen screen, DOM-tracked items, post stack on GPU
-- WGSL as the authored source; converter only on the WebGL path
-- Harness toggle + automatic probe display
+Post stack, `loadTexture`, objects, particles, and MSDF on WebGPU.
 
 Shader-file HMR (below) should land against this contract so a `.wgsl` edit hot-swaps on whichever backend is live.
 

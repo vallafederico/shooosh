@@ -5,6 +5,13 @@ export class WebGLUnavailableError extends Error {
   }
 }
 
+export class GpuUnavailableError extends Error {
+  constructor(message = "No GPU backend is available (WebGPU or WebGL2).") {
+    super(message);
+    this.name = "GpuUnavailableError";
+  }
+}
+
 export class ShaderCompileError extends Error {
   readonly label: string;
   readonly log: string;
