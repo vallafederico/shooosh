@@ -1,0 +1,90 @@
+# shooosh
+
+> WGSL-first site GPU engine. WebGPU when available, WebGL2 fallback. Documentation and tasks are written for coding agents.
+
+Use the focused files below first. Read `llms-full` only when it exists. Do not ingest `node_modules/` or `dist/`.
+
+## When to use shooosh
+
+- A site needs a fullscreen shader, a page-behind layer, or DOM-tracked quads
+- The authored shader language should be WGSL
+- The same code must run on WebGPU or fall back to WebGL2
+- An agent needs to implement or extend the engine without inventing a new scene API
+
+## Start here
+
+- [Docs hub](./docs/README.md): GitHub documentation folder
+- [Agent readiness](./agents.md): Product identity, runtime policy, conventions, how to pick work
+- [Agent-first](./docs/agent-first.md): What we set up for coding agents
+- [Getting started](./docs/getting-started.md): Install, two mounts
+- [Examples](./examples/README.md): Library usage — plasma, noise, SDF, warp, mouse, bloom, cards
+- [Shader contract](./docs/shader-contract.md): `fn fsMain`, `vUv`, `uUni`, backends, failure policy
+- [Shader translation](./docs/shader-translation.md): WGSL ↔ GLSL 300 es mapping + converters
+- [API summary](./docs/api.md): Dual-renderer public API
+- [Site patterns](./docs/site-patterns.md): App-shell canvas, items, post, Webflow — from aiuis usage
+- [MSDF generators](./docs/msdf.md): Node/Bun font atlas + icon SDF (`shooosh/msdf`)
+- [Human readme](./readme.md): GitHub landing
+- [Roadmap](./ROADMAP.md): Direction. Tasks below are the executable split.
+
+## Work queue (do in order)
+
+- [01 WebGPU renderer](./docs/agent-tasks/01-webgpu-renderer.md)
+- [02 Shader files + HMR](./docs/agent-tasks/02-shader-hmr.md)
+- [03 Named uniforms](./docs/agent-tasks/03-named-uniforms.md)
+- [04 WGSL stdlib](./docs/agent-tasks/04-wgsl-stdlib.md)
+- [05 check CLI](./docs/agent-tasks/05-check-cli.md)
+- [06 Agent docs hosting](./docs/agent-tasks/06-agent-docs-hosting.md)
+- [07 Compile overlay](./docs/agent-tasks/07-compile-overlay.md)
+
+## Public API (current)
+
+Source: `package/index.ts` (file-level headers = how to use each module)
+
+- `probeRenderer()` → `"webgpu" | "webgl2" | null`
+- `createEngine` (async, `{ backend?: "auto"|"webgpu"|"webgl2" }`) / `initEngine` / `getDefaultEngine` / `setDefaultEngine` / `resolveEngine`
+- `createScene` / `Scene` / `parseSceneDataset`
+- `acquireLayer` / `releaseLayer`
+- `createItem` / `createScreen` / `createObject` / `createParticles` / `createMsdfGlyphs`
+- `effects` / `createPostProcessor`
+- `loadTexture` / `loadGlb` / `createFakeHdriCanvas`
+- `convertWgslFragmentToGlsl` / `convertGlslFragmentToWgsl` / `isGlsl300`
+- `compileProgramAsync` — non-blocking WebGL compile
+- `createMouseMonad` / `createMouseTrail`
+
+Node / Bun only (`shooosh/msdf`, not the browser entry):
+
+- `generateMsdf` / `generateFontAtlas` / `generateIconSdf` / `alphaToSdf`
+- CLI: `pnpm msdf -- <inputs> --out <dir>` / `npx shooosh-msdf`
+
+## Shader contract
+
+See [docs/shader-contract.md](./docs/shader-contract.md). Short form:
+
+- Author `shaders.fragment` as WGSL with `fn fsMain`.
+- `vUv` is top-origin.
+- Uniforms today: `setUni({ value1 })` → `uUni.values0.x` / `uUni[0].x` (16 floats). Named uniforms are task 03.
+- Full `#version 300 es` GLSL is a WebGL2 escape hatch. Port it with `convertGlslFragmentToWgsl` (skill: `glsl-to-wgsl`).
+- Failed compile must not blank the page.
+
+## Skills
+
+- [`.cursor/skills/wgsl-to-glsl`](./.cursor/skills/wgsl-to-glsl/SKILL.md) — WGSL → GLSL 300 es
+- [`.cursor/skills/glsl-to-wgsl`](./.cursor/skills/glsl-to-wgsl/SKILL.md) — GLSL 300 es → WGSL
+- [`.cursor/skills/shooosh-site`](./.cursor/skills/shooosh-site/SKILL.md) — mount a page canvas / layer
+- [`.cursor/skills/shooosh-item`](./.cursor/skills/shooosh-item/SKILL.md) — DOM-tracked quad
+- [`.cursor/skills/shooosh-post`](./.cursor/skills/shooosh-post/SKILL.md) — bloom / grain / `applyEffect`
+- [`.cursor/skills/shooosh-msdf`](./.cursor/skills/shooosh-msdf/SKILL.md) — bake font/icon SDFs (Node/Bun)
+- [`.cursor/skills/shooosh-examples`](./.cursor/skills/shooosh-examples/SKILL.md) — copy a setup from `examples/`
+
+## Machine interfaces (target)
+
+These should exist after the matching tasks. Until then, this repo *is* the interface.
+
+- `/agents.md` and `/llms.txt` on the hosted showcase (task 06)
+- `shooosh check` CLI (task 05)
+- Example gallery the harness already pulls (`examples/` — each file calls createScene / createItem)
+
+## Optional
+
+- [Source repository](https://github.com/vallafederico/shooosh)
+- [vgpu agent docs](https://vgpu.sh/llms.txt) — inspiration only

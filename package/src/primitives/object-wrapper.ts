@@ -1,3 +1,13 @@
+/**
+ * createObject — GLB / generated mesh. WebGL2 only today.
+ *
+ * How to use:
+ *   createObject({ glb, shaders, onFrame })
+ * On WebGPU this path warns or no-ops until the port lands.
+ *
+ * Docs: docs/api.md
+ */
+
 import { ObjectManager, type ObjectOptions } from "./object";
 import type { UniValues } from "../engine/uni";
 

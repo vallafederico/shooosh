@@ -1,3 +1,10 @@
+/**
+ * Element → clip-space verts for createItem. One canvas rect per frame.
+ *
+ * How to use: engines must call resetCanvasRectCache() at the start of each
+ * render. Site code does not call this.
+ */
+
 export type ItemClipData = {
   vertices: Float32Array;
   isVisible: boolean;

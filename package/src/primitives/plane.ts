@@ -1,4 +1,15 @@
-import { getDefaultEngine, resolveEngine, type EngineFrame } from "../engine/engine";
+/**
+ * Fullscreen / item plane (WebGL2 compile + GPU dispatch).
+ *
+ * How to use: createScreen / createItem go through this (or gpu-plane).
+ * Fragment: WGSL `fn fsMain`, or `#version 300 es` as a WebGL2 escape hatch.
+ * Compile failure keeps the last good program and logs — never blank.
+ *
+ * Docs: docs/shader-contract.md
+ */
+
+import { getDefaultEngine, type EngineFrame } from "../engine/engine";
+import { createGpuFullscreenPlaneRenderer } from "./gpu-plane";
 import {
   ensureWatchableUni,
   type UniValues,
@@ -17,7 +28,10 @@ export type FullscreenPlaneGeometry = {
   subdivisionsY: number;
 };
 
-export type FullscreenPlaneRenderFrame = Pick<EngineFrame, "canvas" | "gl">;
+export type FullscreenPlaneRenderFrame = {
+  canvas: HTMLCanvasElement;
+  gl: WebGL2RenderingContext;
+};
 
 export type FullscreenPlaneTexture = {
   view?: unknown;
@@ -71,7 +85,7 @@ export type FullscreenPlaneController = {
 
 export type FullscreenPlaneRenderer = {
   readonly geometry: FullscreenPlaneGeometry;
-  render: (frame: FullscreenPlaneRenderFrame) => void;
+  render: (frame: { canvas: HTMLCanvasElement }) => void;
   destroy: () => void;
 };
 
@@ -310,7 +324,7 @@ export function createFullscreenPlaneRenderer(
 
   return {
     geometry,
-    render(nextFrame: FullscreenPlaneRenderFrame) {
+    render(nextFrame: { canvas: HTMLCanvasElement }) {
       if (!program) {
         program = asyncProgram.poll();
         if (!program) return; // shader still compiling — skip this frame
@@ -387,8 +401,19 @@ export function initFullscreenPlane(
 
   const renderFromFrame = (frame: EngineFrame) => {
     if (!renderer) {
-      renderer = createFullscreenPlaneRenderer(frame, config, uni);
+      if (frame.backend === "webgpu") {
+        renderer = createGpuFullscreenPlaneRenderer(config, uni);
+      } else if (frame.gl) {
+        renderer = createFullscreenPlaneRenderer(
+          { canvas: frame.canvas, gl: frame.gl },
+          config,
+          uni,
+        );
+      } else {
+        return;
+      }
     }
+    if (!renderer) return;
     if (controller) {
       config.onFrame?.(controller, frame);
     }

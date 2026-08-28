@@ -1,3 +1,14 @@
+/**
+ * convertWgslFragmentToGlsl — WGSL `fsMain` → GLSL 300 es (WebGL2 fallback).
+ *
+ * How to use:
+ *   convertWgslFragmentToGlsl(wgsl, { includeUv: true })
+ * Supported subset only. If it rejects, use skill `wgsl-to-glsl` and keep the
+ * result inside the shader contract.
+ *
+ * Docs: docs/shader-translation.md · skill wgsl-to-glsl
+ */
+
 type WgslCompatOptions = {
   includeUv?: boolean;
   includeNormal?: boolean;
@@ -37,15 +48,35 @@ function inferExprType(
   if (/^vec4\(/.test(value)) return "vec4";
   if (/^vec3\(/.test(value)) return "vec3";
   if (/^vec2\(/.test(value)) return "vec2";
-  if (/\bvUv\b/.test(value)) return "vec2";
-  if (/\bvNormal\b/.test(value)) return "vec3";
-  // Single-component swizzle (.x, .y, .r, etc.) yields float (after vec constructors)
-  if (/\.(?![xyzwrgba]{2})[xyzwrgba]\b/.test(value)) return "float";
+  for (const [name, type] of functionReturns.entries()) {
+    if (new RegExp(`^${name}\\s*\\(`).test(value.trim())) return type;
+  }
+  if (/\bmix\s*\(/.test(value)) {
+    const mixed: ScalarOrVectorType[] = [];
+    for (const [name, type] of symbols.entries()) {
+      if (new RegExp(`\\b${name}\\b`).test(value)) mixed.push(type);
+    }
+    const vectors = mixed.filter((type) => type.startsWith("vec") || type === "mat4");
+    if (vectors.length > 0) return maxVectorType(vectors);
+  }
+  // A lone .x/.y swizzle is float. `mix(a, b, vUv.y)` must stay a vector.
+  if (
+    /\.(?![xyzwrgba]{2})[xyzwrgba]\b/.test(value) &&
+    !/\b(mix|vec[234])\s*\(/.test(value)
+  ) {
+    return "float";
+  }
   if (/\.[xy]{2}\b/.test(value) || /\.[st]{2}\b/.test(value)) return "vec2";
   if (/\.[xyz]{3}\b/.test(value) || /\.[rgb]{3}\b/.test(value)) return "vec3";
   if (/\.[xyzw]{4}\b/.test(value) || /\.[rgba]{4}\b/.test(value)) return "vec4";
   if (/texture(Size)?\s*\(/.test(value)) return "vec2";
-  if (/length\s*\(/.test(value)) return "float";
+  if (/\b(length|dot|exp|log|sqrt)\s*\(/.test(value)) return "float";
+  if (
+    /\b(sin|cos|tan|atan|pow)\s*\(/.test(value) &&
+    !/\bvec[234]\s*\(/.test(value)
+  ) {
+    return "float";
+  }
 
   const candidates: ScalarOrVectorType[] = [];
   for (const [name, type] of symbols.entries()) {
@@ -142,6 +173,7 @@ export function convertWgslFragmentToGlsl(
   out = out.replace(/uUni\.values(\d+)/g, (_m, idx: string) => `uUni[${idx}]`);
   out = out.replace(/\bin\.uv\b/g, "vUv");
   out = out.replace(/\bin\.normal\b/g, "vNormal");
+  out = out.replace(/\batan2\s*\(/g, "atan(");
   out = convertFunctionSignatures(out);
   out.replace(
     /\b(vec2|vec3|vec4|float|int|uint|mat4)\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*\{/g,

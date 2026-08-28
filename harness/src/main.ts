@@ -8,7 +8,7 @@ if (!nav || !stage) {
 }
 
 const params = new URLSearchParams(location.search)
-const initial = params.get("demo") ?? demos[0]?.id ?? "screen"
+const initial = params.get("demo") ?? demos[0]?.id ?? "gradient"
 let teardown: (() => void) | undefined
 
 function setUrl(id: string) {

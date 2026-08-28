@@ -1,0 +1,42 @@
+<!--
+  Webflow / IIFE embed — no bundler. Drop in a Designer embed.
+
+  Pair with a shader from examples/ (this one is the gradient).
+  releaseLayer() on Webflow page teardown if you use acquireLayer.
+
+  Docs: docs/site-patterns.md
+-->
+<canvas
+  data-shooosh
+  data-dpr-max="1.5"
+  aria-hidden="true"
+  style="position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1"
+></canvas>
+
+<script src="https://unpkg.com/shooosh"></script>
+<script>
+  const { createScene, parseSceneDataset } = window.Shooosh
+  const canvas = document.querySelector("[data-shooosh]")
+
+  createScene(canvas, {
+    ...parseSceneDataset(canvas.dataset),
+    screen: {
+      shaders: {
+        fragment: `
+fn fsMain() -> vec4f {
+  let t = uUni.values0.x;
+  let ink = vec3f(0.047, 0.047, 0.043);
+  let acid = vec3f(0.847, 1.0, 0.243);
+  let paper = vec3f(0.925, 0.906, 0.863);
+  let g = mix(ink, paper, vUv.y);
+  let band = smoothstep(0.46, 0.5, vUv.x) * (1.0 - smoothstep(0.5, 0.54, vUv.x));
+  return vec4f(mix(g, acid, band * (0.65 + 0.35 * sin(t * 2.0))), 1.0);
+}
+`,
+      },
+      onFrame(self, frame) {
+        self.setUni({ value1: frame.now * 0.001 })
+      },
+    },
+  })
+</script>

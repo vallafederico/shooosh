@@ -2,7 +2,7 @@
   "name": "shooosh",
   "author": "vallafederico",
   "version": "0.0.1",
-  "description": "Native WebGL2 engine with WGSL fragment shaders for sites — scenes, DOM-tracked items, and post-processing.",
+  "description": "WGSL-first site engine: WebGPU when available, WebGL2 fallback — scenes, DOM-tracked items, and post-processing.",
   "type": "module",
   "main": "./dist/cjs.js",
   "module": "./dist/esm.js",
@@ -14,7 +14,15 @@
       "import": "./dist/esm.js",
       "require": "./dist/cjs.js",
       "default": "./dist/esm.js"
+    },
+    "./msdf": {
+      "types": "./package/msdf/index.ts",
+      "import": "./dist/msdf/index.js",
+      "default": "./dist/msdf/index.js"
     }
+  },
+  "bin": {
+    "shooosh-msdf": "./bin/msdf.mjs"
   },
   "repository": {
     "type": "git",
@@ -23,7 +31,7 @@
   "bugs": {
     "url": "https://github.com/vallafederico/shooosh/issues"
   },
-  "homepage": "https://github.com/vallafederico/shooosh#readme",
+  "homepage": "https://github.com/vallafederico/shooosh/tree/main/docs",
   "keywords": [
     "webgl",
     "webgl2",
@@ -33,7 +41,10 @@
     "shader",
     "canvas",
     "post-processing",
-    "bloom"
+    "bloom",
+    "msdf",
+    "sdf",
+    "font"
   ],
   "scripts": {
     "build": "pnpm run -w --parallel /^build:.*/",
@@ -41,6 +52,7 @@
     "build:web": "pnpm --filter web build",
     "test": "bun test package",
     "test:build": "bun run bin/test-build.ts",
+    "msdf": "bun run bin/msdf.ts",
     "dev": "pnpm run -w --parallel /^dev:.*/",
     "dev:harness": "pnpm --filter harness dev",
     "dev:web": "pnpm --filter web dev",
@@ -52,12 +64,29 @@
   },
   "files": [
     "dist/",
+    "package/msdf/",
+    "bin/msdf.mjs",
+    "docs/",
     "package.json",
     "readme.md",
     "LICENSE"
   ],
   "license": "MIT",
   "devDependencies": {
-    "bun-plugin-dts": "^0.3.0"
+    "bun-plugin-dts": "^0.3.0",
+    "msdf-bmfont-xml": "^2.8.0",
+    "sharp": "^0.34.5"
+  },
+  "peerDependencies": {
+    "msdf-bmfont-xml": "^2.7.0",
+    "sharp": "^0.34.0"
+  },
+  "peerDependenciesMeta": {
+    "msdf-bmfont-xml": {
+      "optional": true
+    },
+    "sharp": {
+      "optional": true
+    }
   }
 }

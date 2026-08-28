@@ -1,3 +1,11 @@
+/**
+ * ParticlesManager — WebGL2 point list. Not a public import.
+ *
+ * How to use: createParticles() wraps this. No-op / warn on WebGPU.
+ *
+ * Docs: docs/site-patterns.md
+ */
+
 import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import { compileProgramAsync, type AsyncProgram } from "../shaders/compile";
 
@@ -118,6 +126,7 @@ export class ParticlesManager {
     const engine = getDefaultEngine();
     if (!engine) return;
     const gl = engine.gl;
+    if (!gl) return;
     this.gl = gl;
 
     // Create VAO + VBO
@@ -145,6 +154,7 @@ export class ParticlesManager {
     if (this.destroyed || this.count === 0) return;
 
     const gl = frame.gl;
+    if (!gl) return;
 
     if (!this.program) {
       this.program = this.asyncProgram?.poll() ?? null;

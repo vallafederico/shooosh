@@ -1,6 +1,10 @@
 /**
- * Loads a GLB file and returns only mesh geometry (positions + normals + optional UVs).
- * Ignores lights, cameras, materials, and other non-mesh data.
+ * loadGlb — mesh geometry only (positions, normals, optional UVs).
+ *
+ * How to use: pass the result to createObject. Ignores lights, cameras,
+ * materials. WebGL2 only today.
+ *
+ * Docs: docs/api.md
  */
 
 const GLB_MAGIC = 0x46546c67; // 'glTF'

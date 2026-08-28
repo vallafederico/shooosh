@@ -1,3 +1,16 @@
+/**
+ * loadTexture — image → GPU texture for createItem / createScreen / MSDF.
+ *
+ * How to use:
+ *   const tex = await loadTexture(url, { fit: "cover" })
+ *   createItem(el, { texture: tex, shaders: { fragment: wgsl } })
+ *
+ * WebGL2 only today. Needs a default engine (createScene or acquireLayer).
+ * Bake SDF icons with shooosh/msdf, then load the PNG here.
+ *
+ * Docs: docs/msdf.md · docs/api.md
+ */
+
 import { getDefaultEngine, initEngine } from "../engine/engine";
 
 type WebglTextureHandle = {
@@ -185,6 +198,11 @@ export class TextureLoader {
     }
 
     const gl = webglController.gl;
+    if (!gl) {
+      throw new Error(
+        "loadTexture requires the WebGL2 backend. Texture upload is not implemented on WebGPU yet.",
+      );
+    }
     const bitmap = await toImageBitmap(source);
     const width = Math.max(1, bitmap.width);
     const height = Math.max(1, bitmap.height);

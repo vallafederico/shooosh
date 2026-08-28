@@ -1,3 +1,12 @@
+/**
+ * createMouseMonad — pointer state (lerp, drag) for site onFrame hooks.
+ *
+ * How to use: read x/y/target, write into setUni. Skip setUni once current
+ * equals target so the settle loop can idle.
+ *
+ * Docs: docs/site-patterns.md
+ */
+
 export type MouseMonadState = {
   x: number;
   y: number;

@@ -1,6 +1,13 @@
 # shooosh
 
-Native WebGL2 engine with WGSL fragment shaders. This is the package already used across our sites — scenes, a shared page-behind layer, DOM-tracked items, and a small post stack.
+[![npm](https://img.shields.io/npm/v/shooosh.svg)](https://www.npmjs.com/package/shooosh)
+[![license](https://img.shields.io/npm/l/shooosh.svg)](./LICENSE)
+
+**WGSL-first site GPU.** WebGPU when the browser can, WebGL2 when it can’t. Same `createScene` / `createItem` / `acquireLayer` API either way.
+
+The engine already running on our sites — a fullscreen fragment, a page-behind canvas, DOM-tracked quads. Not a scene graph. Not Three.
+
+**Docs:** [docs/](./docs/README.md) · [Getting started](./docs/getting-started.md) · [API](./docs/api.md) · [Shader contract](./docs/shader-contract.md)
 
 ```shell
 pnpm i shooosh
@@ -12,14 +19,12 @@ import { createScene } from "shooosh"
 createScene(canvas, {
   screen: {
     shaders: {
-      fragment: `#version 300 es
-precision highp float;
-in vec2 vUv;
-uniform vec4 uUni[4];
-out vec4 outColor;
-void main() {
-  outColor = vec4(vUv, 0.5 + 0.5 * sin(uUni[0].x), 1.0);
-}`,
+      fragment: `
+fn fsMain() -> vec4f {
+  let t = uUni.values0.x
+  return vec4f(vUv, 0.5 + 0.5 * sin(t), 1.0)
+}
+`,
     },
     onFrame(self, frame) {
       self.setUni({ value1: frame.now * 0.001 })
@@ -32,83 +37,57 @@ void main() {
 <script src="https://unpkg.com/shooosh"></script>
 ```
 
-The IIFE build attaches `window.Shooosh`.
+IIFE attaches `window.Shooosh`. Full mounts (owned canvas vs page-behind layer): [getting started](./docs/getting-started.md).
+
+## Documentation
+
+This is the GitHub landing page. The [docs folder](./docs/README.md) is the documentation set.
+
+| | |
+| --- | --- |
+| [Getting started](./docs/getting-started.md) | Install, two mounts, first shader |
+| [Examples](./examples/README.md) | Using the library: plasma, noise, SDF, mouse, bloom, cards |
+| [API](./docs/api.md) | What to call |
+| [Shader contract](./docs/shader-contract.md) | `fn fsMain`, `vUv`, `uUni` |
+| [Site patterns](./docs/site-patterns.md) | How we mount this on pages |
+| [MSDF](./docs/msdf.md) | Node/Bun font + icon SDF generators |
+| [WGSL ↔ GLSL](./docs/shader-translation.md) | Fallback converter + mapping |
+| [Roadmap](./ROADMAP.md) | What’s next |
+
+## Agent-first
+
+Built so a coding agent can open the repo and implement the next slice without inventing an API. What that means, in order: [docs/agent-first.md](./docs/agent-first.md).
+
+| | |
+| --- | --- |
+| [`llms.txt`](./llms.txt) | Machine index — start here |
+| [`agents.md`](./agents.md) | Product identity, rules, how to pick work |
+| [`docs/agent-tasks/`](./docs/agent-tasks/) | Numbered briefs. Lowest `status: todo` wins |
+
+## Backends
+
+`createEngine` / `createScene` / `acquireLayer` probe WebGPU first, then WebGL2. `acquireLayer()` / `probeRenderer()` returning `null` is valid — leave the page readable.
+
+Post, textures, objects, particles, and MSDF sampling are **WebGL2-only** today. Bake atlases with [`shooosh/msdf`](./docs/msdf.md) (Node/Bun, not the site bundle).
 
 ## Repo
 
-| Path | What |
-| --- | --- |
-| `package/` | Library source. This is what npm publishes. |
-| `harness/` | Working playground. Edit `package/` and hot-reload. |
-| `web/` | Public showcase site. |
-| `bin/` | ESM / CJS / IIFE build + publish checks. |
+```
+package/    published library
+docs/       documentation hub (link this from GitHub)
+examples/   copy-paste library usage (plasma, items, bloom)
+harness/    vite playground  —  pnpm --filter harness dev
+web/        astro landing
+bin/        esm / cjs / IIFE / msdf CLI
+```
 
 ```shell
 pnpm i
-pnpm dev          # harness + web
-pnpm --filter harness dev
+pnpm dev
 pnpm test
 pnpm build:package
 ```
 
-## API
+## License
 
-| Name | Description |
-| --- | --- |
-| `createEngine` | WebGL2 context, layered `onRender`, `onPostRender`, settle-aware raf. |
-| `createScene` | Owns a canvas: optional fullscreen `screen`, post presets, items. |
-| `acquireLayer` / `releaseLayer` | Shared fixed canvas behind the page. Refcounted. |
-| `createItem` | DOM-tracked quad. IntersectionObserver-gated. `uUni` vec4[4]. |
-| `createScreen` | Fullscreen plane on the current default engine. |
-| `createObject` / `createParticles` / `createMsdfGlyphs` | 3D / particle / MSDF primitives. |
-| `effects` | `bloom`, `bw`, `noise`, `custom` post presets. |
-| `loadTexture` / `loadGlb` | Texture (cover/contain UV) and mesh-only GLB. |
-| `convertWgslFragmentToGlsl` | WGSL subset → GLSL 300 es. |
-
-### Shaders
-
-Pass `shaders.fragment`:
-
-- Full GLSL 300 es (`#version 300 es` … `out vec4 outColor`) is used as-is.
-- Otherwise it is treated as WGSL and converted. Prefer GLSL for anything beyond a simple `fsMain`.
-
-`vUv` is top-origin. Item / screen uniforms are 16 floats: `setUni({ value1 })` → `uUni[0].x`.
-
-### Layer vs scene
-
-Most site effects sit on the shared layer:
-
-```js
-import { acquireLayer, createItem, releaseLayer } from "shooosh"
-
-const engine = acquireLayer()
-if (!engine) return
-
-const item = createItem(element, {
-  shaders: { fragment: glsl },
-  onFrame(self, frame) {
-    self.setUni({ value1: frame.now * 0.001 })
-  },
-})
-
-return () => {
-  item.destroy()
-  releaseLayer()
-}
-```
-
-`createScene` is for a dedicated `<canvas>` — fullscreen shaders, section-scoped work, or scene-wide post.
-
-`acquireLayer()` returns `null` when WebGL2 is missing. Leave the page readable.
-
-## Roadmap
-
-Shader-file imports and in-place HMR (Vite + Bun) are next. [vgpu](https://github.com/vercel-labs/vgpu) is the DX reference — named uniforms, a small shader stdlib, `check` CLI — not a WebGPU rewrite. See [ROADMAP.md](./ROADMAP.md).
-
-## Publish
-
-```shell
-pnpm release:patch
-```
-
-Builds `dist/` (esm, cjs, IIFE, types) and publishes the root package.
+MIT. See [LICENSE](./LICENSE).

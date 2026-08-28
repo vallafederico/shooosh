@@ -1,4 +1,14 @@
-// Entry point for the IIFE/unpkg bundle: attaches the full API to a global.
+/**
+ * IIFE / unpkg entry. Attaches the browser API to `window.Shooosh`.
+ *
+ * How to use (Webflow / no bundler):
+ *   <script src="https://unpkg.com/shooosh"></script>
+ *   const { createScene, acquireLayer, createItem } = window.Shooosh
+ *
+ * Same exports as `package/index.ts`. Not the Node MSDF toolchain.
+ *
+ * Docs: docs/getting-started.md · docs/site-patterns.md
+ */
 import * as lib from "./index";
 
 const GLOBAL_NAME = "Shooosh";

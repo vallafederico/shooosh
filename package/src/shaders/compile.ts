@@ -1,15 +1,13 @@
 /**
- * Non-blocking WebGL2 shader program compilation.
+ * compileProgramAsync — non-blocking WebGL2 compile/link.
  *
- * Compiling/linking a program and then querying COMPILE_STATUS / LINK_STATUS
- * blocks the main thread until the GPU driver finishes — which can stall for
- * hundreds of milliseconds for large shaders and freeze the whole page.
+ * How to use: submit, then poll() on later frames. Failed compile/link must
+ * keep the last good program and surface the log — never blank the page.
  *
- * This helper submits the program to the driver WITHOUT querying status, then
- * lets the caller poll() on subsequent frames. With KHR_parallel_shader_compile
- * the poll is a cheap non-blocking check while the driver compiles on its own
- * threads. Without the extension we still defer the (blocking) status query to a
- * later frame, so at minimum the very first frame is never stalled.
+ * Compiling then immediately reading COMPILE_STATUS blocks the main thread
+ * (large shaders can stall for hundreds of ms). This helper submits without
+ * querying, then lets the caller poll(). With KHR_parallel_shader_compile the
+ * poll is cheap; without it the blocking query is at least deferred a frame.
  */
 
 type KhrParallelExt = { COMPLETION_STATUS_KHR: GLenum };

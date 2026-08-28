@@ -1,3 +1,14 @@
+/**
+ * effects.* presets for createScene({ post }) / createPostProcessor.
+ *
+ * How to use:
+ *   post: [effects.bloom(), effects.bw(), effects.noise(), effects.custom({ fragment })]
+ *
+ * `effects.custom` wraps applyEffect — not fsMain. WebGL2 only today.
+ *
+ * Docs: docs/site-patterns.md · skill shooosh-post
+ */
+
 import type { BloomEffectOptions } from "../post/bloom";
 import type { NoiseEffectOptions } from "../post/noise";
 import type { PostEffect } from "../post/processor";

@@ -46,6 +46,14 @@ body {
   text-transform: uppercase;
 }
 
+.backend {
+  margin: -16px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
 nav {
   display: flex;
   flex-direction: column;
@@ -82,7 +90,7 @@ nav button[aria-current="true"] {
   background: var(--bg);
 }
 
-#stage[data-demo="items"] {
+#stage[data-demo="item-fill"] {
   background: transparent;
 }
 

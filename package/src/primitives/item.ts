@@ -1,9 +1,19 @@
-import { getDefaultEngine, resolveEngine, type EngineFrame } from "../engine/engine";
+/**
+ * ItemManager — tracks getBoundingClientRect and draws a quad. Not public.
+ *
+ * How to use: createItem() wraps this. Queues on a raf list until an engine
+ * exists, then picks WebGPU (gpu-item) or WebGL2 (plane compile).
+ *
+ * Docs: docs/site-patterns.md
+ */
+
+import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import type { FullscreenPlaneShaders, FullscreenPlaneTexture } from "./plane";
 import { ensureWatchableUni, type UniValues, type UniWatchController } from "../engine/uni";
 import { getElementClipData } from "./item.utils";
 import { convertWgslFragmentToGlsl } from "../shaders/wgsl-compat";
 import { compileProgramAsync } from "../shaders/compile";
+import { createGpuItemRenderer } from "./gpu-item";
 
 type ItemRenderer = {
   render: (frame: EngineFrame) => void;
@@ -85,7 +95,13 @@ export class ItemManager {
         }
 
         if (!this.renderer) {
-          this.renderer = createItemRenderer(this.element, frame, this.options, this.uni);
+          if (frame.backend === "webgpu") {
+            this.renderer = createGpuItemRenderer(this.element, this.options, this.uni);
+          } else if (frame.gl) {
+            this.renderer = createItemRenderer(this.element, frame, this.options, this.uni);
+          } else {
+            return;
+          }
         }
 
         this.options.onFrame?.(this, frame);
@@ -188,6 +204,9 @@ function createItemRenderer(
   uni: UniWatchController,
 ): ItemRenderer {
   const gl = frame.gl;
+  if (!gl) {
+    return { render() {}, destroy() {} };
+  }
 
   let uniValues = uni.toFloat32(16);
   const unsubscribeUni = uni.subscribe(() => {

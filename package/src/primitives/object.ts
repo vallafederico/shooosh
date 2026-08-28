@@ -1,3 +1,11 @@
+/**
+ * ObjectManager — mesh draw (WebGL2). Not a public import.
+ *
+ * How to use: createObject() wraps this. Needs a default WebGL2 engine.
+ *
+ * Docs: docs/api.md
+ */
+
 import { getDefaultEngine, resolveEngine, type EngineFrame } from "../engine/engine";
 import {
   ensureWatchableUni,
@@ -216,6 +224,7 @@ export class ObjectManager {
         }
 
         if (!this.renderer) {
+          if (!frame.gl) return;
           this.renderer = createObjectRenderer(
             this.element,
             frame,
@@ -383,6 +392,9 @@ function createObjectRenderer(
   },
 ): ObjectRenderer {
   const gl = frame.gl;
+  if (!gl) {
+    return { render: () => false, destroy() {} };
+  }
 
   const useScreenPlacement = element == null;
   const screenPlacement: ScreenPlacement | undefined = useScreenPlacement

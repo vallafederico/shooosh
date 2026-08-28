@@ -1,3 +1,12 @@
+/**
+ * Package build — ESM / CJS / IIFE + Node `shooosh/msdf`.
+ *
+ * How to use: `bun run bin/build.ts` or `pnpm build:package`.
+ * Browser entries: package/index.ts, package/global.ts.
+ * Node entry: package/msdf/index.ts (external: sharp, msdf-bmfont-xml).
+ * Do not bundle msdf into the IIFE / site build.
+ */
+
 import type { BuildConfig } from "bun"
 import { build } from "bun"
 import dts from "bun-plugin-dts"
@@ -32,6 +41,16 @@ async function run() {
         target: "browser",
         minify: true,
         sourcemap: "none",
+      }),
+      build({
+        entrypoints: ["./package/msdf/index.ts"],
+        outdir: "./dist/msdf",
+        format: "esm",
+        target: "node",
+        naming: "index.js",
+        minify: false,
+        sourcemap: "external",
+        external: ["sharp", "msdf-bmfont-xml"],
       }),
     ])
 

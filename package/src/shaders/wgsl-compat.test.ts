@@ -21,6 +21,18 @@ test("converts a simple WGSL fragment to GLSL 300 es", () => {
   expect(glsl).not.toContain("fn fsMain")
 })
 
+test("maps atan2(y, x) to GLSL atan(y, x)", () => {
+  const glsl = convertWgslFragmentToGlsl(
+    `fn fsMain() -> vec4f {
+  let a = atan2(vUv.y, vUv.x);
+  return vec4f(a, 0.0, 0.0, 1.0);
+}`,
+    { includeUv: true },
+  )
+  expect(glsl).toContain("atan(")
+  expect(glsl).not.toContain("atan2")
+})
+
 test("throws when fsMain is missing", () => {
   expect(() => convertWgslFragmentToGlsl("let x = 1.0;")).toThrow(
     /Unable to locate fsMain/,

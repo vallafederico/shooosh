@@ -1,29 +1,53 @@
 # Roadmap
 
-The engine stays what it is: a site-native WebGL2 runtime with WGSL-or-GLSL fragments, a shared page layer, and DOM-tracked items. [vgpu](https://github.com/vercel-labs/vgpu) is the reference for shader DX — file imports, named uniforms, in-place HMR, a small stdlib, a `check` CLI — not for tensors, Dawn, or a WebGPU rewrite.
+Executable queue for agents: [docs/agent-tasks/](./docs/agent-tasks/). Start at `01`. Docs hub: [docs/](./docs/README.md) · manifest: [agents.md](./agents.md) · index: [llms.txt](./llms.txt) · [agent-first](./docs/agent-first.md).
+
+Site-native GPU runtime: scenes, a shared page layer, DOM-tracked items. **WGSL is the shading language.** The engine **prefers WebGPU** and **falls back to WebGL2** when the adapter or device is missing. Same `createScene` / `createItem` / `acquireLayer` API on both backends.
+
+[vgpu](https://github.com/vercel-labs/vgpu) is the reference for shader DX (file imports, named uniforms, in-place HMR, stdlib, `check` CLI) — not for tensors, Dawn, or their frame/pass graph.
+
+## Runtime policy
+
+1. Probe `navigator.gpu` → adapter → device.
+2. If that works, run the WebGPU renderer. Shaders stay WGSL.
+3. If it fails, run the existing WebGL2 renderer. WGSL is converted to GLSL 300 es.
+4. If neither works, return `null` / throw `GpuUnavailableError`. The page stays readable.
+
+Force a backend only when debugging: `createEngine(canvas, { backend: "webgpu" | "webgl2" })`.
+
+GLSL 300 es (`#version 300 es`) remains accepted as an escape hatch for current sites. New work is WGSL.
 
 ## Now
 
 - Publishable package (`esm` / `cjs` / IIFE / types)
-- `createEngine` / `createScene` / `acquireLayer` / `createItem`
-- GLSL 300 es passthrough + WGSL subset → GLSL
-- Post presets, loaders, particles / objects / MSDF
-- Vite harness + Astro `/web`
+- Dual renderer: WebGPU default, WebGL2 fallback (`createEngine` / `createScene` / `acquireLayer` / `createItem` / `createScreen`)
+- WGSL `fsMain` on WebGPU; WGSL ↔ GLSL converters + agent skills
+- Post presets, loaders, particles / objects / MSDF (WebGL2)
+- Vite harness + Astro `/web` (`?backend=` + backend label)
+- Agent docs: `llms.txt`, `agents.md`, `docs/` hub, `docs/agent-first.md`, site-patterns (aiuis / Webflow)
+- Skills: WGSL ↔ GLSL, site mount, item, post, MSDF bake
+- Node/Bun `shooosh/msdf`: font atlases + icon SDFs (`pnpm msdf`)
+
+## Next — remaining GPU ports
+
+Post stack, `loadTexture`, objects, particles, and MSDF on WebGPU.
+
+Shader-file HMR (below) should land against this contract so a `.wgsl` edit hot-swaps on whichever backend is live.
 
 ## Next — shader files + HMR
 
-Edit a `.frag` / `.glsl` / `.wgsl` and the live program swaps. Failed compile keeps the last good program and surfaces the log. Vite and Bun share one runtime accept path.
+Edit a `.wgsl` (also `.frag` / `.glsl` for legacy) and the live program swaps. Failed compile keeps the last good program and surfaces the log. Vite and Bun share one runtime accept path.
 
 ### Runtime (package)
 
 - `configure({ shaders })` on screen / item / object actually rebuilds the program (async, settle-aware)
-- `hotSwapShader(target, source)` — same path used by both bundlers
+- `hotSwapShader(target, source)` — same path used by both bundlers and both backends
 - Overlay or `onShaderError` for compile/link logs; never blank the page
 - Watch `#include` / WGSL `import` graphs so a shared noise helper invalidates every consumer
 
 ### Vite plugin (`shooosh/vite`)
 
-- `import frag from "./wave.frag"` (also `.glsl`, `.wgsl`, `.vert`)
+- `import frag from "./wave.wgsl"` (also `.frag`, `.glsl`, `.vert`)
 - `addWatchFile` for transitive includes (same idea as `@vgpu/wgsl/loader-vite`)
 - Custom event `shooosh:shader` so the scene does **not** full-reload
 - `import.meta.hot.accept` fallback when the consumer owns the swap
@@ -34,26 +58,23 @@ Edit a `.frag` / `.glsl` / `.wgsl` and the live program swaps. Failed compile ke
 - File watcher + the same `hotSwapShader` accept path
 - Works in the harness when we run it on Bun, not only Vite
 
-Harness gets a demo that imports a file shader and survives edits.
-
 ## Steal from vgpu
 
 | Feature | Why |
 | --- | --- |
 | Named uniforms | `setUni({ time, speed })` instead of `value1` → `uUni[0].x`. Keep the vec4[4] packing underneath. |
-| Shader stdlib | Tiny GLSL/WGSL modules: hash, value noise, color. Importable from files once HMR exists. |
-| `shooosh check` | Compile/validate a shader from the CLI. No browser. CI + agents. |
+| Shader stdlib | Tiny WGSL modules: hash, value noise, color. Importable from files once HMR exists. |
+| `shooosh check` | Validate WGSL (and the GLSL fallback compile) from the CLI. No browser. |
 | Agent docs | `llms.txt` / `agents.md` for the public API and shader contract. |
-| Compile overlay | vgpu-style “keep drawing, show the error”. |
+| Compile overlay | Keep drawing, show the error. |
 
 ## Later
 
-- Stronger WGSL converter (or keep GLSL as the source of truth and treat WGSL as a subset)
-- WebGPU backend behind the same scene/item API, WebGL2 remains default
-- Example gallery the harness can pull from
+- Stronger WGSL ↔ GLSL converters (samplers, structs, preprocessor)
+- Example gallery: [`examples/`](./examples/README.md) is the source; harness can pull from it later
 - Bundle budget on the IIFE build
-- Headless / mock adapter for CI (vgpu/mock energy, WebGL-less)
+- Headless / mock adapter for CI (optional; not Dawn-in-the-package)
 
 ## Not this package
 
-vgpu’s tensors, neural nets, Dawn node adapter, and explicit `frame.pass` graph. Those are a different product. Shooosh is the thing already on the sites.
+vgpu’s tensors, neural nets, Dawn node adapter, and explicit `frame.pass` graph. Shooosh is the site engine — two renderers, one WGSL-first API.

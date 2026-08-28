@@ -1,3 +1,20 @@
+/**
+ * createScene — own a <canvas> (app shell, section hero, SSR-safe init).
+ *
+ * How to use:
+ *   const scene = createScene(canvas, {
+ *     autoInit: false,            // SSR: don't touch GPU in the constructor
+ *     dpr: { max: 1.5 },
+ *     screen: { shaders: { fragment: wgsl } },
+ *   })
+ *   await scene.init()
+ *
+ * After init, createItem / createParticles / post use the default engine.
+ * Teardown: scene.destroy(). Page-behind without a scene object: acquireLayer.
+ *
+ * Docs: docs/getting-started.md · docs/site-patterns.md · skill shooosh-site
+ */
+
 import {
   getDefaultEngine,
   initEngine,
@@ -75,6 +92,7 @@ export class Scene {
     const engineOptions: EngineOptions = {
       dpr: this.options.dpr,
       clearColor: this.options.clearColor,
+      backend: this.options.backend,
     };
 
     this.engine = await initEngine(this.canvas, engineOptions);
@@ -84,8 +102,14 @@ export class Scene {
     }
 
     if (this.options.post?.length) {
-      this.postProcessor = createPostProcessor();
-      this.applyPostPresets(this.options.post);
+      if (this.engine.backend === "webgpu") {
+        console.warn(
+          "shooosh: post-processing is not implemented on the WebGPU backend yet; skipping.",
+        );
+      } else {
+        this.postProcessor = createPostProcessor();
+        this.applyPostPresets(this.options.post);
+      }
     }
 
     this.screenTexture?.destroy();

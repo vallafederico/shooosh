@@ -1,3 +1,9 @@
+/**
+ * Black-and-white preset source. WebGL2 post chain.
+ *
+ * How to use: effects.bw(). Mix amount is uUni[0].x.
+ */
+
 export function createBlackAndWhiteComputeShader() {
   return `
 fn applyEffect(color: vec4f, _uv: vec2f, _size: vec2u, _uni: PostUni) -> vec4f {

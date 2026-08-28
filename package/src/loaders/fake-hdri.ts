@@ -1,3 +1,10 @@
+/**
+ * createFakeHdriCanvas — procedural sky/ground canvas for lighting tests.
+ *
+ * How to use: feed the canvas to loadTexture / an environment slot.
+ * Site-owned helper; not a renderer.
+ */
+
 export type CreateFakeHdriOptions = {
   width?: number;
   height?: number;
