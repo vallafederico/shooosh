@@ -1,7 +1,7 @@
 {
   "name": "shooosh",
   "author": "vallafederico",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "WGSL-first site engine: WebGPU when available, WebGL2 fallback — scenes, DOM-tracked items, and post-processing.",
   "type": "module",
   "main": "./dist/cjs.js",
