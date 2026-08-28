@@ -7,7 +7,7 @@
 
 The engine already running on our sites — a fullscreen fragment, a page-behind canvas, DOM-tracked quads. Not a scene graph. Not Three.
 
-**Docs:** [docs/](./docs/README.md) · [Getting started](./docs/getting-started.md) · [API](./docs/api.md) · [Shader contract](./docs/shader-contract.md)
+**Docs:** [docs/](./docs/README.md) · [Changelog](./CHANGELOG.md) · [Getting started](./docs/getting-started.md) · [API](./docs/api.md) · [Shader contract](./docs/shader-contract.md)
 
 ```shell
 pnpm i shooosh

@@ -4,7 +4,7 @@ WGSL-first site GPU. WebGPU when the browser can, WebGL2 when it can’t.
 
 This folder is what [the GitHub repo](https://github.com/vallafederico/shooosh) should link to. The root [readme](../readme.md) is the short landing page; everything below is the focused set.
 
-[npm](https://www.npmjs.com/package/shooosh) · [GitHub](https://github.com/vallafederico/shooosh) · [Roadmap](../ROADMAP.md)
+[npm](https://www.npmjs.com/package/shooosh) · [GitHub](https://github.com/vallafederico/shooosh) · [Changelog](../CHANGELOG.md) · [Roadmap](../ROADMAP.md)
 
 ## Start
 
