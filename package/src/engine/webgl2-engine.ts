@@ -27,7 +27,7 @@ import type {
   PostRenderCallback,
   RenderCallback,
   RenderSubscriptionOptions,
-  RenderTarget,
+  WebGl2RenderTarget,
   WebGLEngine,
 } from "./engine";
 
@@ -63,7 +63,7 @@ export function createWebGl2Engine(
   applyCanvasBackdrop(canvas, baseClearColor);
 
   let clearColor = baseClearColor;
-  let sceneTarget: RenderTarget | null = null;
+  let sceneTarget: WebGl2RenderTarget | null = null;
   let renderSubscriberId = 1;
   let renderSubscriberOrder = 0;
 
@@ -71,7 +71,7 @@ export function createWebGl2Engine(
   const postRenderSubscribers = new Set<PostRenderCallback>();
   let sortedRenderSubscribersCache: RenderSubscriberEntry[] | null = null;
 
-  const createRenderTarget = (width: number, height: number): RenderTarget => {
+  const createRenderTarget = (width: number, height: number): WebGl2RenderTarget => {
     const texture = gl.createTexture();
     const framebuffer = gl.createFramebuffer();
     const depth = gl.createRenderbuffer();
@@ -118,7 +118,8 @@ export function createWebGl2Engine(
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    const target: RenderTarget = {
+    const target: WebGl2RenderTarget = {
+      backend: "webgl2",
       texture,
       framebuffer,
       depth,

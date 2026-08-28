@@ -69,7 +69,10 @@ function inferExprType(
   if (/\.[xy]{2}\b/.test(value) || /\.[st]{2}\b/.test(value)) return "vec2";
   if (/\.[xyz]{3}\b/.test(value) || /\.[rgb]{3}\b/.test(value)) return "vec3";
   if (/\.[xyzw]{4}\b/.test(value) || /\.[rgba]{4}\b/.test(value)) return "vec4";
-  if (/texture(Size)?\s*\(/.test(value)) return "vec2";
+  if (/texture(Sample|Size)?\s*\(/.test(value)) {
+    if (/textureSize\s*\(/.test(value)) return "vec2";
+    return "vec4";
+  }
   if (/\b(length|dot|exp|log|sqrt)\s*\(/.test(value)) return "float";
   if (
     /\b(sin|cos|tan|atan|pow)\s*\(/.test(value) &&
@@ -152,6 +155,27 @@ function extractFsMainBody(source: string) {
   };
 }
 
+/** Identifiers illegal as GLSL ES 3.00 names — WGSL authors use them freely. */
+const GLSL_RESERVED_IDENTIFIERS = [
+  "sample",
+  "input",
+  "output",
+  "common",
+  "partition",
+  "active",
+  "filter",
+  "row_major",
+  "column_major",
+] as const;
+
+function renameGlslReservedIdentifiers(source: string) {
+  let out = source;
+  for (const word of GLSL_RESERVED_IDENTIFIERS) {
+    out = out.replace(new RegExp(`\\b${word}\\b`, "g"), `_${word}`);
+  }
+  return out;
+}
+
 export function convertWgslFragmentToGlsl(
   source: string,
   options: WgslCompatOptions = {},
@@ -174,6 +198,16 @@ export function convertWgslFragmentToGlsl(
   out = out.replace(/\bin\.uv\b/g, "vUv");
   out = out.replace(/\bin\.normal\b/g, "vNormal");
   out = out.replace(/\batan2\s*\(/g, "atan(");
+  // WGSL textureSample(tex, sampler, uv) → GLSL texture(tex, uv)
+  out = out.replace(
+    /\btextureSample\s*\(\s*([A-Za-z_]\w*)\s*,\s*[A-Za-z_]\w*\s*,\s*([^)]+)\)/g,
+    (_m, tex: string, uv: string) => `texture(${tex}, ${uv.trim()})`,
+  );
+  // GLSL ES 3 reserved identifiers (e.g. `let sample = …`) — rename after
+  // textureSample rewrite so `textureSample` / `uSampler` stay intact.
+  out = renameGlslReservedIdentifiers(out);
+  // Injected cover/contain helper (header) — keep let/var inference correct.
+  if (/\buTexture\b/.test(out)) functionReturns.set("fitUv", "vec2");
   out = convertFunctionSignatures(out);
   out.replace(
     /\b(vec2|vec3|vec4|float|int|uint|mat4)\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*\{/g,
@@ -214,17 +248,33 @@ export function convertWgslFragmentToGlsl(
   );
   out = `${out.slice(0, fsMain.fnStart)}void main() {${mainBody}\n}${out.slice(fsMain.fnEnd)}`;
 
+  const samplers: string[] = [];
+  if (/\buTexture\b/.test(out)) samplers.push("uniform sampler2D uTexture;");
+  if (/\buEnvMap\b/.test(out)) samplers.push("uniform sampler2D uEnvMap;");
+  if (/\buMaskMap\b/.test(out)) samplers.push("uniform sampler2D uMaskMap;");
+
+  const helpers: string[] = [];
+  // Cover/contain helper — same as WGSL wrap when uTexture is bound.
+  // Skip if the author already defined fitUv in the fragment.
+  if (/\buTexture\b/.test(out) && !/\bvec2\s+fitUv\s*\(/.test(out)) {
+    helpers.push(`vec2 fitUv(vec2 uv) {
+  return uv * uUni[1].xy + uUni[1].zw;
+}`);
+  }
+
   const header = [
     "#version 300 es",
     "precision highp float;",
     options.includeUv ? "in vec2 vUv;" : "",
     options.includeNormal ? "in vec3 vNormal;" : "",
     "uniform vec4 uUni[4];",
+    ...samplers,
     "out vec4 outColor;",
     "",
+    ...helpers,
   ]
     .filter(Boolean)
     .join("\n");
 
-  return `${header}\n${out}`;
+  return helpers.length > 0 ? `${header}\n\n${out}` : `${header}\n${out}`;
 }

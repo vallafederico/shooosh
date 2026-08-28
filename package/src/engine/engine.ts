@@ -6,6 +6,12 @@
  *   await createEngine(canvas, { backend: "webgl2" })      // force (debug)
  *   initEngine(canvas) sets the default used by createItem / createScreen
  *
+ * `backend` semantics:
+ *   omitted / "auto" — probe WebGPU, fall back to WebGL2. Either engine chunk may
+ *                      load, so the page can pay for both in the worst case.
+ *   "webgpu"         — fails hard (GpuUnavailableError). No WebGL2 fallback.
+ *   "webgl2"         — WebGL2 only; the WebGPU chunks are never fetched.
+ *
  * Site `onFrame` should read `frame.now` / `frame.delta` / `frame.backend` /
  * `frame.canvas`. `frame.gl` exists only on WebGL2 — do not require it.
  *
@@ -21,15 +27,35 @@ import type { ClearColor } from "./engine-utils";
 
 export type { ClearColor } from "./engine-utils";
 
-export type RenderTarget = {
-  texture: WebGLTexture;
-  framebuffer: WebGLFramebuffer;
-  depth: WebGLRenderbuffer;
+/**
+ * Offscreen colour target the engine renders the site into before post runs.
+ * Backend-agnostic: narrow on `backend` before touching the handles.
+ */
+export type RenderTargetBase = {
   width: number;
   height: number;
-  createView: () => RenderTarget;
+  /** Backend view handle: the GL target itself, or a GPUTextureView. */
+  createView: () => unknown;
   destroy: () => void;
 };
+
+export type WebGl2RenderTarget = RenderTargetBase & {
+  backend: "webgl2";
+  texture: WebGLTexture;
+  framebuffer: WebGLFramebuffer;
+  depth: WebGLRenderbuffer | null;
+};
+
+export type WebGpuRenderTarget = RenderTargetBase & {
+  backend: "webgpu";
+  /** GPUTexture. Kept opaque so GPU types stay out of the public surface. */
+  texture: unknown;
+  /** GPUTextureView for the colour attachment / sampled read. */
+  view: unknown;
+  format: string;
+};
+
+export type RenderTarget = WebGl2RenderTarget | WebGpuRenderTarget;
 
 /**
  * Shared per-frame payload. Site `onFrame` hooks should use `canvas` / `now` /
@@ -45,14 +71,20 @@ export type EngineFrame = {
   gl?: WebGL2RenderingContext;
 };
 
+/**
+ * Post payload. `inputTexture` holds the rendered site; write the result to the
+ * canvas. `gl` is WebGL2-only — the WebGPU backend passes its device / encoder
+ * through the internal GPU frame channel instead.
+ */
 export type EnginePostFrame = {
   canvas: HTMLCanvasElement;
-  gl: WebGL2RenderingContext;
   inputTexture: RenderTarget;
   clearColor: ClearColor;
   now: number;
   delta: number;
-  backend: "webgl2";
+  backend: RendererKind;
+  /** Present on the WebGL2 backend only. */
+  gl?: WebGL2RenderingContext;
 };
 
 export type RenderCallback = (frame: EngineFrame) => void;

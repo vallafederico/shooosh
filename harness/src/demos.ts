@@ -8,8 +8,6 @@ export type Demo = {
   mount: (stage: HTMLElement) => () => void
 }
 
-const backend = readBackendParam()
-
 function fail(stage: HTMLElement, error: unknown) {
   const el = document.createElement("p")
   el.className = "fallback"
@@ -27,6 +25,8 @@ export const demos: Demo[] = examples.map((spec) => ({
   id: spec.id,
   label: spec.label,
   mount(stage) {
+    // Read on each mount so the rail toggle can remount without a full reload.
+    const backend = readBackendParam()
     return mountExample(spec, stage, {
       backend,
       onBackend: setBackendLabel,

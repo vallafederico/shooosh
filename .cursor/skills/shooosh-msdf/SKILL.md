@@ -20,7 +20,7 @@ pnpm msdf -- fonts/Inter.ttf icons/ --out public/msdf
 
 | Input | Call | Runtime |
 | --- | --- | --- |
-| `.ttf` / `.otf` / `.ttc` | `generateFontAtlas` | `createMsdfGlyphs` (WebGL2 today) |
+| `.ttf` / `.otf` / `.ttc` | `generateFontAtlas` | `createMsdfGlyphs` |
 | `.svg` / `.png` / `.webp` | `generateIconSdf` | `createItem` + `loadTexture` |
 | mixed dir | `generateMsdf(inputs, { outDir })` | writes `outDir/fonts` + `outDir/icons` |
 
@@ -35,9 +35,9 @@ pnpm msdf -- fonts/Inter.ttf icons/ --out public/msdf
 ## Always
 
 - Keep generators off the browser entry. Optional deps: `sharp`, `msdf-bmfont-xml`.
-- Author page shaders as WGSL. Sampling the atlas is still WebGL2-only.
+- Author page shaders as WGSL. Atlas sampling runs on both backends — call `loadTexture` after the engine resolves so the handle matches it.
 - Do not add a Python / fonttools variable-font step unless the user asks.
 
 ## Next
 
-Mount the baked atlas: skill `shooosh-item` (`loadTexture`) or `createMsdfGlyphs`. Site canvas: `shooosh-site`.
+Mount the baked atlas: skill `shooosh-item` (`loadTexture`) or `createMsdfGlyphs`. Site canvas: `shooosh-site`. Copy [`examples/msdf-text.ts`](../../../examples/msdf-text.ts) / [`examples/sdf-icons.ts`](../../../examples/sdf-icons.ts).

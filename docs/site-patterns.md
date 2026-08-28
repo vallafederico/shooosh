@@ -39,6 +39,31 @@ Canvas CSS we always use:
 
 Teardown: `scene.destroy()` (or `item.destroy()` + `releaseLayer()`). Pair every acquire with a release.
 
+### Scroll-tracked planes
+
+`createItem` maps `getBoundingClientRect()` → clip space every frame; the settle loop marks dirty on `scroll`. For a tall page demo see [`examples/scroll-cards.ts`](../examples/scroll-cards.ts) and [`examples/scroll-sections.ts`](../examples/scroll-sections.ts).
+
+### WebGPU compute / fluid
+
+Package primitive: `createCompute(engine)`. Fluids are an example loop + shaders you copy and edit:
+
+```js
+import { createScene, createCompute } from "shooosh"
+import { createFluidSim } from "./fluid-sim" // examples/
+import { fluidShaders } from "./fluid-shaders"
+
+const scene = createScene(canvas, { backend: "webgpu" })
+await scene.getInitPromise()
+const gpu = createCompute(scene.getEngine())
+const fluid = createFluidSim(gpu, {
+  shaders: fluidShaders,
+  simScale: 0.5,
+})
+fluid?.splat({ x: 0.5, y: 0.5, dx: 40, dy: -10, color: [0.85, 1, 0.25], radius: 0.02 })
+```
+
+See [`examples/fluid-sim.ts`](../examples/fluid-sim.ts) (pass order) and [`examples/fluid-shaders.ts`](../examples/fluid-shaders.ts) (WGSL).
+
 ## Items queue until the engine exists
 
 `createItem(el, options)` is safe to call before `init` finishes. The item sits on a raf queue until `getDefaultEngine()` is set. Mount order does not matter — aiuis `GlItem` relies on this.
@@ -76,9 +101,40 @@ item.setUni({ value4: r, value5: g, value6: b })
 
 Keep that helper on the site. The engine does not parse CSS.
 
-## Custom post (WebGL2 today)
+## Custom post
 
-`effects.custom` / `createPostProcessor().addFragmentEffect` wrap a snippet as:
+Looks (bloom, grain, FXAA, …) live in [`examples/post-shaders.ts`](../examples/post-shaders.ts) — not package presets. Pass GLSL + WGSL:
+
+```js
+import { createPostProcessor } from "shooosh"
+import {
+  bloomEffect, bloomEffectWgsl,
+  fxaaEffect, fxaaEffectWgsl,
+  grainEffect, grainEffectWgsl,
+} from "./post-shaders"
+
+await scene.getInitPromise()
+const post = createPostProcessor()
+post.addFragmentEffect({
+  fragmentShader: bloomEffect,
+  fragmentShaderWgsl: bloomEffectWgsl,
+  uni: { value1: 0.75, value2: 0.5, value3: 1.5 },
+})
+// Optional AA (strength, edgeThreshold) — after bloom, before grain:
+post.addFragmentEffect({
+  fragmentShader: fxaaEffect,
+  fragmentShaderWgsl: fxaaEffectWgsl,
+  uni: { value1: 1, value2: 0.125 },
+})
+post.addFragmentEffect({
+  fragmentShader: grainEffect,
+  fragmentShaderWgsl: grainEffectWgsl,
+  uni: { value1: 0.07, value2: 520 },
+})
+// teardown: post.destroy()
+```
+
+`addFragmentEffect` wraps a snippet as:
 
 ```glsl
 vec4 applyEffect(vec4 color, vec2 uv, vec2 resolution, vec4 uni[4]) {
@@ -86,23 +142,23 @@ vec4 applyEffect(vec4 color, vec2 uv, vec2 resolution, vec4 uni[4]) {
 }
 ```
 
-Injected: `uTexture` (scene), `uResolution`, `uTime`, `uDelta`, `uUni[4]`. This is a **different contract** from `fsMain`. Post is skipped on WebGPU until that port exists.
+Injected: `uTexture` (scene), `uResolution`, `uTime`, `uDelta`, `uUni[4]`. This is a **different contract** from `fsMain`. Add a `fragmentShaderWgsl` variant (`fn applyEffect`) so the effect also runs on WebGPU. Call `post.destroy()` on teardown.
 
 aiuis mouse-magnify: lerp pointer to UV, write radius/strength into `uUni[0]`, sample `uTexture` with a zoomed UV.
 
-## Particles as dots (WebGL2 today)
+## Particles as dots
 
-`createParticles({ positions, size, color, layer })` — `positions` is clip-space `Float32Array` `[x,y,…]`. aiuis `GlDot` recomputes one point from a DOM rect on scroll; `ParticleGrid` is a static clip-space grid. Recreate on resize if size changes. `setPositions` on scroll is cheaper than destroy/create.
+`createParticles({ positions, size, color, layer })` — `positions` is clip-space `Float32Array` `[x,y,…]`. aiuis `GlDot` recomputes one point from a DOM rect on scroll; `ParticleGrid` is a static clip-space grid. Recreate on resize if size changes. `setPositions` on scroll is cheaper than destroy/create. WebGL2 draws points; WebGPU draws instanced quads with the same soft-edge disc.
 
-## SDF / MSDF (WebGL2 today)
+## SDF / MSDF
 
-`createItem` + `loadTexture` (or `createMsdfGlyphs`). The quad still tracks a DOM box; the fragment samples an atlas. aiuis `SdfImage` / `MsdfText` set `value2`/`value4` to CSS pixel size on resize. This path is why textures and MSDF are on the follow-up GPU checklist.
+`createItem` + `loadTexture` (or `createMsdfGlyphs`). The quad still tracks a DOM box; the fragment samples an atlas. aiuis `SdfImage` / `MsdfText` set `value2`/`value4` to CSS pixel size on resize. Load the atlas after the engine resolves so `loadTexture` picks the backend the page actually got.
 
-Bake the atlases with `shooosh/msdf` (Node/Bun — not the site bundle):
+Harness copies: [`examples/msdf-text.ts`](../examples/msdf-text.ts), [`examples/sdf-icons.ts`](../examples/sdf-icons.ts). Bake the atlases with `shooosh/msdf` (Node/Bun — not the site bundle):
 
 ```shell
 pnpm add -D sharp msdf-bmfont-xml
-pnpm msdf -- fonts/Inter.ttf icons/logo.svg --out public/msdf
+pnpm msdf -- fonts/Inter.ttf examples/assets/icons --out public/msdf
 ```
 
 Fonts default to `fieldType: "sdf"` (hairline faces want `fontSize: 256`). Icons: SVG raster 1024 / spread 64; PNG spread 8. See [msdf.md](./msdf.md).

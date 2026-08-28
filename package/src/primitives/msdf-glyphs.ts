@@ -1,11 +1,13 @@
 /**
- * createMsdfGlyphs — sample a baked font atlas. WebGL2 only today.
+ * createMsdfGlyphs — sample a baked font atlas. Runs on both backends.
  *
  * How to use:
  *   1. Bake with `shooosh/msdf` (`generateFontAtlas` / `pnpm msdf`)
  *   2. loadTexture(atlas.png) + parse the bmfont JSON
  *   3. createMsdfGlyphs({ texture, glyphData, distanceRange, … })
  *
+ * WebGPU draws through gpu-msdf-glyphs.ts (loaded on the first webgpu frame);
+ * load the atlas after the engine starts so the handle matches the backend.
  * Atlas encoding: 0.5 at the edge, > 0.5 inside. Do not import shooosh/msdf
  * from this file (Node/Bun only).
  *
@@ -16,6 +18,7 @@ import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import { getElementClipData } from "./item.utils";
 import { compileProgramAsync, type AsyncProgram } from "../shaders/compile";
 import type { TextureLoaderResult } from "../loaders/texture-loader";
+import { createLazyGpuFactory, createPendingAttachQueue } from "./pending-attach";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -36,6 +39,11 @@ export type MsdfGlyphsHandle = {
   setUni(next: Partial<{ value1: number; value2: number; value3: number; value4: number }>): void;
   destroy(): void;
 };
+
+const ensureGpuGlyphsFactory = createLazyGpuFactory({
+  label: "glyph",
+  load: () => import("./gpu-msdf-glyphs").then((m) => m.createGpuMsdfGlyphsRenderer),
+});
 
 // ─── Shared program per GL context ───────────────────────────────────────────
 
@@ -350,7 +358,6 @@ function createMsdfGlyphsRenderer(
 // ─── Public factory ───────────────────────────────────────────────────────────
 
 type MsdfGlyphsManager = {
-  pending: Set<MsdfGlyphsManager>;
   element: HTMLElement;
   options: MsdfGlyphsOptions;
   renderer: MsdfGlyphsRenderer | null;
@@ -361,30 +368,9 @@ type MsdfGlyphsManager = {
   pendingGlyphData: { data: Float32Array; count: number } | null;
 };
 
-// Static pending set shared across all instances (mirrors ItemManager pattern)
-const pendingManagers = new Set<MsdfGlyphsManager>();
-let pendingRafId = 0;
-
-function ensurePendingLoop() {
-  if (pendingRafId) return;
-
-  const step = () => {
-    pendingRafId = 0;
-    if (pendingManagers.size === 0) return;
-
-    const engine = getDefaultEngine();
-    if (!engine) {
-      pendingRafId = window.requestAnimationFrame(step);
-      return;
-    }
-
-    const nowPending = Array.from(pendingManagers);
-    pendingManagers.clear();
-    nowPending.forEach((mgr) => attachManager(mgr));
-  };
-
-  pendingRafId = window.requestAnimationFrame(step);
-}
+const pendingManagers = createPendingAttachQueue<MsdfGlyphsManager>((mgr) => {
+  attachManager(mgr);
+});
 
 function attachManager(mgr: MsdfGlyphsManager) {
   if (mgr.destroyed || mgr.unsubscribeRender) return;
@@ -396,8 +382,15 @@ function attachManager(mgr: MsdfGlyphsManager) {
       if (mgr.canvas !== frame.canvas) return;
 
       if (!mgr.renderer) {
-        if (!frame.gl) return;
-        mgr.renderer = createMsdfGlyphsRenderer(mgr.element, frame, mgr.options);
+        if (frame.backend === "webgpu") {
+          const createGpuRenderer = ensureGpuGlyphsFactory();
+          if (!createGpuRenderer) return;
+          mgr.renderer = createGpuRenderer(mgr.element, mgr.options);
+        } else if (frame.gl) {
+          mgr.renderer = createMsdfGlyphsRenderer(mgr.element, frame, mgr.options);
+        } else {
+          return;
+        }
         // Apply any queued updates that arrived before the renderer existed
         if (Object.keys(mgr.pendingUni).length > 0) {
           mgr.renderer.setUni(mgr.pendingUni);
@@ -420,7 +413,6 @@ export function createMsdfGlyphs(
   options: MsdfGlyphsOptions,
 ): MsdfGlyphsHandle {
   const mgr: MsdfGlyphsManager = {
-    pending: pendingManagers,
     element,
     options,
     renderer: null,
@@ -436,8 +428,7 @@ export function createMsdfGlyphs(
   if (engine) {
     attachManager(mgr);
   } else {
-    pendingManagers.add(mgr);
-    ensurePendingLoop();
+    pendingManagers.enqueue(mgr);
   }
 
   return {
@@ -469,7 +460,7 @@ export function createMsdfGlyphs(
       mgr.renderer?.destroy();
       mgr.renderer = null;
       mgr.canvas = null;
-      pendingManagers.delete(mgr);
+      pendingManagers.dequeue(mgr);
     },
   };
 }

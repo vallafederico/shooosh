@@ -1,7 +1,7 @@
 /**
  * Harness chrome around an example's own `run`.
  *
- * The example file is the real usage (createScene / createItem / effects).
+ * The example file is the real usage (createScene / createItem / createPostProcessor).
  * This file only adds a caption, a canvas or card rack, and backend callbacks.
  */
 
@@ -37,6 +37,65 @@ export function mountExample(
     const wrap = document.createElement("div")
     wrap.className = "cards"
     wrap.innerHTML = `<div class="card" data-card></div><div class="card" data-card></div>`
+    stage.append(wrap)
+    const handle = spec.run(wrap, runOptions)
+    void handle.ready?.then((backend) => options.onBackend?.(backend ?? null))
+    return () => handle.destroy()
+  }
+
+  if (spec.kind === "scroll-items") {
+    stage.classList.add("scroll-demo")
+    const wrap = document.createElement("div")
+    wrap.className = "scroll-stack"
+    wrap.innerHTML = Array.from({ length: 5 }, (_, i) => {
+      const label = ["Hero", "Feature", "Detail", "Quote", "Close"][i]
+      return `<section class="scroll-block"><p class="scroll-label">${label}</p><div class="card scroll-card" data-card></div></section>`
+    }).join("")
+    stage.append(wrap)
+    const handle = spec.run(wrap, runOptions)
+    void handle.ready?.then((backend) => options.onBackend?.(backend ?? null))
+    return () => {
+      stage.classList.remove("scroll-demo")
+      handle.destroy()
+    }
+  }
+
+  if (spec.kind === "scroll-sections") {
+    stage.classList.add("scroll-demo")
+    const wrap = document.createElement("div")
+    wrap.className = "scroll-stack scroll-stack--sections"
+    wrap.innerHTML = ["Hero band", "Mid band", "Lower band", "Footer band"]
+      .map(
+        (label) =>
+          `<section class="scroll-section" data-plane><p class="scroll-label">${label}</p></section>`,
+      )
+      .join("")
+    stage.append(wrap)
+    const handle = spec.run(wrap, runOptions)
+    void handle.ready?.then((backend) => options.onBackend?.(backend ?? null))
+    return () => {
+      stage.classList.remove("scroll-demo")
+      handle.destroy()
+    }
+  }
+
+  if (spec.kind === "sdf-icons") {
+    const wrap = document.createElement("div")
+    wrap.className = "cards cards--icons"
+    wrap.innerHTML =
+      `<div class="card card--icon" data-icon></div>` +
+      `<div class="card card--icon" data-icon></div>` +
+      `<div class="card card--icon" data-icon></div>`
+    stage.append(wrap)
+    const handle = spec.run(wrap, runOptions)
+    void handle.ready?.then((backend) => options.onBackend?.(backend ?? null))
+    return () => handle.destroy()
+  }
+
+  if (spec.kind === "msdf-text") {
+    const wrap = document.createElement("div")
+    wrap.className = "msdf-stage"
+    wrap.innerHTML = `<div class="msdf-box" data-msdf></div>`
     stage.append(wrap)
     const handle = spec.run(wrap, runOptions)
     void handle.ready?.then((backend) => options.onBackend?.(backend ?? null))

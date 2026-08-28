@@ -13,6 +13,8 @@
  * `vUv` is top-origin on the **element**, not the page.
  *
  * Docs: docs/site-patterns.md · skill shooosh-item
+ *
+ * With a texture, sample `fitUv(vUv)` for CSS-like cover/contain (value5–8).
  */
 
 import { ItemManager, type ItemOptions } from "./item";

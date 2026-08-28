@@ -5,6 +5,11 @@
  * Browser entries: package/index.ts, package/global.ts.
  * Node entry: package/msdf/index.ts (external: sharp, msdf-bmfont-xml).
  * Do not bundle msdf into the IIFE / site build.
+ *
+ * The ESM build code-splits: `dist/esm.js` is the entry, backend-specific code
+ * (`gpu-*`, `webgpu-engine`, post backends, texture upload) lands in
+ * `dist/chunks/` and is fetched only by the backend the browser picked.
+ * CJS and IIFE stay single-file — they inline every dynamic import.
  */
 
 import type { BuildConfig } from "bun"
@@ -26,7 +31,12 @@ async function run() {
       build({
         ...option,
         format: "esm",
-        naming: "[dir]/esm.js",
+        splitting: true,
+        naming: {
+          entry: "[dir]/esm.js",
+          chunk: "chunks/[name]-[hash].[ext]",
+          asset: "chunks/[name]-[hash].[ext]",
+        },
       }),
       build({
         ...option,

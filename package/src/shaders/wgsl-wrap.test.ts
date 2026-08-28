@@ -1,8 +1,10 @@
 import { expect, test } from "bun:test"
 import {
+  defaultTextureWgslFragment,
   defaultWgslFragment,
   isGlsl300,
   resolveWgslFragment,
+  resolveWgslModule,
   wrapWgslFragment,
 } from "./wgsl-wrap"
 
@@ -41,4 +43,36 @@ test("resolveWgslFragment falls back when given GLSL", () => {
 
 test("default debug fragment mentions vUv", () => {
   expect(defaultWgslFragment(true)).toContain("vUv")
+})
+
+test("injects texture bindings only when the fragment samples uTexture", () => {
+  const sampling = resolveWgslModule({
+    fragment: `fn fsMain() -> vec4f { return textureSample(uTexture, uSampler, vUv); }`,
+    hasTexture: true,
+  })
+  expect(sampling.usesTexture).toBe(true)
+  expect(sampling.code).toContain("@binding(1) var uSampler: sampler")
+  expect(sampling.code).toContain("@binding(2) var uTexture: texture_2d<f32>")
+  expect(sampling.code).toContain("fn fitUv(uv: vec2f)")
+
+  const ignoring = resolveWgslModule({
+    fragment: `fn fsMain() -> vec4f { return vec4f(vUv, 0.0, 1.0); }`,
+    hasTexture: true,
+  })
+  expect(ignoring.usesTexture).toBe(false)
+  expect(ignoring.code).not.toContain("var uTexture")
+  expect(ignoring.code).not.toContain("fn fitUv")
+})
+
+test("texture default fragment samples through the injected bindings", () => {
+  expect(defaultTextureWgslFragment()).toContain("textureSample(uTexture, uSampler")
+  const resolved = resolveWgslModule({ hasTexture: true })
+  expect(resolved.usesTexture).toBe(true)
+  expect(resolved.code).toContain("var uTexture")
+})
+
+test("no texture bindings without a texture", () => {
+  const resolved = resolveWgslModule({ hasTexture: false })
+  expect(resolved.usesTexture).toBe(false)
+  expect(resolved.code).not.toContain("var uTexture")
 })

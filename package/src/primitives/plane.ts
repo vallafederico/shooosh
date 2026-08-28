@@ -9,15 +9,15 @@
  */
 
 import { getDefaultEngine, type EngineFrame } from "../engine/engine";
-import { createGpuFullscreenPlaneRenderer } from "./gpu-plane";
 import {
   ensureWatchableUni,
   type UniValues,
   type UniWatchController,
 } from "../engine/uni";
-import { resolveTextureUvTransform, type TextureFitMode } from "../loaders/texture-loader";
+import { resolveTextureUvTransform, textureFitToUni, type TextureFitMode } from "../loaders/texture-loader";
 import { convertWgslFragmentToGlsl } from "../shaders/wgsl-compat";
 import { compileProgramAsync } from "../shaders/compile";
+import { createLazyGpuFactory } from "./pending-attach";
 
 export type FullscreenPlaneGeometry = {
   vertices: Float32Array;
@@ -33,10 +33,11 @@ export type FullscreenPlaneRenderFrame = {
   gl: WebGL2RenderingContext;
 };
 
+/** loadTexture() result, kept structural so both backends' handles fit. */
 export type FullscreenPlaneTexture = {
   view?: unknown;
   sampler?: unknown | null;
-  texture?: { createView: () => unknown };
+  texture?: { backend?: string; createView?: () => unknown } | null;
   width: number;
   height: number;
   aspect: number;
@@ -201,6 +202,10 @@ uniform vec4 uUni[4];
 uniform sampler2D uTexture;
 out vec4 outColor;
 
+vec2 fitUv(vec2 uv) {
+  return uv * uUni[1].xy + uUni[1].zw;
+}
+
 float hash21(vec2 p) {
   vec2 q = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
   return fract(sin(q.x + q.y) * 43758.5453);
@@ -219,7 +224,7 @@ float valueNoise(vec2 p) {
 
 void main() {
   float time = uUni[0].w;
-  vec2 uv = vUv * uUni[1].xy + uUni[1].zw;
+  vec2 uv = fitUv(vUv);
   vec2 noiseUv = uv * 9.0 + vec2(time * 0.35, time * 0.22);
   float n = valueNoise(noiseUv);
   float offset = (n - 0.5) * 0.035;
@@ -341,12 +346,7 @@ export function createFullscreenPlaneRenderer(
           targetAspect,
           options.textureFit ?? "cover",
         );
-        uniWatch.set({
-          value5: uvTransform.scaleX,
-          value6: uvTransform.scaleY,
-          value7: uvTransform.offsetX,
-          value8: uvTransform.offsetY,
-        });
+        uniWatch.set(textureFitToUni(uvTransform));
       }
 
       gl.disable(gl.DEPTH_TEST);
@@ -381,6 +381,11 @@ export function createFullscreenPlaneRenderer(
   } satisfies FullscreenPlaneRenderer;
 }
 
+const ensureGpuPlaneFactory = createLazyGpuFactory({
+  label: "plane",
+  load: () => import("./gpu-plane").then((m) => m.createGpuFullscreenPlaneRenderer),
+});
+
 export function initFullscreenPlane(
   options: FullscreenPlaneInitOptions = {},
 ): FullscreenPlaneController {
@@ -402,7 +407,9 @@ export function initFullscreenPlane(
   const renderFromFrame = (frame: EngineFrame) => {
     if (!renderer) {
       if (frame.backend === "webgpu") {
-        renderer = createGpuFullscreenPlaneRenderer(config, uni);
+        const createGpuRenderer = ensureGpuPlaneFactory();
+        if (!createGpuRenderer) return;
+        renderer = createGpuRenderer(config, uni);
       } else if (frame.gl) {
         renderer = createFullscreenPlaneRenderer(
           { canvas: frame.canvas, gl: frame.gl },

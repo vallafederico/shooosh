@@ -5,7 +5,7 @@
  * Site code: skip `setUni` once values have snapped, or the page never idles
  * (aiuis MouseDistortion does this).
  *
- * Dirty marks: setUni, scroll, pointer, requestFrame.
+ * Dirty marks: setUni, setTransform, scroll, pointer, requestFrame.
  *
  * Docs: docs/site-patterns.md
  */

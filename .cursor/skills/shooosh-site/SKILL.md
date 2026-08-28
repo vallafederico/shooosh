@@ -37,4 +37,4 @@ await scene.init()
 
 ## Next
 
-Copy a setup: skill `shooosh-examples` / [`examples/`](../../../examples/README.md). DOM quads: skill `shooosh-item`. Custom magnify/grain: skill `shooosh-post` (WebGL2). Shader language ports: `wgsl-to-glsl` / `glsl-to-wgsl`.
+Copy a setup: skill `shooosh-examples` / [`examples/`](../../../examples/README.md). DOM quads: skill `shooosh-item`. Post: skill `shooosh-post` (`createPostProcessor` + GLSL/WGSL `applyEffect`). WebGPU sims: `createCompute` + example `fluid-sim` / `fluid-shaders`. Shader language ports: `wgsl-to-glsl` / `glsl-to-wgsl`.

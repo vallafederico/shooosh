@@ -1,10 +1,11 @@
 /**
- * createParticles — clip-space dots. WebGL2 only today.
+ * createParticles — clip-space dots. Runs on both backends.
  *
  * How to use:
  *   createParticles({ positions, size, color, layer })
  * `positions` is `[x,y,…]` in clip space. Recreate on resize if count changes;
  * `setPositions` on scroll is cheaper than destroy/create.
+ * WebGL2 draws gl.POINTS; WebGPU draws instanced quads with the same falloff.
  *
  * Docs: docs/site-patterns.md
  */

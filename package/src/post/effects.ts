@@ -1,62 +1,43 @@
 /**
- * effects.* presets for createScene({ post }) / createPostProcessor.
+ * effects.custom — thin sugar for createScene({ post }). Prefer createPostProcessor.
  *
- * How to use:
- *   post: [effects.bloom(), effects.bw(), effects.noise(), effects.custom({ fragment })]
+ * How to use (sugar):
+ *   post: [effects.custom({
+ *     fragmentShader: bloomEffect,          // GLSL applyEffect (WebGL2)
+ *     fragmentShaderWgsl: bloomEffectWgsl,  // WGSL applyEffect (WebGPU)
+ *     uni: { value1: 0.75 },
+ *   })]
  *
- * `effects.custom` wraps applyEffect — not fsMain. WebGL2 only today.
+ * Preferred (examples):
+ *   createPostProcessor().addFragmentEffect({ fragmentShader: bloomEffect, uni: … })
  *
- * Docs: docs/site-patterns.md · skill shooosh-post
+ * `applyEffect` contract — not fsMain. Looks (bloom, grain, …) live in examples/.
+ * Ship both variants to cover both backends; a single-language effect is skipped
+ * (with a log) on the other one.
+ *
+ * Docs: docs/site-patterns.md · skill shooosh-post · examples/post-shaders.ts
  */
 
-import type { BloomEffectOptions } from "../post/bloom";
-import type { NoiseEffectOptions } from "../post/noise";
 import type { PostEffect } from "../post/processor";
 
-export type BloomEffectPreset = BloomEffectOptions & {
-  id?: string;
-  enabled?: boolean;
-};
-
-export type NoiseEffectPreset = NoiseEffectOptions & {
-  id?: string;
-  enabled?: boolean;
-};
-
-export type BlackAndWhiteEffectPreset = {
-  id?: string;
-  enabled?: boolean;
-};
-
 export type CustomFragmentEffectPreset = {
+  type?: "custom";
   id?: string;
   enabled?: boolean;
-  fragmentShader: string;
+  /** GLSL `applyEffect` — WebGL2 backend. */
+  fragmentShader?: string;
+  /** WGSL `applyEffect` — WebGPU backend. */
+  fragmentShaderWgsl?: string;
   passes?: number;
   textureUniforms?: PostEffect["textureUniforms"];
   uni?: PostEffect["uni"];
 };
 
-export type SceneEffectPreset =
-  | ({ type: "bloom" } & BloomEffectPreset)
-  | ({ type: "bw" } & BlackAndWhiteEffectPreset)
-  | ({ type: "noise" } & NoiseEffectPreset)
-  | ({ type: "custom" } & CustomFragmentEffectPreset);
+/** Only custom applyEffect presets — no named bloom/bw/noise package looks. */
+export type SceneEffectPreset = { type: "custom" } & CustomFragmentEffectPreset;
 
 export const effects = {
-  /** Bright-pass bloom with configurable intensity and threshold. */
-  bloom(options: BloomEffectPreset = {}) {
-    return { type: "bloom" as const, ...options };
-  },
-  /** Desaturate the scene toward grayscale. */
-  bw(options: BlackAndWhiteEffectPreset = {}) {
-    return { type: "bw" as const, ...options };
-  },
-  /** Film grain noise overlay. */
-  noise(options: NoiseEffectPreset = {}) {
-    return { type: "noise" as const, ...options };
-  },
-  /** Custom GLSL fragment effect using applyEffect(color, uv, resolution, uni). */
+  /** Custom GLSL fragment using applyEffect(color, uv, resolution, uni). */
   custom(options: CustomFragmentEffectPreset) {
     return { type: "custom" as const, ...options };
   },

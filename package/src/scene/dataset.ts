@@ -20,7 +20,11 @@ export type SceneOptions = {
   debug?: boolean;
   /** Optional fullscreen background plane. */
   screen?: CreateScreenOptions;
-  /** Post-processing effect presets applied in order. */
+  /**
+   * Post stack (WebGL2). Prefer createPostProcessor().addFragmentEffect with
+   * example-owned applyEffect GLSL — see examples/post-shaders.ts.
+   * effects.custom({ fragmentShader }) is thin sugar for createScene({ post }).
+   */
   post?: SceneEffectPreset[];
   /** Engine options passed to createEngine. */
   dpr?: EngineOptions["dpr"];

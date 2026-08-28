@@ -1,30 +1,27 @@
 ---
 name: shooosh-examples
-description: Copy a shooosh example that uses the library for a common shader look (plasma, noise, SDF, domain warp, mouse light, bloom, cards). Use when the user wants a common site-GPU look or a Webflow/SSR shell.
+description: Copy a shooosh example that uses the library for a common shader look. Use when the user wants a site-GPU look or a Webflow/SSR shell.
 ---
 
 # Copy an example
 
-Read [examples/README.md](../../../examples/README.md). Prefer a **file that imports shooosh** from that table, not a new scene API.
+Open [`examples/README.md`](../../../examples/README.md), pick a row, copy that file. Prefer a **file that imports shooosh** — shaders and recipes live in examples, not package presets.
 
-| Look | File | API |
-| --- | --- | --- |
-| UV gradient + stripe | `examples/gradient.ts` | `createScene` |
-| Polar hero | `examples/plasma.ts` | `createScene` |
-| Grain / fog / paper | `examples/value-noise.ts` | `createScene` |
-| Circle SDF / rings | `examples/sdf-rings.ts` | `createScene` |
-| Marble / liquid warp | `examples/domain-warp.ts` | `createScene` |
-| Graph paper | `examples/grid.ts` | `createScene` |
-| Pointer spotlight | `examples/mouse-light.ts` | `createScene` + `createMouseMonad` |
-| Pointer lens | `examples/mouse-magnify.ts` | `createScene` + `createMouseMonad` |
-| Bloom + grain | `examples/grain-bloom.ts` | `createScene` + `effects.*` (WebGL2 post) |
-| Card / DOM fill | `examples/item-fill.ts` | `acquireLayer` + `createItem` |
+Shared sources (edit these; do not invent package builtins):
 
-Mount-only (Webflow, bake, React/Solid): [examples/setups/](../../../examples/setups/README.md).
+- `examples/post-shaders.ts` — bloom / FXAA / grain `applyEffect` (GLSL + WGSL)
+- `examples/pbr-shaders.ts` — Cook–Torrance for `createObject`
+- `examples/fluid-sim.ts` + `fluid-shaders.ts` — WebGPU fluids on `createCompute`
+- `examples/make-texture.ts` — procedural canvases (`flipY: false` for env/matcap)
+- `examples/make-sdf.ts` — browser EDT demos (production: `shooosh/msdf`)
+
+Mount-only (Webflow, bake, React/Solid): [`examples/setups/`](../../../examples/setups/README.md).
 
 ## Always
 
 - Author WGSL `fn fsMain`. `value1` = seconds. Pointer UV = `value2`/`value3` (top-origin). `createMouseMonad` is −1..1 — remap with `m.x * 0.5 + 0.5`.
+- Textures: `textureSample(uTexture, uSampler, fitUv(vUv))`. Env maps: `loadTexture(src, { flipY: false })`.
 - Stay in the converter subset so WebGL2 can run it (`docs/shader-translation.md`).
-- Post custom uses `applyEffect`, not `fsMain`.
+- Post uses `applyEffect`, not `fsMain` — `createPostProcessor().addFragmentEffect({ fragmentShader, fragmentShaderWgsl })`. No named package bloom/bw/noise.
+- Fluids: `createCompute(engine)` then example `createFluidSim` + shaders. Not a package fluid API.
 - Do not import `shooosh/msdf` from the site bundle.

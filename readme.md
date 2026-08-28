@@ -46,7 +46,7 @@ This is the GitHub landing page. The [docs folder](./docs/README.md) is the docu
 | | |
 | --- | --- |
 | [Getting started](./docs/getting-started.md) | Install, two mounts, first shader |
-| [Examples](./examples/README.md) | Using the library: plasma, noise, SDF, mouse, bloom, cards |
+| [Examples](./examples/README.md) | Using the library: plasma, noise, SDF, mouse, bloom, fluid, scroll, cards |
 | [API](./docs/api.md) | What to call |
 | [Shader contract](./docs/shader-contract.md) | `fn fsMain`, `vUv`, `uUni` |
 | [Site patterns](./docs/site-patterns.md) | How we mount this on pages |
@@ -68,14 +68,14 @@ Built so a coding agent can open the repo and implement the next slice without i
 
 `createEngine` / `createScene` / `acquireLayer` probe WebGPU first, then WebGL2. `acquireLayer()` / `probeRenderer()` returning `null` is valid — leave the page readable.
 
-Post, textures, objects, particles, and MSDF sampling are **WebGL2-only** today. Bake atlases with [`shooosh/msdf`](./docs/msdf.md) (Node/Bun, not the site bundle).
+Scenes, items, textures, post, objects, particles, MSDF and the mouse trail all run on both backends. WGSL is the authored language: a `#version 300 es` fragment is a WebGL2 escape hatch and is ignored on WebGPU. Bake atlases with [`shooosh/msdf`](./docs/msdf.md) (Node/Bun, not the site bundle).
 
 ## Repo
 
 ```
 package/    published library
 docs/       documentation hub (link this from GitHub)
-examples/   copy-paste library usage (plasma, items, bloom)
+examples/   copy-paste library usage (plasma, fluid, items, post)
 harness/    vite playground  —  pnpm --filter harness dev
 web/        astro landing
 bin/        esm / cjs / IIFE / msdf CLI

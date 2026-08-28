@@ -71,63 +71,59 @@ export function createCubeGeometry(): ObjectGeometry {
   return { vertices, indices, vertexStride: 6 };
 }
 
-/** Map (u,v) in [-1,1]^2 to position and normal on rounded rect (halfW, halfH, corner radius r). */
-function roundedRect(
-  u: number,
-  v: number,
-  halfW: number,
-  halfH: number,
+/**
+ * Project a point on the sharp box surface onto a watertight rounded box.
+ * Adjacent faces share the same edge / corner points (no face gaps).
+ */
+function projectRoundedBoxVertex(
+  x: number,
+  y: number,
+  z: number,
+  hx: number,
+  hy: number,
+  hz: number,
   r: number,
-): { px: number; py: number; nx: number; ny: number } {
-  const eps = 1e-6;
-  const innerW = Math.max(0, halfW - r);
-  const innerH = Math.max(0, halfH - r);
-  const ax = Math.abs(u);
-  const ay = Math.abs(v);
-  const sx = u >= 0 ? 1 : -1;
-  const sy = v >= 0 ? 1 : -1;
-  if (ax < eps && ay < eps) {
-    return { px: 0, py: 0, nx: 0, ny: 0 };
+  faceNormal: [number, number, number],
+): { x: number; y: number; z: number; nx: number; ny: number; nz: number } {
+  if (r <= 1e-8) {
+    return {
+      x,
+      y,
+      z,
+      nx: faceNormal[0],
+      ny: faceNormal[1],
+      nz: faceNormal[2],
+    };
   }
-  const tFlat = Math.min(
-    halfW > 0 && ax > eps ? innerW / ax : 1e10,
-    halfH > 0 && ay > eps ? innerH / ay : 1e10,
-  );
-  let tCircle = 1e10;
-  if (r > 0) {
-    const A = u * u + v * v;
-    const B = u * (innerW * sx) + v * (innerH * sy);
-    const C = innerW * innerW + innerH * innerH - r * r;
-    const disc = B * B - A * C;
-    if (disc >= 0 && A > eps) {
-      tCircle = (B + Math.sqrt(disc)) / A;
-    }
+  const ix = Math.max(0, hx - r);
+  const iy = Math.max(0, hy - r);
+  const iz = Math.max(0, hz - r);
+  const cx = Math.max(-ix, Math.min(ix, x));
+  const cy = Math.max(-iy, Math.min(iy, y));
+  const cz = Math.max(-iz, Math.min(iz, z));
+  const dx = x - cx;
+  const dy = y - cy;
+  const dz = z - cz;
+  const len = Math.hypot(dx, dy, dz);
+  if (len < 1e-8) {
+    return {
+      x: cx + faceNormal[0] * r,
+      y: cy + faceNormal[1] * r,
+      z: cz + faceNormal[2] * r,
+      nx: faceNormal[0],
+      ny: faceNormal[1],
+      nz: faceNormal[2],
+    };
   }
-  const t = Math.min(tFlat, tCircle);
-  const px = t * u;
-  const py = t * v;
-  let nx: number, ny: number;
-  const onCircle =
-    r > 0 &&
-    tCircle < 1e9 &&
-    t >= tCircle - 0.001 &&
-    (px - innerW * sx) ** 2 + (py - innerH * sy) ** 2 > eps;
-  if (onCircle) {
-    const cx = innerW * sx;
-    const cy = innerH * sy;
-    const d = Math.hypot(px - cx, py - cy) || 1;
-    nx = (px - cx) / d;
-    ny = (py - cy) / d;
-  } else {
-    if (tFlat <= (halfW > 0 && ax > eps ? innerW / ax : 1e10) + 0.001) {
-      nx = sx;
-      ny = 0;
-    } else {
-      nx = 0;
-      ny = sy;
-    }
-  }
-  return { px, py, nx, ny };
+  const inv = r / len;
+  return {
+    x: cx + dx * inv,
+    y: cy + dy * inv,
+    z: cz + dz * inv,
+    nx: dx / len,
+    ny: dy / len,
+    nz: dz / len,
+  };
 }
 
 export function createRoundedBoxGeometry(params: {
@@ -137,9 +133,9 @@ export function createRoundedBoxGeometry(params: {
   rounding: number;
 }): ObjectGeometry {
   const { width, height, depth, rounding } = params;
-  const bx = width / 2;
-  const by = height / 2;
-  const bz = depth / 2;
+  const hx = width / 2;
+  const hy = height / 2;
+  const hz = depth / 2;
   const r = Math.max(0, Math.min(rounding, width / 2, height / 2, depth / 2));
   const N = 10;
   const verts: number[] = [];
@@ -147,85 +143,50 @@ export function createRoundedBoxGeometry(params: {
   let baseIndex = 0;
 
   const faces: Array<{
-    axis: "x" | "y" | "z";
-    sign: number;
-    halfA: number;
-    halfB: number;
-    posC: number;
-    outNorm: [number, number, number];
-    flatNorm: [number, number, number];
+    normal: [number, number, number];
+    /** Sharp-box corner of the face, parameterized by (i,j) in [0,N]. */
+    corner: (i: number, j: number) => [number, number, number];
+    /** Flip winding when the face normal points toward -axis. */
+    flip: boolean;
   }> = [
-    { axis: "z", sign: 1, halfA: bx, halfB: by, posC: bz, outNorm: [0, 0, 1], flatNorm: [0, 0, 1] },
-    { axis: "z", sign: -1, halfA: bx, halfB: by, posC: -bz, outNorm: [0, 0, -1], flatNorm: [0, 0, -1] },
-    { axis: "x", sign: 1, halfA: by, halfB: bz, posC: bx, outNorm: [1, 0, 0], flatNorm: [1, 0, 0] },
-    { axis: "x", sign: -1, halfA: by, halfB: bz, posC: -bx, outNorm: [-1, 0, 0], flatNorm: [-1, 0, 0] },
-    { axis: "y", sign: 1, halfA: bx, halfB: bz, posC: by, outNorm: [0, 1, 0], flatNorm: [0, 1, 0] },
-    { axis: "y", sign: -1, halfA: bx, halfB: bz, posC: -by, outNorm: [0, -1, 0], flatNorm: [0, -1, 0] },
+    {
+      normal: [0, 0, 1],
+      flip: false,
+      corner: (i, j) => [-hx + (2 * hx * i) / N, -hy + (2 * hy * j) / N, hz],
+    },
+    {
+      normal: [0, 0, -1],
+      flip: true,
+      corner: (i, j) => [-hx + (2 * hx * i) / N, -hy + (2 * hy * j) / N, -hz],
+    },
+    {
+      normal: [1, 0, 0],
+      flip: false,
+      corner: (i, j) => [hx, -hy + (2 * hy * i) / N, -hz + (2 * hz * j) / N],
+    },
+    {
+      normal: [-1, 0, 0],
+      flip: true,
+      corner: (i, j) => [-hx, -hy + (2 * hy * i) / N, -hz + (2 * hz * j) / N],
+    },
+    {
+      normal: [0, 1, 0],
+      flip: false,
+      corner: (i, j) => [-hx + (2 * hx * i) / N, hy, -hz + (2 * hz * j) / N],
+    },
+    {
+      normal: [0, -1, 0],
+      flip: true,
+      corner: (i, j) => [-hx + (2 * hx * i) / N, -hy, -hz + (2 * hz * j) / N],
+    },
   ];
 
   for (const face of faces) {
-    const { halfA, halfB, posC, outNorm, flatNorm } = face;
-    const uSign = face.axis === "z" ? 1 : face.axis === "x" ? 1 : 1;
-    const vSign = face.sign;
     for (let j = 0; j <= N; j++) {
       for (let i = 0; i <= N; i++) {
-        const u = (i / N) * 2 - 1;
-        const v = ((j / N) * 2 - 1) * vSign;
-        const { px, py, nx, ny } = roundedRect(u, v, halfA, halfB, r);
-        const onFlat =
-          Math.abs(Math.abs(nx) - 1) < 0.001 || Math.abs(Math.abs(ny) - 1) < 0.001;
-        let x: number, y: number, z: number;
-        if (face.axis === "z") {
-          x = px * uSign;
-          y = py;
-          z = posC;
-        } else if (face.axis === "x") {
-          x = posC;
-          y = px * uSign;
-          z = py;
-        } else {
-          x = px * uSign;
-          y = posC;
-          z = py;
-        }
-        if (Math.hypot(px, py) < 1e-6) {
-          verts.push(x, y, z, flatNorm[0], flatNorm[1], flatNorm[2]);
-          continue;
-        }
-        let n0: number, n1: number, n2: number;
-        if (face.axis === "z") {
-          if (onFlat) {
-            n0 = flatNorm[0];
-            n1 = flatNorm[1];
-            n2 = flatNorm[2];
-          } else {
-            n0 = nx * uSign;
-            n1 = ny;
-            n2 = 0;
-          }
-        } else if (face.axis === "x") {
-          if (onFlat) {
-            n0 = flatNorm[0];
-            n1 = flatNorm[1];
-            n2 = flatNorm[2];
-          } else {
-            n0 = 0;
-            n1 = nx * uSign;
-            n2 = ny;
-          }
-        } else {
-          if (onFlat) {
-            n0 = flatNorm[0];
-            n1 = flatNorm[1];
-            n2 = flatNorm[2];
-          } else {
-            n0 = nx * uSign;
-            n1 = 0;
-            n2 = ny;
-          }
-        }
-        const len = Math.hypot(n0, n1, n2) || 1;
-        verts.push(x, y, z, n0 / len, n1 / len, n2 / len);
+        const [sx, sy, sz] = face.corner(i, j);
+        const p = projectRoundedBoxVertex(sx, sy, sz, hx, hy, hz, r, face.normal);
+        verts.push(p.x, p.y, p.z, p.nx, p.ny, p.nz);
       }
     }
     for (let j = 0; j < N; j++) {
@@ -234,10 +195,10 @@ export function createRoundedBoxGeometry(params: {
         const b = a + 1;
         const c = a + (N + 1);
         const d = c + 1;
-        if (face.sign > 0) {
-          inds.push(a, b, d, a, d, c);
-        } else {
+        if (face.flip) {
           inds.push(a, d, b, a, c, d);
+        } else {
+          inds.push(a, b, d, a, d, c);
         }
       }
     }
@@ -420,4 +381,93 @@ export function mat4Perspective(fovRad: number, aspect: number, near: number, fa
     0, 0, (far + near) * nf, -1, //
     0, 0, 2 * far * near * nf, 0,
   ]);
+}
+
+/** Same projection with clip z in [0, 1] — WebGPU's depth range. */
+export function mat4PerspectiveZeroToOne(
+  fovRad: number,
+  aspect: number,
+  near: number,
+  far: number,
+) {
+  const f = 1 / Math.tan(fovRad / 2);
+  const nf = 1 / (near - far);
+  return new Float32Array([
+    f / aspect, 0, 0, 0, //
+    0, f, 0, 0, //
+    0, 0, far * nf, -1, //
+    0, 0, far * near * nf, 0,
+  ]);
+}
+
+const UNIT_CUBE_CORNERS: Array<[number, number, number]> = [
+  [-1, -1, -1],
+  [1, -1, -1],
+  [-1, 1, -1],
+  [1, 1, -1],
+  [-1, -1, 1],
+  [1, -1, 1],
+  [-1, 1, 1],
+  [1, 1, 1],
+];
+
+function transformPoint(m: Float32Array, x: number, y: number, z: number) {
+  return {
+    x: m[0]! * x + m[4]! * y + m[8]! * z + m[12]!,
+    y: m[1]! * x + m[5]! * y + m[9]! * z + m[13]!,
+    z: m[2]! * x + m[6]! * y + m[10]! * z + m[14]!,
+    w: m[3]! * x + m[7]! * y + m[11]! * z + m[15]!,
+  };
+}
+
+/** Conservative unit-cube frustum test. Works for both clip z ranges. */
+export function isMvpVisible(mvp: Float32Array) {
+  let outsideLeft = true;
+  let outsideRight = true;
+  let outsideBottom = true;
+  let outsideTop = true;
+  let outsideNear = true;
+  let outsideFar = true;
+
+  for (const [x, y, z] of UNIT_CUBE_CORNERS) {
+    const p = transformPoint(mvp, x, y, z);
+    outsideLeft = outsideLeft && p.x < -p.w;
+    outsideRight = outsideRight && p.x > p.w;
+    outsideBottom = outsideBottom && p.y < -p.w;
+    outsideTop = outsideTop && p.y > p.w;
+    outsideNear = outsideNear && p.z < 0;
+    outsideFar = outsideFar && p.z > p.w;
+  }
+
+  return !(
+    outsideLeft ||
+    outsideRight ||
+    outsideBottom ||
+    outsideTop ||
+    outsideNear ||
+    outsideFar
+  );
+}
+
+/** Placement for createObject(null, …) — centred in NDC, no DOM element. */
+export function getScreenObjectPlacement(
+  canvas: HTMLCanvasElement,
+  screenPlacement: { centerX?: number; centerY?: number; scale?: number } | undefined,
+): ObjectPlacement {
+  const centerX = screenPlacement?.centerX ?? 0;
+  const centerY = screenPlacement?.centerY ?? 0;
+  const baseScale =
+    (0.4 * Math.min(canvas.width, canvas.height)) /
+    Math.max(canvas.width, canvas.height);
+  const scale = (screenPlacement?.scale ?? 1) * baseScale;
+  return {
+    isVisible: true,
+    centerX,
+    centerY,
+    x: 0,
+    y: 0,
+    width: canvas.width,
+    height: canvas.height,
+    scale: Math.max(0.001, scale),
+  };
 }

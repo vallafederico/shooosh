@@ -2,10 +2,19 @@
  * WebGPU engine implementation. Not a public import.
  *
  * How to use: createEngine() loads this when probeRenderer() is `"webgpu"`.
- * Screen + item run here. Post, textures, objects, particles, MSDF do not —
- * those stay on the WebGL2 engine and warn / no-op on this path.
+ * Screen, item, object, particles, MSDF, textures, post and fluid all run here.
+ *
+ * The scene pass always carries a depth attachment (GPU_DEPTH_FORMAT) so meshes
+ * can depth-test. Every pipeline drawn in that pass must therefore declare a
+ * matching `depthStencil` — use `sceneDepthStencil()` from shaders/gpu-compile.
+ *
+ * With onPostRender subscribers the site renders into an offscreen colour
+ * texture (canvas format, so one pipeline format covers every post pass) and
+ * post presents into the canvas. Post reads device / encoder / canvas view from
+ * runWithGpuPostFrame — they never touch EnginePostFrame.
  *
  * Do not leak GPUDevice into site-facing types. Shared frame is EngineFrame.
+ * createCompute uses getGpuInternals(engine) from gpu-internals.ts.
  *
  * Docs: docs/shader-contract.md
  */
@@ -23,14 +32,27 @@ import {
   getGpuCanvasContext,
   getNavigatorGpu,
   runWithGpuFrame,
+  runWithGpuPostFrame,
+  GPU_DEPTH_FORMAT,
+  GPU_TEXTURE_USAGE,
   type GpuCanvasContext,
   type GpuDevice,
+  type GpuTexture,
+  type GpuTextureView,
 } from "./gpu-api";
+import {
+  clearGpuInternals,
+  registerGpuInternals,
+  type GpuPreRenderContext,
+} from "./gpu-internals";
 import { getDefaultEngine, setDefaultEngine } from "./engine";
 import type {
   ClearColor,
   EngineFrame,
   EngineOptions,
+  EnginePostFrame,
+  PostRenderCallback,
+  WebGpuRenderTarget,
   WebGLEngine,
 } from "./engine";
 
@@ -70,9 +92,14 @@ export async function createWebGpuEngine(
   let clearColor = baseClearColor;
   let configuredWidth = 0;
   let configuredHeight = 0;
-  let postWarned = false;
   let renderSubscriberId = 1;
   let renderSubscriberOrder = 0;
+  let preRenderSubscriberId = 1;
+  let sceneTarget: WebGpuRenderTarget | null = null;
+  let depthTexture: GpuTexture | null = null;
+  let depthView: GpuTextureView | null = null;
+  let depthWidth = 0;
+  let depthHeight = 0;
 
   type RenderSubscriberEntry = {
     id: number;
@@ -83,15 +110,94 @@ export async function createWebGpuEngine(
 
   const renderSubscribers = new Map<number, RenderSubscriberEntry>();
   let sortedRenderSubscribersCache: RenderSubscriberEntry[] | null = null;
+  const preRenderSubscribers = new Map<
+    number,
+    (ctx: GpuPreRenderContext) => void
+  >();
+  const postRenderSubscribers = new Set<PostRenderCallback>();
 
   const configureContext = (gpuContext: GpuCanvasContext, width: number, height: number) => {
     gpuContext.configure({
       device,
       format,
       alphaMode: "premultiplied",
+      // COPY_DST lets post copy the scene straight to the canvas while its
+      // pipelines are still compiling, instead of presenting nothing.
+      usage: GPU_TEXTURE_USAGE.RENDER_ATTACHMENT | GPU_TEXTURE_USAGE.COPY_DST,
     });
     configuredWidth = width;
     configuredHeight = height;
+  };
+
+  const createSceneTarget = (width: number, height: number): WebGpuRenderTarget => {
+    const texture = device.createTexture({
+      label: "shooosh-scene",
+      size: { width, height },
+      format,
+      usage:
+        GPU_TEXTURE_USAGE.RENDER_ATTACHMENT |
+        GPU_TEXTURE_USAGE.TEXTURE_BINDING |
+        GPU_TEXTURE_USAGE.COPY_SRC,
+    });
+    const view = texture.createView();
+    return {
+      backend: "webgpu",
+      texture,
+      view,
+      format,
+      width,
+      height,
+      createView() {
+        return view;
+      },
+      destroy() {
+        texture.destroy();
+      },
+    };
+  };
+
+  /**
+   * The scene pass always owns a depth buffer so createObject can depth-test
+   * without the engine having to know whether a mesh exists this frame. Flat
+   * drawables opt out per pipeline (`depthWriteEnabled: false`, compare
+   * `always`), so their layer ordering is unchanged.
+   */
+  const ensureDepthView = () => {
+    const width = Math.max(1, canvas.width);
+    const height = Math.max(1, canvas.height);
+    if (depthView && depthWidth === width && depthHeight === height) {
+      return depthView;
+    }
+    depthTexture?.destroy();
+    depthTexture = device.createTexture({
+      label: "shooosh-depth",
+      size: { width, height },
+      format: GPU_DEPTH_FORMAT,
+      usage: GPU_TEXTURE_USAGE.RENDER_ATTACHMENT,
+    });
+    depthView = depthTexture.createView();
+    depthWidth = width;
+    depthHeight = height;
+    return depthView;
+  };
+
+  const releaseDepth = () => {
+    depthTexture?.destroy();
+    depthTexture = null;
+    depthView = null;
+    depthWidth = 0;
+    depthHeight = 0;
+  };
+
+  const ensureSceneTarget = () => {
+    const width = Math.max(1, canvas.width);
+    const height = Math.max(1, canvas.height);
+    if (sceneTarget && sceneTarget.width === width && sceneTarget.height === height) {
+      return sceneTarget;
+    }
+    sceneTarget?.destroy();
+    sceneTarget = createSceneTarget(width, height);
+    return sceneTarget;
   };
 
   const resize = () => {
@@ -106,6 +212,9 @@ export async function createWebGpuEngine(
     if (didResize) {
       canvas.width = width;
       canvas.height = height;
+      sceneTarget?.destroy();
+      sceneTarget = null;
+      releaseDepth();
     }
     if (didResize || configuredWidth !== width || configuredHeight !== height) {
       configureContext(context, width, height);
@@ -124,10 +233,42 @@ export async function createWebGpuEngine(
 
   const renderAt = (now: number, delta: number) => {
     const encoder = device.createCommandEncoder({ label: "shooosh-frame" });
+
+    const preCtx: GpuPreRenderContext = {
+      device,
+      encoder,
+      canvas,
+      now,
+      delta,
+    };
+    preRenderSubscribers.forEach((callback) => {
+      try {
+        callback(preCtx);
+      } catch (error) {
+        console.warn("Pre-render callback failed, skipping:", error);
+      }
+    });
+
+    const hasPost = postRenderSubscribers.size > 0;
+    const scene = hasPost ? ensureSceneTarget() : null;
+
+    // Acquired on demand: when post is not ready to draw, nothing touches the
+    // canvas and the browser keeps presenting the previous frame.
+    let canvasTexture: ReturnType<typeof context.getCurrentTexture> | null = null;
+    let canvasView: unknown = null;
+    const getCanvasTexture = () => {
+      if (!canvasTexture) canvasTexture = context.getCurrentTexture();
+      return canvasTexture;
+    };
+    const getCanvasView = () => {
+      if (!canvasView) canvasView = getCanvasTexture().createView();
+      return canvasView;
+    };
+
     const pass = encoder.beginRenderPass({
       colorAttachments: [
         {
-          view: context.getCurrentTexture().createView(),
+          view: scene ? scene.view : getCanvasView(),
           clearValue: {
             r: clearColor.r,
             g: clearColor.g,
@@ -138,6 +279,12 @@ export async function createWebGpuEngine(
           storeOp: "store",
         },
       ],
+      depthStencilAttachment: {
+        view: ensureDepthView(),
+        depthClearValue: 1,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
     });
 
     resetCanvasRectCache();
@@ -160,6 +307,36 @@ export async function createWebGpuEngine(
     });
 
     pass.end();
+
+    if (scene) {
+      const postFrame: EnginePostFrame = {
+        canvas,
+        inputTexture: scene,
+        clearColor,
+        now,
+        delta,
+        backend: "webgpu",
+      };
+      runWithGpuPostFrame(
+        {
+          device,
+          format,
+          encoder,
+          getTargetView: getCanvasView,
+          getTargetTexture: getCanvasTexture,
+        },
+        () => {
+          postRenderSubscribers.forEach((callback) => {
+            try {
+              callback(postFrame);
+            } catch (error) {
+              console.warn("Post render callback failed:", error);
+            }
+          });
+        },
+      );
+    }
+
     device.queue.submit([encoder.finish()]);
   };
 
@@ -190,6 +367,15 @@ export async function createWebGpuEngine(
     };
   };
 
+  const subscribePreRender = (callback: (ctx: GpuPreRenderContext) => void) => {
+    const id = preRenderSubscriberId++;
+    preRenderSubscribers.set(id, callback);
+    loop.requestFrame();
+    return () => {
+      preRenderSubscribers.delete(id);
+    };
+  };
+
   const setClearColor = (nextColor: Partial<ClearColor>) => {
     clearColor = {
       r: clampColorChannel(nextColor.r ?? clearColor.r),
@@ -215,18 +401,22 @@ export async function createWebGpuEngine(
     setClearColor,
     getClearColor: () => clearColor,
     onRender: subscribeRender,
-    onPostRender: () => {
-      if (!postWarned) {
-        postWarned = true;
-        console.warn(
-          "shooosh: post-processing is not implemented on the WebGPU backend yet; onPostRender is a no-op.",
-        );
-      }
-      return () => {};
+    onPostRender: (callback) => {
+      postRenderSubscribers.add(callback);
+      loop.requestFrame();
+      return () => {
+        postRenderSubscribers.delete(callback);
+      };
     },
     destroy() {
+      clearGpuInternals(controller);
       loop.destroy();
+      sceneTarget?.destroy();
+      sceneTarget = null;
+      releaseDepth();
       renderSubscribers.clear();
+      preRenderSubscribers.clear();
+      postRenderSubscribers.clear();
       try {
         device.destroy();
       } catch {
@@ -237,6 +427,12 @@ export async function createWebGpuEngine(
       }
     },
   };
+
+  registerGpuInternals(controller, {
+    device,
+    format,
+    onPreRender: subscribePreRender,
+  });
 
   return controller;
 }

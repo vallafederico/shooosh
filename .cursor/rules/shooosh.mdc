@@ -5,11 +5,17 @@ alwaysApply: true
 
 # shooosh
 
-You are working on a WGSL-first site GPU library. WebGPU is the preferred backend; WebGL2 is the fallback. Same scene/item/layer API on both.
+You are working on a WGSL-first site GPU library. WebGPU is the preferred backend; WebGL2 is the fallback. Same `createScene` / `createItem` / `acquireLayer` API on both. **No magic** — looks live in `examples/` as copyable shaders; the package is composition primitives only.
 
-Before implementing, read `llms.txt` and `agents.md`, then the next `docs/agent-tasks/` file with `status: todo`. Complete one task per run.
+## Path
 
-- Author shaders in WGSL (`fsMain`). GLSL 300 es is an escape hatch only. When converting shaders, read `.cursor/skills/wgsl-to-glsl` or `.cursor/skills/glsl-to-wgsl` and `docs/shader-translation.md`. Site mounts/items/post: `docs/site-patterns.md` and the `shooosh-site` / `shooosh-item` / `shooosh-post` skills. Copy a setup from `examples/` (skill `shooosh-examples`) instead of inventing a mount.
+- **Ship a site look / demo:** read `llms.txt` → `examples/README.md` → copy one `examples/*.ts` (skill `shooosh-examples`). Do not invent mounts or named post presets.
+- **Change the package / engine:** read `llms.txt` → `agents.md` → next `docs/agent-tasks/` with `status: todo`. One task per run.
+
+## Rules
+
+- Author shaders in WGSL (`fsMain`). GLSL 300 es is an escape hatch only. Converters: skills `wgsl-to-glsl` / `glsl-to-wgsl` + `docs/shader-translation.md`.
+- Site mounts/items/post: `docs/site-patterns.md` and skills `shooosh-site` / `shooosh-item` / `shooosh-post`. Post = `addFragmentEffect` with author GLSL+WGSL from `examples/post-shaders.ts` — no `addBloomEffect`.
 - Source files carry a top “How to use” header. Read that before adding a second API.
 - Do not leak `WebGL2RenderingContext` into new public types.
 - Shader compile failure: keep last good program, show the log, never blank the page.

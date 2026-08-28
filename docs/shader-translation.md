@@ -36,6 +36,8 @@ const wgslAgain = convertGlslFragmentToWgsl(glsl)
 | `let x =` / `var x =` | `float x =` (type inferred on the way to GLSL) |
 | `fn foo(p: vec2f) -> f32` | `float foo(vec2 p)` |
 | `atan2(y, x)` | `atan(y, x)` (two-arg) |
+| `textureSample(tex, samp, uv)` | `texture(tex, uv)` (+ `uniform sampler2D`) |
+| reserved GLSL names (`sample`, `input`, …) | prefixed `_sample`, `_input`, … |
 | `mix` / `sin` / `smoothstep` / `length` | same names |
 | engine-wrapped `@vertex vsMain` | default `aPosition` / `aUv` vertex (not authored) |
 
@@ -89,7 +91,7 @@ The converters are string rewrites, not a compiler. They handle `fsMain` / `void
 
 They will not faithfully translate:
 
-- Samplers / `texture()` / `textureSample` (textures are WebGL2-only today)
+- Samplers / `texture()` / `textureSample` (textures work on both backends, but the converters do not rewrite sampling calls — hand-port those)
 - Custom vertex stage, storage buffers, compute
 - `#include`, WGSL `import` (task 02)
 - GLSL preprocessor beyond `#version 300 es`

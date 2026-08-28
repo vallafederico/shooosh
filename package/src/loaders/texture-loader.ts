@@ -4,27 +4,21 @@
  * How to use:
  *   const tex = await loadTexture(url, { fit: "cover" })
  *   createItem(el, { texture: tex, shaders: { fragment: wgsl } })
+ *   // In fsMain: textureSample(uTexture, uSampler, fitUv(vUv))
+ *   // Env/matcap: loadTexture(canvas, { flipY: false }) so GL matches WebGPU
+ *   // Or manually: applyTextureUv / textureFitToUni + setUni({ value5…8 })
  *
- * WebGL2 only today. Needs a default engine (createScene or acquireLayer).
+ * Runs on both backends. The upload itself lives in a backend chunk
+ * (texture-upload-webgl2 / texture-upload-webgpu), loaded on demand.
+ * Needs a default engine (createScene or acquireLayer).
+ * `handle.texture` is opaque — narrow on `handle.backend` before using it.
  * Bake SDF icons with shooosh/msdf, then load the PNG here.
  *
  * Docs: docs/msdf.md · docs/api.md
  */
 
-import { getDefaultEngine, initEngine } from "../engine/engine";
-
-type WebglTextureHandle = {
-  texture: WebGLTexture;
-  gl: WebGL2RenderingContext;
-  createView: () => unknown;
-  destroy: () => void;
-  width?: number;
-  height?: number;
-};
-
-type WebglDeviceHandle = {
-  gl: WebGL2RenderingContext;
-};
+import { getDefaultEngine } from "../engine/engine";
+import type { RendererKind } from "../engine/capabilities";
 
 export type TextureSource =
   | string
@@ -33,8 +27,50 @@ export type TextureSource =
   | HTMLCanvasElement
   | OffscreenCanvas;
 
+/**
+ * Uploaded texture. `texture` is a WebGLTexture or a GPUTexture — check
+ * `backend` first. `gl` exists on the WebGL2 path only.
+ */
+export type TextureHandle = {
+  backend: RendererKind;
+  texture: unknown;
+  createView: () => unknown;
+  destroy: () => void;
+  width: number;
+  height: number;
+  gl?: WebGL2RenderingContext;
+};
+
+/** What a backend upload module returns to the loader. */
+export type TextureUpload = {
+  texture: TextureHandle;
+  view: unknown;
+  sampler: unknown | null;
+};
+
+/** Backend-agnostic subset of TextureLoaderOptions an upload module needs. */
+export type TextureUploadOptions = {
+  label?: string;
+  format?: string;
+  usage?: number;
+  createSampler?: boolean;
+  /**
+   * Vertical flip on upload. Defaults: WebGL2 `true` (so top-origin `vUv`
+   * matches image top), WebGPU `false`. For env/matcap maps used with
+   * `dir.xy * 0.5 + 0.5`, pass `{ flipY: false }` on both backends.
+   */
+  flipY?: boolean;
+  sampler?: {
+    magFilter?: "linear" | "nearest";
+    minFilter?: "linear" | "nearest";
+    mipmapFilter?: "linear" | "nearest";
+    addressModeU?: "clamp-to-edge" | "repeat" | "mirror-repeat";
+    addressModeV?: "clamp-to-edge" | "repeat" | "mirror-repeat";
+  };
+};
+
 export type TextureLoaderResult = {
-  texture: WebglTextureHandle;
+  texture: TextureHandle;
   view: unknown;
   sampler: unknown | null;
   width: number;
@@ -56,21 +92,10 @@ export type TextureLoaderResult = {
 
 export type TextureFitMode = "cover" | "contain" | "stretch";
 
-export type TextureLoaderOptions = {
-  label?: string;
-  format?: string;
-  usage?: number;
+export type TextureLoaderOptions = TextureUploadOptions & {
   waitForEngine?: boolean;
   waitTimeoutMs?: number;
-  createSampler?: boolean;
   fit?: TextureFitMode;
-  sampler?: {
-    magFilter?: "linear" | "nearest";
-    minFilter?: "linear" | "nearest";
-    mipmapFilter?: "linear" | "nearest";
-    addressModeU?: "clamp-to-edge" | "repeat" | "mirror-repeat";
-    addressModeV?: "clamp-to-edge" | "repeat" | "mirror-repeat";
-  };
 };
 
 export type TextureUvTransform = {
@@ -160,6 +185,30 @@ export function resolveTextureUvTransform(
   return { scaleX: 1, scaleY, offsetX: 0, offsetY: (1 - scaleY) * 0.5 };
 }
 
+/** Apply a cover/contain transform to a UV (same math as shader `fitUv`). */
+export function applyTextureUv(
+  uv: { x: number; y: number },
+  transform: TextureUvTransform,
+) {
+  return {
+    x: uv.x * transform.scaleX + transform.offsetX,
+    y: uv.y * transform.scaleY + transform.offsetY,
+  };
+}
+
+/**
+ * Pack a fit transform into value5–8 (`uUni.values1` / `uUni[1]`).
+ * Planes and items write these automatically when a texture is bound.
+ */
+export function textureFitToUni(transform: TextureUvTransform) {
+  return {
+    value5: transform.scaleX,
+    value6: transform.scaleY,
+    value7: transform.offsetX,
+    value8: transform.offsetY,
+  };
+}
+
 export function resolvePlaneSizeFromTexture(
   textureWidth: number,
   textureHeight: number,
@@ -197,73 +246,26 @@ export class TextureLoader {
       );
     }
 
-    const gl = webglController.gl;
-    if (!gl) {
-      throw new Error(
-        "loadTexture requires the WebGL2 backend. Texture upload is not implemented on WebGPU yet.",
-      );
-    }
     const bitmap = await toImageBitmap(source);
     const width = Math.max(1, bitmap.width);
     const height = Math.max(1, bitmap.height);
-    const glTexture = gl.createTexture();
-    if (!glTexture) {
-      throw new Error("Unable to create WebGL texture.");
-    }
-    gl.bindTexture(gl.TEXTURE_2D, glTexture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
-    // Use RGB8 when the caller explicitly requests it (e.g. MSDF atlas — only .rgb is read).
-    if (options.format === "rgb") {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB8, gl.RGB, gl.UNSIGNED_BYTE, bitmap);
+
+    let upload: TextureUpload;
+    if (webglController.backend === "webgpu") {
+      const { uploadWebGpuTexture } = await import("./texture-upload-webgpu");
+      upload = uploadWebGpuTexture(webglController, bitmap, options);
     } else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+      const gl = webglController.gl;
+      if (!gl) {
+        throw new Error(
+          "loadTexture needs an initialized backend. Call createScene() or initEngine() first.",
+        );
+      }
+      const { uploadWebGl2Texture } = await import("./texture-upload-webgl2");
+      upload = uploadWebGl2Texture(gl, bitmap, options);
     }
 
-    const mapFilter = (filter: "linear" | "nearest" | undefined) =>
-      filter === "nearest" ? gl.NEAREST : gl.LINEAR;
-    const mapWrap = (
-      wrap: "clamp-to-edge" | "repeat" | "mirror-repeat" | undefined,
-    ) => {
-      if (wrap === "repeat") return gl.REPEAT;
-      if (wrap === "mirror-repeat") return gl.MIRRORED_REPEAT;
-      return gl.CLAMP_TO_EDGE;
-    };
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_MIN_FILTER,
-      mapFilter(options.sampler?.minFilter),
-    );
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_MAG_FILTER,
-      mapFilter(options.sampler?.magFilter),
-    );
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_WRAP_S,
-      mapWrap(options.sampler?.addressModeU),
-    );
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_WRAP_T,
-      mapWrap(options.sampler?.addressModeV),
-    );
-    gl.bindTexture(gl.TEXTURE_2D, null);
-
-    const texture: WebglTextureHandle = {
-      texture: glTexture,
-      gl,
-      width,
-      height,
-      createView() {
-        return this;
-      },
-      destroy() {
-        this.gl.deleteTexture(this.texture);
-      },
-    };
-    const view = texture;
-    const sampler = (options.createSampler ?? true) ? {} : null;
+    const { texture, view, sampler } = upload;
     const aspect = width / Math.max(1, height);
     const fit = options.fit ?? "cover";
 

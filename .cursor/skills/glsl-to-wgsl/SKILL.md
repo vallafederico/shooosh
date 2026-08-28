@@ -28,7 +28,7 @@ If the function throws or the shader is outside the subset, translate by hand us
 - `vec4`/`vec3`/`vec2`/`float` → `vec4f`/`vec3f`/`vec2f`/`f32`.
 - Two-arg `atan(y, x)` → `atan2(y, x)`. One-arg `atan(x)` stays `atan`.
 - Reassigned locals must be `var`, not `let`.
-- `texture()` / samplers are WebGL2-only today — do not silently invent `textureSample`.
+- `texture(uTexture, uv)` becomes `textureSample(uTexture, uSampler, uv)` — the converters do not rewrite it, so port sampling calls by hand.
 - New site shaders should be **stored as WGSL**. Do not leave GLSL as the source of truth if WebGPU should run it.
 
 ## After

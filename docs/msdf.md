@@ -20,7 +20,9 @@ pnpm msdf -- fonts/Inter.ttf icons/ --out public/msdf
 npx shooosh-msdf fonts/Inter.ttf icons/ --out public/msdf
 ```
 
-Runtime sampling (`createMsdfGlyphs`, `loadTexture`) is still **WebGL2-only**. This page is the asset pipeline.
+Runtime sampling (`createMsdfGlyphs`, `loadTexture`) runs on both backends — load the atlas after the engine resolves so the handle matches. This page is the asset pipeline.
+
+Harness demos (procedural atlases, no bake required): [`examples/msdf-text.ts`](../examples/msdf-text.ts), [`examples/sdf-icons.ts`](../examples/sdf-icons.ts). Sample SVGs to bake: [`examples/assets/icons/`](../examples/assets/icons/).
 
 ## What to generate
 
@@ -86,4 +88,4 @@ await generateMsdf(["fonts", "icons"], { outDir: "public/msdf" })
 
 - Import `shooosh/msdf` from `package/index.ts` or the IIFE / site bundle
 - Default new faces to `fieldType: "msdf"`
-- Expect this pipeline on WebGPU until the glyph / texture port lands
+- Expect generators in the browser — bake on Node/Bun, sample at runtime

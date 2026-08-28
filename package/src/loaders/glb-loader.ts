@@ -1,8 +1,8 @@
 /**
  * loadGlb — mesh geometry only (positions, normals, optional UVs).
  *
- * How to use: pass the result to createObject. Ignores lights, cameras,
- * materials. WebGL2 only today.
+ * How to use: pass the result to createObject (either backend). Ignores lights,
+ * cameras, materials.
  *
  * Docs: docs/api.md
  */

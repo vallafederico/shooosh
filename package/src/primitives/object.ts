@@ -1,12 +1,14 @@
 /**
- * ObjectManager — mesh draw (WebGL2). Not a public import.
+ * ObjectManager — mesh draw on both backends. Not a public import.
  *
- * How to use: createObject() wraps this. Needs a default WebGL2 engine.
+ * How to use: createObject() wraps this. WebGPU goes through gpu-object.ts
+ * (loaded on the first webgpu frame) and depth-tests against the engine's scene
+ * depth buffer; WebGL2 keeps the GLSL path below.
  *
  * Docs: docs/api.md
  */
 
-import { getDefaultEngine, resolveEngine, type EngineFrame } from "../engine/engine";
+import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import {
   ensureWatchableUni,
   type UniWatchController,
@@ -15,6 +17,8 @@ import {
 import {
   createObjectGeometry,
   getElementObjectPlacement,
+  getScreenObjectPlacement,
+  isMvpVisible,
   mat4Multiply,
   mat4Perspective,
   mat4RotationX,
@@ -22,11 +26,20 @@ import {
   mat4RotationZ,
   mat4Scale,
   mat4Translation,
-  type ObjectPlacement,
   type ObjectShape,
 } from "./object.utils";
 import { convertWgslFragmentToGlsl } from "../shaders/wgsl-compat";
 import { compileProgramAsync } from "../shaders/compile";
+import { createLazyGpuFactory, createPendingAttachQueue } from "./pending-attach";
+
+const ensureGpuObjectFactory = createLazyGpuFactory({
+  label: "object",
+  load: () => import("./gpu-object").then((m) => m.createGpuObjectRenderer),
+});
+
+const pendingObjects = createPendingAttachQueue<ObjectManager>((object) => {
+  object.attachFromPending();
+});
 
 type ObjectRenderer = {
   render: (frame: EngineFrame) => boolean;
@@ -41,15 +54,37 @@ export type ObjectShaders = {
   fragmentGlsl?: string;
 };
 
+/**
+ * Env/mask maps: pass `loadTexture(...).texture` (TextureHandle) or the full
+ * loader result. WebGL2 matches on `gl`; WebGPU uses `createView()`.
+ */
 type ObjectEnvMapHandle = {
-  texture: WebGLTexture;
-  gl: WebGL2RenderingContext;
+  texture?: unknown;
+  gl?: WebGL2RenderingContext;
+  createView?: () => unknown;
+  backend?: string;
 };
 
-type ObjectMaskMapHandle = {
-  texture: WebGLTexture;
-  gl: WebGL2RenderingContext;
-};
+type ObjectMaskMapHandle = ObjectEnvMapHandle;
+
+/** Resolve a WebGL2 texture from a TextureHandle or nested loader result. */
+function resolveGlMapTexture(
+  handle: ObjectEnvMapHandle | null | undefined,
+  gl: WebGL2RenderingContext,
+  fallback: WebGLTexture,
+): WebGLTexture {
+  if (!handle) return fallback;
+  const inner =
+    typeof handle.createView === "function"
+      ? handle
+      : ((handle.texture as ObjectEnvMapHandle | undefined) ?? null);
+  if (!inner || inner.gl !== gl) return fallback;
+  const tex = inner.texture;
+  if (!tex || typeof (tex as { createView?: unknown }).createView === "function") {
+    return fallback;
+  }
+  return tex as WebGLTexture;
+}
 
 /** Explicit placement when not using a DOM element. NDC: centerX/centerY in [-1, 1]. scale: multiplier of default size (1 = default, 2 = twice as big). */
 export type ScreenPlacement = {
@@ -87,58 +122,7 @@ export type ObjectOptions = {
   maskMap?: ObjectMaskMapHandle | null;
 };
 
-const UNIT_CUBE_CORNERS: Array<[number, number, number]> = [
-  [-1, -1, -1],
-  [1, -1, -1],
-  [-1, 1, -1],
-  [1, 1, -1],
-  [-1, -1, 1],
-  [1, -1, 1],
-  [-1, 1, 1],
-  [1, 1, 1],
-];
-
-function transformPoint(m: Float32Array, x: number, y: number, z: number) {
-  return {
-    x: m[0] * x + m[4] * y + m[8] * z + m[12],
-    y: m[1] * x + m[5] * y + m[9] * z + m[13],
-    z: m[2] * x + m[6] * y + m[10] * z + m[14],
-    w: m[3] * x + m[7] * y + m[11] * z + m[15],
-  };
-}
-
-function isMvpVisible(mvp: Float32Array) {
-  let outsideLeft = true;
-  let outsideRight = true;
-  let outsideBottom = true;
-  let outsideTop = true;
-  let outsideNear = true;
-  let outsideFar = true;
-
-  for (const [x, y, z] of UNIT_CUBE_CORNERS) {
-    const p = transformPoint(mvp, x, y, z);
-    outsideLeft = outsideLeft && p.x < -p.w;
-    outsideRight = outsideRight && p.x > p.w;
-    outsideBottom = outsideBottom && p.y < -p.w;
-    outsideTop = outsideTop && p.y > p.w;
-    outsideNear = outsideNear && p.z < 0;
-    outsideFar = outsideFar && p.z > p.w;
-  }
-
-  return !(
-    outsideLeft ||
-    outsideRight ||
-    outsideBottom ||
-    outsideTop ||
-    outsideNear ||
-    outsideFar
-  );
-}
-
 export class ObjectManager {
-  private static pending = new Set<ObjectManager>();
-  private static pendingRafId = 0;
-
   private element: HTMLElement | null;
   private options: ObjectOptions;
   private uni: UniWatchController;
@@ -173,13 +157,33 @@ export class ObjectManager {
   }
 
   setTransform(next: Partial<typeof this.transform>) {
-    if (typeof next.scale === "number") this.transform.scale = next.scale;
-    if (typeof next.rotationX === "number")
+    let changed = false;
+    if (typeof next.scale === "number" && next.scale !== this.transform.scale) {
+      this.transform.scale = next.scale;
+      changed = true;
+    }
+    if (
+      typeof next.rotationX === "number" &&
+      next.rotationX !== this.transform.rotationX
+    ) {
       this.transform.rotationX = next.rotationX;
-    if (typeof next.rotationY === "number")
+      changed = true;
+    }
+    if (
+      typeof next.rotationY === "number" &&
+      next.rotationY !== this.transform.rotationY
+    ) {
       this.transform.rotationY = next.rotationY;
-    if (typeof next.rotationZ === "number")
+      changed = true;
+    }
+    if (
+      typeof next.rotationZ === "number" &&
+      next.rotationZ !== this.transform.rotationZ
+    ) {
       this.transform.rotationZ = next.rotationZ;
+      changed = true;
+    }
+    if (changed) getDefaultEngine()?.requestFrame();
   }
 
   getTransform() {
@@ -193,7 +197,7 @@ export class ObjectManager {
     this.renderer?.destroy();
     this.renderer = null;
     this.canvas = null;
-    ObjectManager.pending.delete(this);
+    pendingObjects.dequeue(this);
   }
 
   private connectOrQueue() {
@@ -205,8 +209,12 @@ export class ObjectManager {
       return;
     }
 
-    ObjectManager.pending.add(this);
-    ObjectManager.ensurePendingLoop();
+    pendingObjects.enqueue(this);
+  }
+
+  /** @internal pending-attach queue */
+  attachFromPending() {
+    this.attach();
   }
 
   private attach() {
@@ -224,43 +232,34 @@ export class ObjectManager {
         }
 
         if (!this.renderer) {
-          if (!frame.gl) return;
-          this.renderer = createObjectRenderer(
-            this.element,
-            frame,
-            this.options,
-            this.uni,
-            this.transform,
-          );
+          if (frame.backend === "webgpu") {
+            const createGpuRenderer = ensureGpuObjectFactory();
+            if (!createGpuRenderer) return;
+            this.renderer = createGpuRenderer(
+              this.element,
+              this.options,
+              this.uni,
+              this.transform,
+            );
+          } else if (frame.gl) {
+            this.renderer = createObjectRenderer(
+              this.element,
+              frame,
+              this.options,
+              this.uni,
+              this.transform,
+            );
+          } else {
+            return;
+          }
         }
-        const didRender = this.renderer.render(frame);
-        if (didRender) {
-          this.options.onFrame?.(this, frame);
-        }
+        // Match createItem: onFrame first so setTransform/setUni keep the settle
+        // loop hot before (and even if) this draw is skipped.
+        this.options.onFrame?.(this, frame);
+        this.renderer.render(frame);
       },
       { layer: this.options.layer ?? 20 },
     );
-  }
-
-  private static ensurePendingLoop() {
-    if (ObjectManager.pendingRafId) return;
-
-    const step = () => {
-      ObjectManager.pendingRafId = 0;
-      if (ObjectManager.pending.size === 0) return;
-
-      const webgl = getDefaultEngine();
-      if (!webgl) {
-        ObjectManager.pendingRafId = window.requestAnimationFrame(step);
-        return;
-      }
-
-      const pendingNow = Array.from(ObjectManager.pending);
-      ObjectManager.pending.clear();
-      pendingNow.forEach((item) => item.attach());
-    };
-
-    ObjectManager.pendingRafId = window.requestAnimationFrame(step);
   }
 }
 
@@ -357,28 +356,6 @@ function getShaderSource(options: ObjectOptions) {
   };
 }
 
-function getScreenPlacement(
-  canvas: HTMLCanvasElement,
-  screenPlacement: ScreenPlacement | undefined,
-): ObjectPlacement {
-  const centerX = screenPlacement?.centerX ?? 0;
-  const centerY = screenPlacement?.centerY ?? 0;
-  const baseScale =
-    (0.25 * Math.min(canvas.width, canvas.height)) /
-    Math.max(canvas.width, canvas.height);
-  const scale = (screenPlacement?.scale ?? 1) * baseScale;
-  return {
-    isVisible: true,
-    centerX,
-    centerY,
-    x: 0,
-    y: 0,
-    width: canvas.width,
-    height: canvas.height,
-    scale: Math.max(0.001, scale),
-  };
-}
-
 function createObjectRenderer(
   element: HTMLElement | null,
   frame: EngineFrame,
@@ -447,15 +424,22 @@ function createObjectRenderer(
   let uEnvMapLoc: WebGLUniformLocation | null = null;
   let uMaskMapLoc: WebGLUniformLocation | null = null;
   let uHasUvLoc: WebGLUniformLocation | null = null;
-  let uValue1Loc: WebGLUniformLocation | null = null;
+  let uUniLoc: WebGLUniformLocation | null = null;
   const fallbackWhiteTexture = getSolidTexture(gl, [255, 255, 255, 255]);
   const fallbackBlackTexture = getSolidTexture(gl, [0, 0, 0, 255]);
-  const envMapTexture =
-    options.envMap?.gl === gl ? options.envMap.texture : fallbackWhiteTexture;
-  const maskMapTexture =
-    options.maskMap?.gl === gl ? options.maskMap.texture : fallbackBlackTexture;
+  const envMapTexture = resolveGlMapTexture(
+    options.envMap,
+    gl,
+    fallbackWhiteTexture,
+  );
+  const maskMapTexture = resolveGlMapTexture(
+    options.maskMap,
+    gl,
+    fallbackBlackTexture,
+  );
+  let uniValues = uni.toFloat32(16);
   const unsubscribeUni = uni.subscribe(() => {
-    // Keep API parity; custom uni values are tracked but not consumed by default WebGL shaders.
+    uniValues = uni.toFloat32(16);
   });
 
   return {
@@ -468,10 +452,10 @@ function createObjectRenderer(
         uEnvMapLoc = gl.getUniformLocation(program, "uEnvMap");
         uMaskMapLoc = gl.getUniformLocation(program, "uMaskMap");
         uHasUvLoc = gl.getUniformLocation(program, "uHasUv");
-        uValue1Loc = gl.getUniformLocation(program, "uValue1");
+        uUniLoc = gl.getUniformLocation(program, "uUni");
       }
       const placement = useScreenPlacement
-        ? getScreenPlacement(nextFrame.canvas, screenPlacement)
+        ? getScreenObjectPlacement(nextFrame.canvas, screenPlacement)
         : getElementObjectPlacement(element!, nextFrame.canvas);
       if (!placement.isVisible) return false;
 
@@ -514,12 +498,13 @@ function createObjectRenderer(
 
       gl.enable(gl.DEPTH_TEST);
       gl.depthMask(true);
-      gl.enable(gl.CULL_FACE);
-      gl.cullFace(gl.BACK);
-      gl.frontFace(gl.CCW);
+      // Match WebGPU objects (cullMode: "none") — shared geometry winding
+      // disagrees with GL's default CCW cull and punched holes in undersides.
+      gl.disable(gl.CULL_FACE);
       gl.useProgram(program!);
       if (uMvpLoc) gl.uniformMatrix4fv(uMvpLoc, false, mvp);
       if (uModelLoc) gl.uniformMatrix4fv(uModelLoc, false, model);
+      if (uUniLoc) gl.uniform4fv(uUniLoc, uniValues);
       if (uEnvMapLoc) {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, envMapTexture);
@@ -532,9 +517,6 @@ function createObjectRenderer(
       }
       if (uHasUvLoc) {
         gl.uniform1f(uHasUvLoc, geometry.vertexStride >= 8 ? 1 : 0);
-      }
-      if (uValue1Loc) {
-        gl.uniform1f(uValue1Loc, uni.target.value1 ?? 0);
       }
       gl.bindVertexArray(vao);
       gl.drawElements(gl.TRIANGLES, geometry.indices.length, indexType, 0);

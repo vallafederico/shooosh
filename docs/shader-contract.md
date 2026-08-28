@@ -22,6 +22,8 @@ fn fsMain() -> vec4f {
 | --- | --- |
 | `vUv` | Top-origin UV. `(0,0)` is the top-left of the quad / screen. |
 | `uUni` | 16 floats packed as four `vec4`s. |
+| `uTexture` / `uSampler` | Bound when a texture is set and the fragment names `uTexture`. |
+| `fitUv(uv)` | Cover/contain helper — `uv * values1.xy + values1.zw`. Injected with `uTexture`. |
 
 On **WebGPU** the engine prepends `struct Uni { values0..3 }`, `vsMain`, and `var<private> vUv`, then calls `fsMain` from `fsEntry`.
 
@@ -43,6 +45,27 @@ self.setUni({ value1: t, value2: 0.5 })
 Named uniforms are task 03. Until then, stick to `value1`…`value16`.
 
 The WebGL plane also writes `value4` as seconds (`performance.now() * 0.001`) each draw.
+
+### Texture fit (CSS object-fit)
+
+When `createScreen` / `createItem` has a `texture`, the engine writes a cover/contain transform into **value5–8** every frame (`textureFit`, default `"cover"`):
+
+| Slot | Meaning |
+| --- | --- |
+| `value5` / `values1.x` | scaleX |
+| `value6` / `values1.y` | scaleY |
+| `value7` / `values1.z` | offsetX |
+| `value8` / `values1.w` | offsetY |
+
+Sample with the injected helper:
+
+```wgsl
+fn fsMain() -> vec4f {
+  return textureSample(uTexture, uSampler, fitUv(vUv));
+}
+```
+
+JS helpers: `resolveTextureUvTransform`, `applyTextureUv`, `textureFitToUni`.
 
 ## Backends
 
@@ -72,7 +95,8 @@ See [site-patterns.md](./site-patterns.md) and skill `shooosh-post`.
 ## Out of contract
 
 - Custom vertex shaders (logged, ignored).
-- Textures, post, objects, particles, MSDF — WebGL2 only today.
+- GLSL on WebGPU: a `#version 300 es` fragment is ignored there (warning + default fragment). Convert it.
+- Post `textureUniforms` on WebGPU (warned, unbound).
 - Dawn, tensors, vgpu `frame.pass` graphs.
 
 ## Translate

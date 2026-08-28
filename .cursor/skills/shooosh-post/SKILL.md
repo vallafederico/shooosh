@@ -1,43 +1,59 @@
 ---
 name: shooosh-post
-description: Add a shooosh post effect (bloom, grain, or custom applyEffect). Use for mouse-magnify, film grain, bloom, or any full-frame WebGL2 post that reads the scene texture.
+description: Add a shooosh post effect (custom applyEffect on both backends). Bloom/grain live as example GLSL + WGSL. Use for mouse-magnify, film grain, bloom, or any full-frame post that reads the scene texture.
 ---
 
-# Post effects (WebGL2)
+# Post effects
 
-Read [docs/site-patterns.md](../../../docs/site-patterns.md). Post is **not implemented on WebGPU** yet — skip or force `{ backend: "webgl2" }` and say so.
+Read [docs/site-patterns.md](../../../docs/site-patterns.md). Post runs on **WebGL2 and WebGPU**. Give each effect both `fragmentShader` (GLSL) and `fragmentShaderWgsl` (WGSL).
 
-## Presets
-
-```js
-createScene(canvas, {
-  post: [
-    effects.bloom({ intensity: 0.7 }),
-    effects.noise({ amount: 0.08 }),
-  ],
-})
-```
-
-Or after init: `createPostProcessor()` + `addBloomEffect` / `addNoiseEffect` / `addFragmentEffect`.
+Looks (bloom, grain, FXAA, …) live in **examples**, not package presets. See [`examples/post-shaders.ts`](../../../examples/post-shaders.ts).
 
 ## Custom `applyEffect`
 
-This is **not** `fsMain`. The processor wraps your snippet:
+```js
+import { createScene, createPostProcessor } from "shooosh"
+import {
+  bloomEffect, bloomEffectWgsl,
+  fxaaEffect, fxaaEffectWgsl,
+  grainEffect, grainEffectWgsl,
+} from "./post-shaders"
 
-```glsl
-vec4 applyEffect(vec4 color, vec2 uv, vec2 resolution, vec4 uni[4]) {
-  vec2 mouse = uni[0].xy;
-  float radius = uni[0].z;
-  float strength = uni[0].w;
-  vec2 aspect = vec2(resolution.x / resolution.y, 1.0);
-  float mask = smoothstep(radius, radius * 0.55, length((uv - mouse) * aspect));
-  vec2 zoomed = mouse + (uv - mouse) * (1.0 - mask * strength);
-  return texture(uTexture, zoomed);
-}
+const scene = createScene(canvas, {
+  screen: { shaders: { fragment } },
+})
+await scene.getInitPromise()
+const post = createPostProcessor()
+post.addFragmentEffect({
+  fragmentShader: bloomEffect,
+  fragmentShaderWgsl: bloomEffectWgsl,
+  uni: { value1: 0.75, value2: 0.5, value3: 1.5 },
+})
+// Optional AA — omit to skip. Prefer after bloom, before grain.
+post.addFragmentEffect({
+  fragmentShader: fxaaEffect,
+  fragmentShaderWgsl: fxaaEffectWgsl,
+  uni: { value1: 1, value2: 0.125 }, // strength, edgeThreshold
+})
+post.addFragmentEffect({
+  fragmentShader: grainEffect,
+  fragmentShaderWgsl: grainEffectWgsl,
+  uni: { value1: 0.08, value2: 520 },
+})
 ```
 
-Injected uniforms: `uTexture` (scene), `uResolution`, `uTime`, `uDelta`, `uUni[4]`. `uv` is top-origin.
+`effects.custom` + `createScene({ post })` still works as thin sugar; examples use the processor primitive.
 
-Drive `uUni` from `onFrame` on the processor. **Return early** when the lerp has snapped so the settle loop can idle (aiuis `MouseDistortion`).
+This is **not** `fsMain`. WebGL2 wraps GLSL:
+
+```glsl
+vec4 applyEffect(vec4 color, vec2 uv, vec2 resolution, vec4 uni[4]) { ... }
+```
+
+WebGPU wraps WGSL `fn applyEffect(color: vec4f, uv: vec2f, resolution: vec2f, uni: Uni) -> vec4f`.
+
+Injected: scene texture, resolution, time, delta, uni. `uv` is top-origin.
+
+Drive `uUni` from `onFrame` on the processor. **Return early** when the lerp has snapped so the settle loop can idle.
 
 Failed custom compile disables that effect; it must not blank the page.

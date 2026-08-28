@@ -1,15 +1,18 @@
-import { demos, type Demo } from "./demos"
+import { demos } from "./demos"
+import { mountBackendToggle, setBackendLabel } from "./backend"
 
 const nav = document.querySelector<HTMLElement>("#nav")
 const stage = document.querySelector<HTMLElement>("#stage")
+const toggleHost = document.querySelector<HTMLElement>("#backend-toggle")
 
-if (!nav || !stage) {
-  throw new Error("Harness markup is missing #nav or #stage")
+if (!nav || !stage || !toggleHost) {
+  throw new Error("Harness markup is missing #nav, #stage, or #backend-toggle")
 }
 
 const params = new URLSearchParams(location.search)
 const initial = params.get("demo") ?? demos[0]?.id ?? "gradient"
 let teardown: (() => void) | undefined
+let currentId = initial
 
 function setUrl(id: string) {
   const next = new URL(location.href)
@@ -24,6 +27,8 @@ function mount(id: string) {
   teardown?.()
   stage.replaceChildren()
   stage.dataset.demo = demo.id
+  currentId = demo.id
+  setBackendLabel("…")
   teardown = demo.mount(stage)
   setUrl(demo.id)
 
@@ -43,6 +48,10 @@ for (const demo of demos) {
   button.addEventListener("click", () => mount(demo.id))
   nav.append(button)
 }
+
+mountBackendToggle(toggleHost, () => {
+  mount(currentId)
+})
 
 mount(initial)
 

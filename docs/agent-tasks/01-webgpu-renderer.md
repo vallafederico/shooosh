@@ -46,4 +46,4 @@ Verify: `bun test package` · `bun run bin/build.ts` · harness screen + items.
 
 ### Follow-up (skipped to keep this reviewable)
 
-Post stack, `loadTexture`, objects, particles, and MSDF stay WebGL2-only. On WebGPU they no-op / warn / throw a readable error. Port those next if a site path needs them.
+Post stack, `loadTexture`, objects, particles, and MSDF stay WebGL2-only. On WebGPU they no-op / warn / throw a readable error. Port those next if a site path needs them. → **Done in [08](./08-webgpu-remaining-ports.md).**

@@ -2,89 +2,64 @@
 
 > WGSL-first site GPU engine. WebGPU when available, WebGL2 fallback. Documentation and tasks are written for coding agents.
 
-Use the focused files below first. Read `llms-full` only when it exists. Do not ingest `node_modules/` or `dist/`.
-
-## When to use shooosh
-
-- A site needs a fullscreen shader, a page-behind layer, or DOM-tracked quads
-- The authored shader language should be WGSL
-- The same code must run on WebGPU or fall back to WebGL2
-- An agent needs to implement or extend the engine without inventing a new scene API
+**No magic.** The package is composition primitives + shader contracts. Looks (bloom, FXAA, grain, PBR, fluids) live as copyable WGSL/GLSL in `examples/`. Do not ingest `node_modules/` or `dist/`.
 
 ## Start here
 
-- [Docs hub](./docs/README.md): GitHub documentation folder
-- [Agent readiness](./agents.md): Product identity, runtime policy, conventions, how to pick work
-- [Agent-first](./docs/agent-first.md): What we set up for coding agents
-- [Getting started](./docs/getting-started.md): Install, two mounts
-- [Examples](./examples/README.md): Library usage — plasma, noise, SDF, warp, mouse, bloom, cards
-- [Shader contract](./docs/shader-contract.md): `fn fsMain`, `vUv`, `uUni`, backends, failure policy
-- [Shader translation](./docs/shader-translation.md): WGSL ↔ GLSL 300 es mapping + converters
-- [API summary](./docs/api.md): Dual-renderer public API
-- [Site patterns](./docs/site-patterns.md): App-shell canvas, items, post, Webflow — from aiuis usage
-- [MSDF generators](./docs/msdf.md): Node/Bun font atlas + icon SDF (`shooosh/msdf`)
-- [Human readme](./readme.md): GitHub landing
-- [Roadmap](./ROADMAP.md): Direction. Tasks below are the executable split.
+| Goal | Read |
+| --- | --- |
+| **Ship a look** | This file → [examples/README.md](./examples/README.md) → copy one `examples/*.ts` |
+| **Change the engine** | This file → [agents.md](./agents.md) → next [docs/agent-tasks/](./docs/agent-tasks/) with `status: todo` |
+| **Mount on a site** | Skill [shooosh-site](./.cursor/skills/shooosh-site/SKILL.md) → [docs/site-patterns.md](./docs/site-patterns.md) if needed |
 
-## Work queue (do in order)
+Humans on GitHub: [readme.md](./readme.md) → [docs/README.md](./docs/README.md) → [docs/getting-started.md](./docs/getting-started.md).
 
-- [01 WebGPU renderer](./docs/agent-tasks/01-webgpu-renderer.md)
-- [02 Shader files + HMR](./docs/agent-tasks/02-shader-hmr.md)
-- [03 Named uniforms](./docs/agent-tasks/03-named-uniforms.md)
-- [04 WGSL stdlib](./docs/agent-tasks/04-wgsl-stdlib.md)
-- [05 check CLI](./docs/agent-tasks/05-check-cli.md)
-- [06 Agent docs hosting](./docs/agent-tasks/06-agent-docs-hosting.md)
-- [07 Compile overlay](./docs/agent-tasks/07-compile-overlay.md)
+## When to use shooosh
 
-## Public API (current)
+- Fullscreen shader, page-behind layer, or DOM-tracked quads
+- Authored language is WGSL; same code on WebGPU or WebGL2
+- Agents compose primitives — they do not invent a scene API or named effect presets
 
-Source: `package/index.ts` (file-level headers = how to use each module)
+## Public API (composition)
+
+Source: [`package/index.ts`](./package/index.ts) (file-level “How to use” headers).
 
 - `probeRenderer()` → `"webgpu" | "webgl2" | null`
-- `createEngine` (async, `{ backend?: "auto"|"webgpu"|"webgl2" }`) / `initEngine` / `getDefaultEngine` / `setDefaultEngine` / `resolveEngine`
-- `createScene` / `Scene` / `parseSceneDataset`
+- `createEngine` / `initEngine` / `getDefaultEngine` — `{ backend?: "auto"|"webgpu"|"webgl2" }`
+- `createScene` / `parseSceneDataset`
 - `acquireLayer` / `releaseLayer`
 - `createItem` / `createScreen` / `createObject` / `createParticles` / `createMsdfGlyphs`
-- `effects` / `createPostProcessor`
-- `loadTexture` / `loadGlb` / `createFakeHdriCanvas`
-- `convertWgslFragmentToGlsl` / `convertGlslFragmentToWgsl` / `isGlsl300`
-- `compileProgramAsync` — non-blocking WebGL compile
+- `createPostProcessor().addFragmentEffect({ fragmentShader, fragmentShaderWgsl })` — no named bloom/bw/noise; copy [`examples/post-shaders.ts`](./examples/post-shaders.ts)
+- `effects.custom` — thin sugar for `createScene({ post })` (author shaders only)
+- `createCompute` — WebGPU; fluids = copy `examples/fluid-sim.ts` + `fluid-shaders.ts`
+- `loadTexture` (+ `fitUv` / `textureFit` / `{ flipY: false }` for env) / `loadGlb`
+- `convertWgslFragmentToGlsl` / `convertGlslFragmentToWgsl`
 - `createMouseMonad` / `createMouseTrail`
 
-Node / Bun only (`shooosh/msdf`, not the browser entry):
+Node/Bun only (`shooosh/msdf`): `generateMsdf` / `generateFontAtlas` / `generateIconSdf` / `alphaToSdf` · CLI `pnpm msdf`
 
-- `generateMsdf` / `generateFontAtlas` / `generateIconSdf` / `alphaToSdf`
-- CLI: `pnpm msdf -- <inputs> --out <dir>` / `npx shooosh-msdf`
+## Shader contract (short)
 
-## Shader contract
+See [docs/shader-contract.md](./docs/shader-contract.md).
 
-See [docs/shader-contract.md](./docs/shader-contract.md). Short form:
+- Author `fn fsMain() -> vec4f`. `vUv` is top-origin.
+- Textures: sample `fitUv(vUv)` when using `uTexture` + cover/contain.
+- `setUni({ value1 })` → `uUni.values0.x` / `uUni[0].x` (16 floats).
+- Post is `applyEffect`, not `fsMain` — both GLSL + WGSL for dual backends.
+- Failed compile keeps the last good program; never blank the page.
 
-- Author `shaders.fragment` as WGSL with `fn fsMain`.
-- `vUv` is top-origin.
-- Uniforms today: `setUni({ value1 })` → `uUni.values0.x` / `uUni[0].x` (16 floats). Named uniforms are task 03.
-- Full `#version 300 es` GLSL is a WebGL2 escape hatch. Port it with `convertGlslFragmentToWgsl` (skill: `glsl-to-wgsl`).
-- Failed compile must not blank the page.
+## Work queue
+
+- [01](./docs/agent-tasks/01-webgpu-renderer.md) … [08](./docs/agent-tasks/08-webgpu-remaining-ports.md) (`08` done). Next unfinished: lowest `status: todo`.
 
 ## Skills
 
-- [`.cursor/skills/wgsl-to-glsl`](./.cursor/skills/wgsl-to-glsl/SKILL.md) — WGSL → GLSL 300 es
-- [`.cursor/skills/glsl-to-wgsl`](./.cursor/skills/glsl-to-wgsl/SKILL.md) — GLSL 300 es → WGSL
-- [`.cursor/skills/shooosh-site`](./.cursor/skills/shooosh-site/SKILL.md) — mount a page canvas / layer
-- [`.cursor/skills/shooosh-item`](./.cursor/skills/shooosh-item/SKILL.md) — DOM-tracked quad
-- [`.cursor/skills/shooosh-post`](./.cursor/skills/shooosh-post/SKILL.md) — bloom / grain / `applyEffect`
-- [`.cursor/skills/shooosh-msdf`](./.cursor/skills/shooosh-msdf/SKILL.md) — bake font/icon SDFs (Node/Bun)
-- [`.cursor/skills/shooosh-examples`](./.cursor/skills/shooosh-examples/SKILL.md) — copy a setup from `examples/`
-
-## Machine interfaces (target)
-
-These should exist after the matching tasks. Until then, this repo *is* the interface.
-
-- `/agents.md` and `/llms.txt` on the hosted showcase (task 06)
-- `shooosh check` CLI (task 05)
-- Example gallery the harness already pulls (`examples/` — each file calls createScene / createItem)
+- [shooosh-examples](./.cursor/skills/shooosh-examples/SKILL.md) — copy from `examples/`
+- [shooosh-site](./.cursor/skills/shooosh-site/SKILL.md) / [shooosh-item](./.cursor/skills/shooosh-item/SKILL.md) / [shooosh-post](./.cursor/skills/shooosh-post/SKILL.md)
+- [shooosh-msdf](./.cursor/skills/shooosh-msdf/SKILL.md) — bake atlases (Node/Bun)
+- [wgsl-to-glsl](./.cursor/skills/wgsl-to-glsl/SKILL.md) / [glsl-to-wgsl](./.cursor/skills/glsl-to-wgsl/SKILL.md)
 
 ## Optional
 
-- [Source repository](https://github.com/vallafederico/shooosh)
-- [vgpu agent docs](https://vgpu.sh/llms.txt) — inspiration only
+- [docs/api.md](./docs/api.md) · [docs/shader-translation.md](./docs/shader-translation.md) · [ROADMAP.md](./ROADMAP.md)
+- [Source](https://github.com/vallafederico/shooosh) · [vgpu llms.txt](https://vgpu.sh/llms.txt) (inspiration only)

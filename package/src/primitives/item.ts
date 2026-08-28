@@ -13,12 +13,26 @@ import { ensureWatchableUni, type UniValues, type UniWatchController } from "../
 import { getElementClipData } from "./item.utils";
 import { convertWgslFragmentToGlsl } from "../shaders/wgsl-compat";
 import { compileProgramAsync } from "../shaders/compile";
-import { createGpuItemRenderer } from "./gpu-item";
+import {
+  resolveTextureUvTransform,
+  textureFitToUni,
+  type TextureFitMode,
+} from "../loaders/texture-loader";
+import { createLazyGpuFactory, createPendingAttachQueue } from "./pending-attach";
 
 type ItemRenderer = {
   render: (frame: EngineFrame) => void;
   destroy: () => void;
 };
+
+const ensureGpuItemFactory = createLazyGpuFactory({
+  label: "item",
+  load: () => import("./gpu-item").then((m) => m.createGpuItemRenderer),
+});
+
+const pendingItems = createPendingAttachQueue<ItemManager>((item) => {
+  item.attachFromPending();
+});
 
 export type ItemOptions = {
   layer?: number;
@@ -27,13 +41,12 @@ export type ItemOptions = {
   uni?: UniValues;
   /** loadTexture() result — bound as uTexture in the fragment */
   texture?: FullscreenPlaneTexture | null;
+  /** CSS object-fit for uTexture. Default `"cover"`. Writes value5–8 each frame. */
+  textureFit?: TextureFitMode;
   onFrame?: (item: ItemManager, frame: EngineFrame) => ItemManager | void;
 };
 
 export class ItemManager {
-  private static pending = new Set<ItemManager>();
-  private static pendingRafId = 0;
-
   private element: HTMLElement;
   private options: ItemOptions;
   private uni: UniWatchController;
@@ -64,7 +77,7 @@ export class ItemManager {
     this.renderer?.destroy();
     this.renderer = null;
     this.canvas = null;
-    ItemManager.pending.delete(this);
+    pendingItems.dequeue(this);
   }
 
   private connectOrQueue() {
@@ -76,8 +89,12 @@ export class ItemManager {
       return;
     }
 
-    ItemManager.pending.add(this);
-    ItemManager.ensurePendingLoop();
+    pendingItems.enqueue(this);
+  }
+
+  /** @internal pending-attach queue */
+  attachFromPending() {
+    this.attach();
   }
 
   private attach() {
@@ -96,7 +113,9 @@ export class ItemManager {
 
         if (!this.renderer) {
           if (frame.backend === "webgpu") {
-            this.renderer = createGpuItemRenderer(this.element, this.options, this.uni);
+            const createGpuRenderer = ensureGpuItemFactory();
+            if (!createGpuRenderer) return;
+            this.renderer = createGpuRenderer(this.element, this.options, this.uni);
           } else if (frame.gl) {
             this.renderer = createItemRenderer(this.element, frame, this.options, this.uni);
           } else {
@@ -109,27 +128,6 @@ export class ItemManager {
       },
       { layer: this.options.layer ?? 10 },
     );
-  }
-
-  private static ensurePendingLoop() {
-    if (ItemManager.pendingRafId) return;
-
-    const step = () => {
-      ItemManager.pendingRafId = 0;
-      if (ItemManager.pending.size === 0) return;
-
-      const webgl = getDefaultEngine();
-      if (!webgl) {
-        ItemManager.pendingRafId = window.requestAnimationFrame(step);
-        return;
-      }
-
-      const pendingNow = Array.from(ItemManager.pending);
-      ItemManager.pending.clear();
-      pendingNow.forEach((item) => item.attach());
-    };
-
-    ItemManager.pendingRafId = window.requestAnimationFrame(step);
   }
 }
 
@@ -256,6 +254,18 @@ function createItemRenderer(
 
       const clipData = getElementClipData(element, nextFrame.canvas);
       if (!clipData.isVisible) return;
+
+      if (texture) {
+        const rect = element.getBoundingClientRect();
+        const targetAspect =
+          Math.max(1, rect.width) / Math.max(1, rect.height);
+        const uvTransform = resolveTextureUvTransform(
+          texture.aspect,
+          targetAspect,
+          options.textureFit ?? "cover",
+        );
+        uni.set(textureFitToUni(uvTransform));
+      }
 
       gl.disable(gl.DEPTH_TEST);
       // premultiplied-alpha blending — item shaders can output transparency

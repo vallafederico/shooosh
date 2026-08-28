@@ -1,13 +1,22 @@
 /**
- * createMouseTrail — GPU trail texture (post-based). WebGL2 only today.
+ * createMouseTrail — GPU trail texture. Runs on both backends.
  *
- * How to use: sample the trail texture from a custom post / item shader.
- * No-op / warn on WebGPU.
+ * How to use:
+ *   const trail = createMouseTrail()
+ *   createItem(el, { texture: trail.getTextureHandle()!, shaders: { fragment } })
+ * `getTextureHandle()` is shaped like a loadTexture() result, so it drops
+ * straight into createItem / createScreen / a custom post pass. Narrow on
+ * `handle.texture.backend` before touching the raw texture.
+ *
+ * WebGL2 paints in an onPostRender hook; WebGPU paints in the engine pre-render
+ * hook (gpu-mousetrail.ts), so the trail never forces the offscreen post path.
  *
  * Docs: docs/api.md
  */
 
-import { getDefaultEngine, resolveEngine, type EnginePostFrame } from "../engine/engine";
+import { getDefaultEngine, type EnginePostFrame, type WebGLEngine } from "../engine/engine";
+import { getGpuInternals } from "../engine/gpu-internals";
+import type { TextureHandle } from "../loaders/texture-loader";
 
 type TrailTarget = {
   texture: WebGLTexture;
@@ -49,12 +58,26 @@ type TrailProgramBundle = {
   growLocs: GrowLocs;
 };
 
+/**
+ * Backend-agnostic trail texture, shaped like a loadTexture() result so it can
+ * be passed as `texture` to createItem / createScreen. The trail owns the
+ * texture; `handle.texture.destroy()` is a no-op — call `trail.destroy()`.
+ *
+ * The trail reallocates with the canvas, so re-read the handle (and rebuild the
+ * consumer) after a resize instead of holding one forever.
+ */
 export type MouseTrailTextureHandle = {
-  texture: WebGLTexture;
-  gl: WebGL2RenderingContext;
+  texture: TextureHandle;
+  /** GPUTextureView on WebGPU; the handle itself on WebGL2. */
+  view: unknown;
+  /** GPUSampler on WebGPU; null on WebGL2. */
+  sampler: unknown | null;
   width: number;
   height: number;
+  aspect: number;
 };
+
+type GpuTrailModule = typeof import("./gpu-mousetrail");
 
 export type CreateMouseTrailOptions = {
   /** UV reference space. Defaults to window. */
@@ -92,6 +115,8 @@ export class MouseTrail {
   private bundle: TrailProgramBundle | null = null;
   private targets: TrailTarget[] = [];
   private readIndex = 0;
+  private gpuTrail: import("./gpu-mousetrail").GpuMouseTrail | null = null;
+  private destroyed = false;
   private pointer = { x: 0.5, y: 0.5 };
   private prevPointer = { x: 0.5, y: 0.5 };
   private speed = 0;
@@ -132,27 +157,144 @@ export class MouseTrail {
     this.dissipate = clamp(options.dissipate ?? 0.992, 0.8, 1);
     this.eventElement.addEventListener("pointermove", this.onPointerMove as EventListener);
     this.eventElement.addEventListener("pointerleave", this.onPointerLeave as EventListener);
-    this.unsubscribe = getDefaultEngine()!.onPostRender((frame) => this.onPostRender(frame));
+
+    const engine = getDefaultEngine();
+    if (!engine) {
+      throw new Error(
+        "MouseTrail needs a default engine. Await createScene() / acquireLayer() first.",
+      );
+    }
+    if (engine.backend === "webgpu") {
+      this.attachWebGpu(engine);
+    } else {
+      this.unsubscribe = engine.onPostRender((frame) => this.onPostRender(frame));
+    }
   }
 
   getTextureHandle(): MouseTrailTextureHandle | null {
+    if (this.gpuTrail) {
+      const target = this.gpuTrail.getTarget();
+      if (!target) return null;
+      return {
+        texture: {
+          backend: "webgpu",
+          texture: target.texture,
+          width: target.width,
+          height: target.height,
+          createView: () => target.view,
+          destroy: () => {},
+        },
+        view: target.view,
+        sampler: this.gpuTrail.getSampler(),
+        width: target.width,
+        height: target.height,
+        aspect: target.width / Math.max(1, target.height),
+      };
+    }
+
     if (!this.gl || this.targets.length !== 2) return null;
     const current = this.targets[this.readIndex];
     if (!current) return null;
-    return {
+    const gl = this.gl;
+    const handle: TextureHandle = {
+      backend: "webgl2",
       texture: current.texture,
-      gl: this.gl,
+      gl,
       width: current.width,
       height: current.height,
+      createView() {
+        return this;
+      },
+      destroy() {},
+    };
+    return {
+      texture: handle,
+      view: handle,
+      sampler: null,
+      width: current.width,
+      height: current.height,
+      aspect: current.width / Math.max(1, current.height),
     };
   }
 
   destroy() {
+    this.destroyed = true;
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.eventElement.removeEventListener("pointermove", this.onPointerMove as EventListener);
     this.eventElement.removeEventListener("pointerleave", this.onPointerLeave as EventListener);
+    this.gpuTrail?.destroy();
+    this.gpuTrail = null;
     this.disposeGpuResources();
+  }
+
+  /**
+   * WebGPU paints from the pre-render hook: onPostRender there would switch the
+   * engine into its offscreen post path with nobody to present the result.
+   */
+  private attachWebGpu(engine: WebGLEngine) {
+    const internals = getGpuInternals(engine);
+    if (!internals) {
+      console.warn("shooosh: createMouseTrail could not reach the WebGPU device.");
+      return;
+    }
+
+    let module: GpuTrailModule | null = null;
+    void import("./gpu-mousetrail")
+      .then((loaded) => {
+        module = loaded;
+        engine.requestFrame();
+      })
+      .catch((error) => {
+        console.warn("shooosh: failed to load the WebGPU mouse trail:", error);
+      });
+
+    this.unsubscribe = internals.onPreRender((ctx) => {
+      if (this.destroyed || !module) return;
+      if (!this.gpuTrail) {
+        this.gpuTrail = module.createGpuMouseTrail(ctx.device, {
+          resolutionScale: this.resolutionScale,
+          fade: this.fade,
+          radius: this.radius,
+          strength: this.strength,
+          cutoff: this.cutoff,
+          growth: this.growth,
+          dissipate: this.dissipate,
+        });
+      }
+
+      this.advanceSmoothedSize(ctx.delta);
+      this.gpuTrail.update(ctx.device, ctx.encoder, ctx.canvas, {
+        mouseX: this.pointer.x,
+        mouseY: this.pointer.y,
+        prevX: this.prevPointer.x,
+        prevY: this.prevPointer.y,
+        speed: this.hasPointer ? this.speed : 0,
+        size: this.smoothedSize,
+        timeSeconds: ctx.now * 0.001,
+      });
+      this.settlePointer();
+      if (this.hasPointer || this.speed > 0 || this.smoothedSize > 0) {
+        engine.requestFrame();
+      }
+    });
+  }
+
+  /** Exponential ease toward the speed-driven brush size. Shared by both backends. */
+  private advanceSmoothedSize(deltaMs: number) {
+    const dtSec = Math.max(0.001, deltaMs * 0.001);
+    const targetSize = clamp((this.hasPointer ? this.speed : 0) * 0.02, 0, 1);
+    const rate = targetSize > this.smoothedSize ? 8 : 4;
+    const alpha = 1 - Math.exp(-rate * dtSec);
+    this.smoothedSize += (targetSize - this.smoothedSize) * alpha;
+    if (Math.abs(targetSize - this.smoothedSize) < 0.0005) this.smoothedSize = targetSize;
+  }
+
+  private settlePointer() {
+    this.prevPointer.x = this.pointer.x;
+    this.prevPointer.y = this.pointer.y;
+    this.speed *= 0.9;
+    if (this.speed < 0.0005) this.speed = 0;
   }
 
   private onPostRender(frame: EnginePostFrame) {
@@ -185,14 +327,7 @@ export class MouseTrail {
     if (pl.uCutoff != null) gl.uniform1f(pl.uCutoff, this.cutoff);
     if (pl.uSpeed != null) gl.uniform1f(pl.uSpeed, this.hasPointer ? this.speed : 0);
     if (pl.uTime != null) gl.uniform1f(pl.uTime, frame.now * 0.001);
-    const dtSec = Math.max(0.001, frame.delta * 0.001);
-    const targetSize = clamp((this.hasPointer ? this.speed : 0) * 0.02, 0, 1);
-    const growRate = 8;
-    const shrinkRate = 4;
-    const rate = targetSize > this.smoothedSize ? growRate : shrinkRate;
-    const alpha = 1 - Math.exp(-rate * dtSec);
-    this.smoothedSize += (targetSize - this.smoothedSize) * alpha;
-    if (Math.abs(targetSize - this.smoothedSize) < 0.0005) this.smoothedSize = targetSize;
+    this.advanceSmoothedSize(frame.delta);
     if (pl.uSize != null) gl.uniform1f(pl.uSize, this.smoothedSize);
     if (pl.uMouse != null) gl.uniform2f(pl.uMouse, this.pointer.x, this.pointer.y);
     if (pl.uMousePrev != null)
@@ -234,10 +369,7 @@ export class MouseTrail {
     );
 
     // Final texture stays on read target (index unchanged).
-    this.prevPointer.x = this.pointer.x;
-    this.prevPointer.y = this.pointer.y;
-    this.speed *= 0.9;
-    if (this.speed < 0.0005) this.speed = 0;
+    this.settlePointer();
 
     // Trail decay is GPU-side state, invisible to the uni dirty system — keep
     // requesting frames while there's still motion or a fading trail to paint.

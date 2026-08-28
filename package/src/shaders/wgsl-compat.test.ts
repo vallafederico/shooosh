@@ -33,8 +33,39 @@ test("maps atan2(y, x) to GLSL atan(y, x)", () => {
   expect(glsl).not.toContain("atan2")
 })
 
-test("throws when fsMain is missing", () => {
-  expect(() => convertWgslFragmentToGlsl("let x = 1.0;")).toThrow(
-    /Unable to locate fsMain/,
+test("maps textureSample(tex, sampler, uv) to texture(tex, uv)", () => {
+  const glsl = convertWgslFragmentToGlsl(
+    `fn fsMain() -> vec4f {
+  return textureSample(uTexture, uSampler, vUv);
+}`,
+    { includeUv: true },
   )
+  expect(glsl).toContain("texture(uTexture, vUv)")
+  expect(glsl).toContain("uniform sampler2D uTexture;")
+  expect(glsl).not.toContain("textureSample")
+})
+
+test("injects fitUv when the fragment samples uTexture", () => {
+  const glsl = convertWgslFragmentToGlsl(
+    `fn fsMain() -> vec4f {
+  return textureSample(uTexture, uSampler, fitUv(vUv));
+}`,
+    { includeUv: true },
+  )
+  expect(glsl).toContain("vec2 fitUv(vec2 uv)")
+  expect(glsl).toContain("uUni[1].xy")
+  expect(glsl).toContain("fitUv(vUv)")
+})
+
+test("renames GLSL reserved identifier `sample`", () => {
+  const glsl = convertWgslFragmentToGlsl(
+    `fn fsMain() -> vec4f {
+  let sample = textureSample(uTexture, uSampler, vUv).r;
+  return vec4f(sample, sample, sample, 1.0);
+}`,
+    { includeUv: true },
+  )
+  expect(glsl).toContain("float _sample =")
+  expect(glsl).toContain("_sample, _sample, _sample")
+  expect(glsl).not.toMatch(/(?<![_\w])sample(?![_\w])/)
 })

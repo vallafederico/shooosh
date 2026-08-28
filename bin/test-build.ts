@@ -1,7 +1,34 @@
-import { readFileSync, existsSync } from "fs"
+import { readFileSync, existsSync, readdirSync } from "fs"
 import { join } from "path"
 
 const distDir = join(process.cwd(), "dist")
+const chunksDir = join(distDir, "chunks")
+
+/**
+ * ESM code-splitting chunk files (backend-specific code) reachable from
+ * dist/esm.js. dist/ is not cleaned between builds, so walking the import graph
+ * is what keeps a stale chunk from passing these checks.
+ */
+function readEsmChunkNames() {
+  if (!existsSync(chunksDir) || !existsSync(join(distDir, "esm.js"))) return []
+
+  const referencesIn = (source: string) =>
+    Array.from(source.matchAll(/["'](?:\.\/|\.\/chunks\/|chunks\/)([\w.-]+\.js)["']/g)).map(
+      (match) => match[1]!,
+    )
+
+  const reachable = new Set<string>()
+  const queue = referencesIn(readFileSync(join(distDir, "esm.js"), "utf-8"))
+  while (queue.length > 0) {
+    const name = queue.pop()!
+    if (reachable.has(name)) continue
+    const path = join(chunksDir, name)
+    if (!existsSync(path)) continue
+    reachable.add(name)
+    queue.push(...referencesIn(readFileSync(path, "utf-8")))
+  }
+  return Array.from(reachable)
+}
 
 interface TestResult {
   name: string
@@ -54,6 +81,7 @@ async function runTests() {
         "createScene",
         "createItem",
         "createScreen",
+        "createCompute",
         "acquireLayer",
         "effects",
         "convertWgslFragmentToGlsl",
@@ -82,6 +110,7 @@ async function runTests() {
         "createEngine",
         "createScene",
         "createItem",
+        "createCompute",
         "acquireLayer",
         "convertWgslFragmentToGlsl",
         "convertGlslFragmentToWgsl",
@@ -109,10 +138,38 @@ async function runTests() {
       }
     }),
 
-    test("browser ESM does not include the Node msdf toolchain", () => {
+    test("ESM build splits backend code into chunks", () => {
+      const chunks = readEsmChunkNames()
+      if (chunks.length === 0) {
+        throw new Error("ESM build emitted no dist/chunks — code splitting is off")
+      }
       const esm = readFileSync(join(distDir, "esm.js"), "utf-8")
+      if (!esm.includes("./chunks/")) {
+        throw new Error("dist/esm.js does not reference any split chunk")
+      }
+      for (const name of [
+        "gpu-plane",
+        "gpu-item",
+        "gpu-object",
+        "gpu-particles",
+        "gpu-msdf-glyphs",
+        "gpu-mousetrail",
+        "webgpu-engine",
+        "webgl2-engine",
+      ]) {
+        if (!chunks.some((chunk) => chunk.startsWith(name))) {
+          throw new Error(`ESM build did not split ${name} into its own chunk`)
+        }
+      }
+    }),
+
+    test("browser ESM does not include the Node msdf toolchain", () => {
+      const sources = [
+        readFileSync(join(distDir, "esm.js"), "utf-8"),
+        ...readEsmChunkNames().map((name) => readFileSync(join(chunksDir, name), "utf-8")),
+      ]
       for (const token of ["msdf-bmfont-xml", "generateFontAtlas", "generateIconSdf"]) {
-        if (esm.includes(token)) {
+        if (sources.some((source) => source.includes(token))) {
           throw new Error(`browser build leaked shooosh/msdf (${token})`)
         }
       }

@@ -27,7 +27,8 @@ item.destroy()
 - `vUv` is top-origin on the **element**, not the page.
 - `setUni({ value1 })` → `uUni.values0.x`. Skip `setUni` when values did not change (settle loop).
 - Brand colors: read CSS (`--color-key`) on the site and pack into `valueN`. The engine does not parse CSS.
-- Textures / MSDF / SDF: WebGL2 only today (`loadTexture`, `createMsdfGlyphs`). On WebGPU they throw or no-op. Bake atlases with skill `shooosh-msdf` (`shooosh/msdf`) — Node/Bun, not the site bundle.
+- Textures / MSDF / SDF (`loadTexture`, `createMsdfGlyphs`) run on both backends. Load after the engine resolves — `loadTexture` picks the backend, and a WebGL2 handle is ignored on WebGPU. Bake atlases with skill `shooosh-msdf` (`shooosh/msdf`) — Node/Bun, not the site bundle.
+- With `{ texture }`, sample `fitUv(vUv)` for CSS-like cover/contain (`textureFit`, default `"cover"`). The engine packs value5–8 each frame.
 - Do not pass `#version 300 es` unless this is a legacy escape hatch — prefer WGSL so WebGPU can run it.
 
 ## Wrapper shape (Solid / React)

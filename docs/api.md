@@ -10,10 +10,12 @@ Source of truth: [`package/index.ts`](../package/index.ts). This page is the hum
 | --- | --- |
 | Fullscreen fragment on its own canvas | `createScene(canvas, { screen })` |
 | Page-behind canvas + DOM quads | `await acquireLayer()` then `createItem(el, …)` |
+| WebGPU compute sim | `createCompute(engine)` — recipes (fluids, …) live in [`examples/`](../examples/README.md) |
+| Post (bloom / grain / custom) | `createPostProcessor()` + example shaders (`fragmentShader` + `fragmentShaderWgsl`) |
 | Which GPU am I on? | `await probeRenderer()` or `engine.backend` |
-| Force a backend | `{ backend: "webgpu" \| "webgl2" }` or `?backend=` |
+| Force a backend | `{ backend: "webgpu" \| "webgl2" }` — only that module graph; omit/`auto` picks best |
 
-`acquireLayer()` / `probeRenderer()` return `null` when nothing is available. Leave the page readable.
+`acquireLayer()` / `probeRenderer()` / `createCompute()` return `null` when unavailable. Leave the page readable.
 
 Site recipes (app-shell canvas, SSR init, Webflow, particles, MSDF): [site-patterns.md](./site-patterns.md). Library examples: [examples/](../examples/README.md). Bake font/icon atlases: [msdf.md](./msdf.md).
 
@@ -40,7 +42,9 @@ engine.onRender((frame) => {
 
 `createEngine` and `acquireLayer` are **async**. `initEngine` sets the default engine used by `createScreen` / `createItem`.
 
-Settle window: the loop stays hot for 250ms after the last dirty mark (scroll, pointer, `setUni`, `requestFrame`).
+**Backend import policy:** omit / `"auto"` probes WebGPU then WebGL2 (both chunks may load). `"webgpu"` / `"webgl2"` load only that stack and fail if unavailable (no silent fallback when forced).
+
+Settle window: the loop stays hot for 250ms after the last dirty mark (scroll, pointer, `setUni`, `setTransform`, `requestFrame`).
 
 ## Scene / layer / item
 
@@ -63,6 +67,8 @@ item.destroy()
 releaseLayer()
 ```
 
+Scroll-tracked planes: see [`examples/scroll-cards.ts`](../examples/scroll-cards.ts) and [`examples/scroll-sections.ts`](../examples/scroll-sections.ts).
+
 ## Shaders
 
 Author WGSL `fn fsMain`. See [shader-contract.md](./shader-contract.md).
@@ -74,14 +80,46 @@ convertGlslFragmentToWgsl(glsl)                     // port an escape-hatch shad
 
 `#version 300 es` still compiles on WebGL2 only.
 
-## WebGL2-only today
+## WebGPU compute
 
-These no-op, warn, or throw a readable error on WebGPU:
+```ts
+const gpu = createCompute(engine) // null on WebGL2
+if (!gpu) return
 
-- `effects.*` / `createPostProcessor` / `onPostRender`
-- `loadTexture` / `loadGlb`
-- `createObject` / `createParticles` / `createMsdfGlyphs`
-- `createMouseTrail` (post-based)
+const pipe = gpu.createPipeline(wgsl, "pass")
+const fields = gpu.createPingPong(w, h, "vel")
+gpu.setOnCompute(({ encoder }) => {
+  gpu.dispatch(encoder, pipe, w, h, [
+    { binding: 0, resource: fields.readView },
+    { binding: 1, resource: fields.writeView },
+  ])
+  fields.swap()
+})
+gpu.setOnDisplay(({ pass }) => { /* optional blit */ })
+```
+
+Helpers: `createPipeline`, `createDisplayPipeline`, `createPingPong`, `createStorageTexture`, `createUniformBuffer`, `writeBuffer`, `dispatch`, `requestFrame`, `destroy`.
+
+**Fluids are not a package API.** Copy [`examples/fluid-sim.ts`](../examples/fluid-sim.ts) (pass loop) + [`examples/fluid-shaders.ts`](../examples/fluid-shaders.ts) (WGSL) and edit those. Demos: [`fluid-pointer`](../examples/fluid-pointer.ts), [`fluid-ambient`](../examples/fluid-ambient.ts).
+
+## Post
+
+Prefer `createPostProcessor().addFragmentEffect` with **author-owned** GLSL + WGSL from [`examples/post-shaders.ts`](../examples/post-shaders.ts) (bloom, FXAA, grain). There are **no** named package presets (`addBloomEffect` removed). Demo: [`grain-bloom`](../examples/grain-bloom.ts). Skill: `shooosh-post`.
+
+`effects.custom({ fragmentShader, fragmentShaderWgsl })` + `createScene({ post })` remains thin sugar for the same snippets.
+
+## Backend notes
+
+The whole public API runs on both backends. Where they differ:
+
+- `#version 300 es` fragments are a WebGL2 escape hatch. On WebGPU they are ignored with a warning and the default WGSL fragment is used, so author WGSL (or convert with `convertGlslFragmentToWgsl`).
+- Post effects need `fragmentShaderWgsl` to run on WebGPU; a GLSL-only `applyEffect` is skipped with a warning. `textureUniforms` are not bound by the WebGPU post chain yet — sample extra textures from a `createItem` / `createScreen` fragment instead.
+- `createParticles` draws `gl.POINTS` on WebGL2 and instanced quads on WebGPU (no `gl_PointSize` there); the disc falloff matches.
+- `createObject` depth-tests against the engine depth buffer on WebGPU and does not back-face cull; `shaders.fragmentGlsl` falls back to the default material there.
+- `loadTexture` picks the backend from the running engine, so load textures **after** `createScene()` / `acquireLayer()` resolves. A WebGL2 handle passed to a WebGPU draw is ignored with a warning.
+- Texture fit: `loadTexture(src, { fit: "cover" })` + `createItem` / `createScreen` `{ texture, textureFit }`. Sample with `fitUv(vUv)`. Helpers: `resolveTextureUvTransform`, `applyTextureUv`, `textureFitToUni` (packs value5–8).
+- Env/matcap maps (`dir.xy * 0.5 + 0.5`): `loadTexture(src, { flipY: false })` so WebGL2 matches WebGPU sample space (default GL upload still flips for top-origin `vUv`).
+- `createMouseTrail().getTextureHandle()` is shaped like a `loadTexture()` result on both backends — pass it straight to `createItem({ texture })`. The trail reallocates with the canvas, so re-read the handle after a resize.
 
 ## Node / Bun — `shooosh/msdf`
 

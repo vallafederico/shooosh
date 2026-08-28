@@ -1,13 +1,16 @@
 /**
- * ParticlesManager — WebGL2 point list. Not a public import.
+ * ParticlesManager — dot cloud on both backends. Not a public import.
  *
- * How to use: createParticles() wraps this. No-op / warn on WebGPU.
+ * How to use: createParticles() wraps this. WebGL2 draws gl.POINTS; WebGPU has
+ * no useful gl_PointSize, so it draws instanced unit quads (gpu-particles.ts)
+ * with the same soft-edge disc falloff.
  *
  * Docs: docs/site-patterns.md
  */
 
 import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import { compileProgramAsync, type AsyncProgram } from "../shaders/compile";
+import { createLazyGpuFactory, createPendingAttachQueue } from "./pending-attach";
 
 export type ParticlesOptions = {
   /** Float32Array of clip-space positions: [x0, y0, x1, y1, ...] — x/y in [-1, 1]. */
@@ -40,25 +43,16 @@ void main() {
   outColor = vec4(uColor.rgb * alpha, alpha);
 }`;
 
-const pending = new Set<ParticlesManager>();
-let pendingRafId = 0;
+const ensureGpuParticlesFactory = createLazyGpuFactory({
+  label: "particle",
+  load: () => import("./gpu-particles").then((m) => m.createGpuParticlesRenderer),
+});
 
-function ensurePendingLoop() {
-  if (pendingRafId) return;
-  const step = () => {
-    pendingRafId = 0;
-    if (pending.size === 0) return;
-    const engine = getDefaultEngine();
-    if (!engine) {
-      pendingRafId = window.requestAnimationFrame(step);
-      return;
-    }
-    const items = Array.from(pending);
-    pending.clear();
-    items.forEach((p) => p._attach());
-  };
-  pendingRafId = window.requestAnimationFrame(step);
-}
+const pendingParticles = createPendingAttachQueue<ParticlesManager>((p) => {
+  p._attach();
+});
+
+type GpuRenderer = import("./gpu-particles").GpuParticlesRenderer;
 
 export class ParticlesManager {
   private options: ParticlesOptions;
@@ -71,6 +65,7 @@ export class ParticlesManager {
   private program: WebGLProgram | null = null;
   private uSizeLoc: WebGLUniformLocation | null = null;
   private uColorLoc: WebGLUniformLocation | null = null;
+  private gpuRenderer: GpuRenderer | null = null;
   private count = 0;
 
   constructor(options: ParticlesOptions) {
@@ -82,6 +77,7 @@ export class ParticlesManager {
   setPositions(next: Float32Array) {
     this.options.positions = next;
     this.count = Math.floor(next.length / 2);
+    this.gpuRenderer?.setPositions(next);
     const gl = this.gl;
     const vbo = this.vbo;
     if (gl && vbo) {
@@ -103,11 +99,13 @@ export class ParticlesManager {
     }
     this.asyncProgram?.destroy();
     this.asyncProgram = null;
+    this.gpuRenderer?.destroy();
+    this.gpuRenderer = null;
     this.program = null;
     this.vao = null;
     this.vbo = null;
     this.gl = null;
-    pending.delete(this);
+    pendingParticles.dequeue(this);
   }
 
   _connectOrQueue() {
@@ -117,22 +115,24 @@ export class ParticlesManager {
       this._attach();
       return;
     }
-    pending.add(this);
-    ensurePendingLoop();
+    pendingParticles.enqueue(this);
   }
 
   _attach() {
     if (this.destroyed || this.unsubRender) return;
     const engine = getDefaultEngine();
     if (!engine) return;
-    const gl = engine.gl;
-    if (!gl) return;
-    this.gl = gl;
 
-    // Create VAO + VBO
+    this.unsubRender = engine.onRender((frame) => this._render(frame), {
+      layer: this.options.layer ?? 10,
+    });
+  }
+
+  private _setupGl(gl: WebGL2RenderingContext) {
     const vao = gl.createVertexArray();
     const vbo = gl.createBuffer();
     if (!vao || !vbo) throw new Error("Failed to create WebGL buffers for particles.");
+    this.gl = gl;
     this.vao = vao;
     this.vbo = vbo;
 
@@ -143,18 +143,25 @@ export class ParticlesManager {
     gl.bindVertexArray(null);
 
     this.asyncProgram = compileProgramAsync(gl, VERTEX_SRC, FRAGMENT_SRC, "particles");
-
-    this.unsubRender = engine.onRender(
-      (frame) => this._render(frame),
-      { layer: this.options.layer ?? 10 },
-    );
   }
 
   private _render(frame: EngineFrame) {
     if (this.destroyed || this.count === 0) return;
 
+    if (frame.backend === "webgpu") {
+      if (!this.gpuRenderer) {
+        const createGpuRenderer = ensureGpuParticlesFactory();
+        if (!createGpuRenderer) return;
+        this.gpuRenderer = createGpuRenderer(this.options);
+      }
+      this.gpuRenderer.render(frame);
+      return;
+    }
+
     const gl = frame.gl;
     if (!gl) return;
+    if (!this.gl) this._setupGl(gl);
+    if (this.gl !== gl) return;
 
     if (!this.program) {
       this.program = this.asyncProgram?.poll() ?? null;

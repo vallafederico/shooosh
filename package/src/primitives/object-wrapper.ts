@@ -1,9 +1,10 @@
 /**
- * createObject — GLB / generated mesh. WebGL2 only today.
+ * createObject — GLB / generated mesh. Runs on both backends.
  *
  * How to use:
  *   createObject({ glb, shaders, onFrame })
- * On WebGPU this path warns or no-ops until the port lands.
+ * Author the material as WGSL `fn fsMain` (reads `vUv`, `vNormal`, `uUni`);
+ * `shaders.fragmentGlsl` is a WebGL2 escape hatch and is ignored on WebGPU.
  *
  * Docs: docs/api.md
  */

@@ -3,21 +3,34 @@
  *
  * How to use: ItemManager constructs this when engine.backend === "webgpu".
  * Same item API as the WebGL2 path. Fragment is wrapWgslFragment(fsMain).
+ * With `options.texture` from loadTexture, sample
+ * `textureSample(uTexture, uSampler, fitUv(vUv))` for CSS-like cover/contain.
  *
  * Docs: docs/shader-contract.md
  */
 
 import type { EngineFrame } from "../engine/engine";
-import { getGpuFrame, GPU_BUFFER_USAGE, type GpuBindGroup, type GpuBuffer } from "../engine/gpu-api";
+import {
+  getGpuFrame,
+  sceneDepthStencil,
+  GPU_BUFFER_USAGE,
+  type GpuBindGroup,
+  type GpuBuffer,
+} from "../engine/gpu-api";
 import type { UniWatchController } from "../engine/uni";
+import {
+  resolveTextureUvTransform,
+  textureFitToUni,
+} from "../loaders/texture-loader";
 import {
   compileGpuPipeline,
   createBindGroup,
   createUniformBuffer,
+  resolveGpuTextureBinding,
   writeBufferFromArray,
   type GpuProgram,
 } from "../shaders/gpu-compile";
-import { resolveWgslFragment } from "../shaders/wgsl-wrap";
+import { resolveWgslModule } from "../shaders/wgsl-wrap";
 import { getElementClipData } from "./item.utils";
 import type { ItemOptions } from "./item";
 
@@ -42,16 +55,17 @@ export function createGpuItemRenderer(
     uniValues = uni.toFloat32(16);
   });
 
-  if (options.texture) {
-    console.warn("shooosh: item textures are not implemented on the WebGPU backend yet.");
-  }
+  const textureBinding = resolveGpuTextureBinding(device, options.texture ?? null, "item");
 
-  const wgsl = resolveWgslFragment({
+  const wgsl = resolveWgslModule({
     fragment: options.shaders?.fragment ?? options.shaders?.wgsl,
     debugUv: options.debugUv,
     kind: "item",
+    hasTexture: Boolean(textureBinding),
   });
-  const program: GpuProgram = compileGpuPipeline(device, wgsl, format, "item");
+  const program: GpuProgram = compileGpuPipeline(device, wgsl.code, format, "item", {
+    depthStencil: sceneDepthStencil(),
+  });
   const uniformBuffer = createUniformBuffer(device, "item-uni");
   const vertexBuffer: GpuBuffer = device.createBuffer({
     label: "item-vertex",
@@ -80,7 +94,25 @@ export function createGpuItemRenderer(
       if (!clipData.isVisible) return;
 
       if (!bindGroup) {
-        bindGroup = createBindGroup(device, pipeline, uniformBuffer, "item-bind");
+        bindGroup = createBindGroup(
+          device,
+          pipeline,
+          uniformBuffer,
+          "item-bind",
+          wgsl.usesTexture ? textureBinding : null,
+        );
+      }
+
+      if (options.texture && wgsl.usesTexture) {
+        const rect = element.getBoundingClientRect();
+        const targetAspect =
+          Math.max(1, rect.width) / Math.max(1, rect.height);
+        const uvTransform = resolveTextureUvTransform(
+          options.texture.aspect,
+          targetAspect,
+          options.textureFit ?? "cover",
+        );
+        uni.set(textureFitToUni(uvTransform));
       }
 
       writeBufferFromArray(device, uniformBuffer, uniValues);

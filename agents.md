@@ -15,25 +15,23 @@ Common use cases:
 
 - Fullscreen fragment on a dedicated `<canvas>` (`createScene`)
 - Shared page-behind canvas + DOM-tracked quads (`acquireLayer` + `createItem`)
-- Post stack (`effects.bloom` / `bw` / `noise` / `custom`)
+- Post stack (`createPostProcessor` + example-owned `applyEffect` GLSL — see `examples/post-shaders.ts`)
+- WebGPU compute (`createCompute`); fluids as example shaders + loop (`examples/fluid-sim.ts` / `fluid-shaders.ts`)
 - Hot-swap a `.wgsl` file without remounting the scene (roadmap)
 
 ## Documentation surfaces
 
-- [llms.txt](./llms.txt) — machine index. Start here.
-- [docs/README.md](./docs/README.md) — documentation hub (GitHub link target)
+- [llms.txt](./llms.txt) — machine index (**start here**)
+- [examples/](./examples/README.md) — copy a look (demos start here)
 - [docs/getting-started.md](./docs/getting-started.md) — install + two mounts
-- [examples/](./examples/README.md) — copy-paste library usage (plasma, noise, SDF, items)
-- [docs/agent-first.md](./docs/agent-first.md) — what we set up for agents
-- [docs/shader-contract.md](./docs/shader-contract.md) — authored language and uniforms
-- [docs/shader-translation.md](./docs/shader-translation.md) — WGSL ↔ GLSL
-- [docs/api.md](./docs/api.md) — public API after the dual renderer
-- [docs/site-patterns.md](./docs/site-patterns.md) — aiuis / Webflow / slider recipes
-- [docs/msdf.md](./docs/msdf.md) — Node/Bun font + icon SDF generators
-- [ROADMAP.md](./ROADMAP.md) — product direction
-- [docs/agent-tasks/](./docs/agent-tasks/) — executable briefs. Pick the lowest unfinished number
-- [readme.md](./readme.md) — GitHub landing
-- Source of truth for the public API: [package/index.ts](./package/index.ts) — each module has a file-level “how to use” header
+- [docs/shader-contract.md](./docs/shader-contract.md) · [docs/api.md](./docs/api.md) · [docs/site-patterns.md](./docs/site-patterns.md)
+- [docs/msdf.md](./docs/msdf.md) · [ROADMAP.md](./ROADMAP.md) · [docs/agent-tasks/](./docs/agent-tasks/)
+- [docs/README.md](./docs/README.md) — human docs hub
+- Public API source of truth: [package/index.ts](./package/index.ts)
+
+### Agent interface (short)
+
+This repo *is* the agent interface until hosted docs (task 06). Index = `llms.txt`. Working rules = this file. Looks = `examples/`. Engine work = next `docs/agent-tasks/` with `status: todo`. Do not invent named post presets — copy `examples/post-shaders.ts`.
 
 Cursor skills (read when converting shaders):
 
@@ -49,9 +47,9 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 
 ## Agent instructions
 
-1. Read `llms.txt`, then this file, then the next file in `docs/agent-tasks/` whose status is `todo`.
-2. Do **one** task per run. Mark it `done` in that file’s front matter when finished. Do not start the next task unless the current one is complete and tests pass.
-3. Author new shaders in WGSL (`fsMain`). Do not add GLSL except as a fallback converter target or a site escape hatch. When porting shaders, read the `wgsl-to-glsl` / `glsl-to-wgsl` skills and prefer `convertWgslFragmentToGlsl` / `convertGlslFragmentToWgsl`.
+1. **Ship a look:** `llms.txt` → `examples/README.md` → copy one example. **Change the engine:** `llms.txt` → this file → next `docs/agent-tasks/` with `status: todo`.
+2. Do **one** engine task per run. Mark it `done` in that file’s front matter when finished. Do not start the next task unless the current one is complete and tests pass.
+3. Author new shaders in WGSL (`fsMain`). Looks (bloom/FXAA/grain/PBR/fluids) live in `examples/` — not package presets. When porting shaders, read the `wgsl-to-glsl` / `glsl-to-wgsl` skills.
 4. Do not leak `WebGL2RenderingContext` into new public types. Shared frame types stay backend-agnostic.
 5. Never blank the page on shader failure — keep the last good program, surface the log.
 6. Out of scope: tensors, neural nets, Dawn-in-the-package, vgpu’s `frame.pass` graph.
@@ -75,14 +73,15 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 | `package/src/engine/` | async `createEngine` (WebGPU default, WebGL2 fallback), `probeRenderer` |
 | `package/src/scene/` | `createScene` |
 | `package/src/primitives/` | screen, item, object, particles, msdf |
-| `package/src/post/` | bloom, bw, noise, custom |
+| `package/src/post/` | `createPostProcessor` + `effects.custom` sugar (looks in examples/) |
+| `package/src/compute/` | `createCompute` (WebGPU) |
 | `package/src/shaders/` | compile, WGSL wrap, WGSL ↔ GLSL converters |
-| `.cursor/skills/` | Agent skills: WGSL ↔ GLSL |
+| `examples/` | Copy-paste looks + recipes (fluid-sim, post-shaders, scroll, …) |
+| `.cursor/skills/` | Agent skills: WGSL ↔ GLSL, site, item, post, examples, MSDF |
 | `harness/` | Vite playground |
 | `web/` | Astro landing |
 | `bin/` | ESM / CJS / IIFE / `shooosh/msdf` build + `msdf` CLI + publish checks |
 | `docs/` | Documentation hub (GitHub link target) |
-| `examples/` | Library usage examples (createScene / createItem + common shaders) |
 | `docs/agent-tasks/` | Cloud-agent work queue |
 
 ## Links

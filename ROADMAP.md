@@ -20,19 +20,14 @@ GLSL 300 es (`#version 300 es`) remains accepted as an escape hatch for current 
 ## Now
 
 - Publishable package (`esm` / `cjs` / IIFE / types)
-- Dual renderer: WebGPU default, WebGL2 fallback (`createEngine` / `createScene` / `acquireLayer` / `createItem` / `createScreen`)
+- Dual renderer: WebGPU default, WebGL2 fallback — scenes, items, textures, post, objects, particles, MSDF, mouse trail on both
 - WGSL `fsMain` on WebGPU; WGSL ↔ GLSL converters + agent skills
-- Post presets, loaders, particles / objects / MSDF (WebGL2)
+- `createCompute` (WebGPU); fluids as example recipes
+- Backend import gating: omit/`auto` picks best; forced backend loads only that chunk graph
 - Vite harness + Astro `/web` (`?backend=` + backend label)
 - Agent docs: `llms.txt`, `agents.md`, `docs/` hub, `docs/agent-first.md`, site-patterns (aiuis / Webflow)
 - Skills: WGSL ↔ GLSL, site mount, item, post, MSDF bake
 - Node/Bun `shooosh/msdf`: font atlases + icon SDFs (`pnpm msdf`)
-
-## Next — remaining GPU ports
-
-Post stack, `loadTexture`, objects, particles, and MSDF on WebGPU.
-
-Shader-file HMR (below) should land against this contract so a `.wgsl` edit hot-swaps on whichever backend is live.
 
 ## Next — shader files + HMR
 

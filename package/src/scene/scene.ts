@@ -11,6 +11,7 @@
  *
  * After init, createItem / createParticles / post use the default engine.
  * Teardown: scene.destroy(). Page-behind without a scene object: acquireLayer.
+ * Compute: createCompute(engine) after init — sims / fluids live in examples/.
  *
  * Docs: docs/getting-started.md · docs/site-patterns.md · skill shooosh-site
  */
@@ -102,14 +103,8 @@ export class Scene {
     }
 
     if (this.options.post?.length) {
-      if (this.engine.backend === "webgpu") {
-        console.warn(
-          "shooosh: post-processing is not implemented on the WebGPU backend yet; skipping.",
-        );
-      } else {
-        this.postProcessor = createPostProcessor();
-        this.applyPostPresets(this.options.post);
-      }
+      this.postProcessor = createPostProcessor();
+      this.applyPostPresets(this.options.post);
     }
 
     this.screenTexture?.destroy();
@@ -142,20 +137,11 @@ export class Scene {
     for (const preset of presets) {
       if (preset.enabled === false) continue;
 
-      switch (preset.type) {
-        case "bloom":
-          this.postProcessor.addBloomEffect(preset);
-          break;
-        case "bw":
-          this.postProcessor.addBlackAndWhiteEffect(preset);
-          break;
-        case "noise":
-          this.postProcessor.addNoiseEffect(preset);
-          break;
-        case "custom":
-          this.postProcessor.addFragmentEffect(preset);
-          break;
+      if (preset.type === "custom") {
+        this.postProcessor.addFragmentEffect(preset);
       }
+      // Named bloom/bw/noise presets were removed — pass applyEffect GLSL via custom
+      // (see examples/post-shaders.ts).
     }
   }
 
