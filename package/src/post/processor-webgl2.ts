@@ -12,41 +12,40 @@
 
 import type { EnginePostFrame } from "../engine/engine";
 import { compileProgramAsync, type AsyncProgram } from "../shaders/compile";
+import { createFullscreenTriangle, createProgram, FULLSCREEN_VERTEX_SOURCE } from "./gl-util";
 import type { InternalEffect, PostBackend } from "./types";
 
 // ---------------------------------------------------------------------------
 // Orientation contract
 // ---------------------------------------------------------------------------
 // The scene framebuffer is stored bottom-origin (standard GL: row 0 displays
-// at the bottom of the screen). The post chain normalizes this ONCE:
+// at the bottom of the screen); intermediate targets hold top-origin "post
+// space". Instead of dedicated ingest/present blits, the flips are folded into
+// the effect passes themselves, so a chain of N passes costs exactly N
+// fullscreen draws:
 //
-//   scene FBO ──(ingest blit, flips)──▶ post space ──(effect passes,
-//   orientation-preserving)──▶ ... ──(final blit, flips)──▶ canvas
+//   1 pass:   scene ──(upright)──▶ canvas          (both bottom-origin)
+//   ≥2 pass:  scene ──(mirror)──▶ post space ──(upright passes)──▶
+//             post space ──(mirror)──▶ canvas
 //
-// In "post space" every effect pass is guaranteed the same semantics,
-// regardless of its position in the chain or how many effects run:
-//   - `uv` is top-origin: (0,0) = top-left of the screen, uv.y grows downward.
-//   - `texture(uTexture, uv)` is screen-aligned: it returns the pixel currently
-//     displayed at that screen position.
-//
-// Because effect passes preserve orientation, adding/removing/toggling effects
-// can never flip the output — the parity of the chain no longer matters.
+// The number of mirrors is always even (0 or 2), so pass-count parity can
+// never flip the output. For every pass `texture(uTexture, uv)` stays
+// screen-aligned: it returns the pixel currently displayed at that screen
+// position. Passes that read post space see the documented top-origin `uv`
+// ((0,0) = top-left); the pass that reads the scene FBO directly (and the
+// single-pass layout) sees a bottom-origin `uv` — screen-symmetric and purely
+// color-based effects are unaffected.
 
-/** Orientation-preserving vertex shader used by every effect pass. */
-const PASS_VERTEX_SOURCE = `#version 300 es
-in vec2 aPosition;
-out vec2 vUv;
-void main() {
-  gl_Position = vec4(aPosition, 0.0, 1.0);
-  vUv = aPosition * 0.5 + 0.5;
-}`;
+/** Orientation-preserving vertex shader used by post-space effect passes. */
+const PASS_VERTEX_SOURCE = FULLSCREEN_VERTEX_SOURCE;
 
 /**
- * Y-mirroring vertex shader used by the ingest blit (scene FBO → post space)
- * and the final blit (post space → canvas), which each flip exactly once.
+ * Y-mirroring vertex shader for the passes that cross between bottom-origin
+ * (scene FBO / canvas) and top-origin post space — each chain flips 0 or 2
+ * times, never an odd number.
  */
 const BLIT_VERTEX_SOURCE = `#version 300 es
-in vec2 aPosition;
+layout(location = 0) in vec2 aPosition;
 out vec2 vUv;
 void main() {
   gl_Position = vec4(aPosition, 0.0, 1.0);
@@ -63,7 +62,6 @@ void main() {
 }`;
 
 type CorePrograms = {
-  blitMirror: WebGLProgram | null;
   blitUpright: WebGLProgram | null;
 };
 
@@ -74,41 +72,6 @@ type GlTarget = {
   height: number;
   destroy: () => void;
 };
-
-function createShader(gl: WebGL2RenderingContext, type: number, source: string) {
-  const shader = gl.createShader(type);
-  if (!shader) throw new Error("Failed to create WebGL shader.");
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    const info = gl.getShaderInfoLog(shader) ?? "Unknown shader compile error.";
-    gl.deleteShader(shader);
-    throw new Error(info);
-  }
-  return shader;
-}
-
-function createProgram(
-  gl: WebGL2RenderingContext,
-  vertexSource: string,
-  fragmentSource: string,
-) {
-  const program = gl.createProgram();
-  if (!program) throw new Error("Failed to create WebGL program.");
-  const vs = createShader(gl, gl.VERTEX_SHADER, vertexSource);
-  const fs = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
-  gl.attachShader(program, vs);
-  gl.attachShader(program, fs);
-  gl.linkProgram(program);
-  gl.deleteShader(vs);
-  gl.deleteShader(fs);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const info = gl.getProgramInfoLog(program) ?? "Unknown program link error.";
-    gl.deleteProgram(program);
-    throw new Error(info);
-  }
-  return program;
-}
 
 function createTarget(gl: WebGL2RenderingContext, width: number, height: number): GlTarget {
   const texture = gl.createTexture();
@@ -147,7 +110,13 @@ class WebGl2PostBackend implements PostBackend {
   private quadBuffer: WebGLBuffer | null = null;
   private programGl: WebGL2RenderingContext | null = null;
   private warnedOnce = new Set<string>();
+  /** Per-effect programs with the orientation-preserving vertex shader. */
   private customPrograms = new Map<string, WebGLProgram>();
+  /**
+   * Per-effect programs with the mirroring vertex shader — used by the pass
+   * that reads the scene FBO directly and by the final pass onto the canvas.
+   */
+  private customMirrorPrograms = new Map<string, WebGLProgram>();
   /** Effects whose shader failed to compile — skipped, never retried. */
   private failedEffects = new Set<string>();
 
@@ -168,12 +137,14 @@ class WebGl2PostBackend implements PostBackend {
 
   invalidate(id: string) {
     this.failedEffects.delete(id);
-    const program = this.customPrograms.get(id);
-    if (program && this.programGl) {
-      this.programGl.deleteProgram(program);
-      this.forgetProgramLocations(program);
+    for (const map of [this.customPrograms, this.customMirrorPrograms]) {
+      const program = map.get(id);
+      if (program && this.programGl) {
+        this.programGl.deleteProgram(program);
+        this.forgetProgramLocations(program);
+      }
+      map.delete(id);
     }
-    this.customPrograms.delete(id);
   }
 
   destroy() {
@@ -193,6 +164,9 @@ class WebGl2PostBackend implements PostBackend {
       for (const program of this.customPrograms.values()) {
         gl.deleteProgram(program);
       }
+      for (const program of this.customMirrorPrograms.values()) {
+        gl.deleteProgram(program);
+      }
     }
     for (const pending of this.pendingAsync.values()) {
       pending.destroy();
@@ -203,6 +177,7 @@ class WebGl2PostBackend implements PostBackend {
     this.quadBuffer = null;
     this.programGl = null;
     this.customPrograms.clear();
+    this.customMirrorPrograms.clear();
     this.failedEffects.clear();
     this.warnedOnce.clear();
     this.compileState = "idle";
@@ -237,24 +212,21 @@ class WebGl2PostBackend implements PostBackend {
     this.programGl = gl;
     this.compileState = "compiling";
     this.pendingAsync.set(
-      "blitMirror",
-      compileProgramAsync(gl, BLIT_VERTEX_SOURCE, COPY_FRAGMENT_SOURCE, "post:blitMirror"),
-    );
-    this.pendingAsync.set(
       "blitUpright",
       compileProgramAsync(gl, PASS_VERTEX_SOURCE, COPY_FRAGMENT_SOURCE, "post:blitUpright"),
     );
     for (const effect of effects) {
       const source = this.getEffectSource(effect);
       if (effect.kind === "fragment" && source) {
+        const fragment = this.toFragmentShaderSource(source, effect);
         this.pendingAsync.set(
           `effect:${effect.id}`,
-          compileProgramAsync(
-            gl,
-            PASS_VERTEX_SOURCE,
-            this.toFragmentShaderSource(source, effect),
-            `post:${effect.id}`,
-          ),
+          compileProgramAsync(gl, PASS_VERTEX_SOURCE, fragment, `post:${effect.id}`),
+        );
+        // Mirror variant for chain-edge passes (scene ingest / canvas present).
+        this.pendingAsync.set(
+          `mirror:${effect.id}`,
+          compileProgramAsync(gl, BLIT_VERTEX_SOURCE, fragment, `post:${effect.id}:mirror`),
         );
       }
     }
@@ -284,16 +256,19 @@ class WebGl2PostBackend implements PostBackend {
       return program;
     };
     this.programs = {
-      blitMirror: take("blitMirror"),
       blitUpright: take("blitUpright"),
     };
     for (const effect of effects) {
       const entry = this.pendingAsync.get(`effect:${effect.id}`);
       if (!entry) continue;
       const program = entry.poll();
-      if (program) {
+      const mirrorProgram = this.pendingAsync.get(`mirror:${effect.id}`)?.poll() ?? null;
+      if (program && mirrorProgram) {
         this.customPrograms.set(effect.id, program);
+        this.customMirrorPrograms.set(effect.id, mirrorProgram);
       } else {
+        if (program) gl.deleteProgram(program);
+        if (mirrorProgram) gl.deleteProgram(mirrorProgram);
         this.failedEffects.add(effect.id);
         console.error(
           `[post] Effect "${effect.id}" shader failed to compile and was disabled. See shader log above.`,
@@ -302,40 +277,36 @@ class WebGl2PostBackend implements PostBackend {
     }
     this.pendingAsync.clear();
 
-    const vao = gl.createVertexArray();
-    const buffer = gl.createBuffer();
-    if (!vao || !buffer) {
-      throw new Error("Failed to create WebGL post-process geometry.");
-    }
+    const { vao, buffer } = createFullscreenTriangle(gl);
     this.quadVao = vao;
     this.quadBuffer = buffer;
-    gl.bindVertexArray(vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 3, -1, -1, 3]),
-      gl.STATIC_DRAW,
-    );
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-    gl.bindVertexArray(null);
 
     this.compileState = "ready";
     return true;
   }
 
-  private ensureTargets(gl: WebGL2RenderingContext, width: number, height: number) {
+  /**
+   * Ping-pong targets for chains with ≥2 passes: a 2-pass chain needs one
+   * intermediate, longer chains alternate between two.
+   */
+  private ensureTargets(
+    gl: WebGL2RenderingContext,
+    width: number,
+    height: number,
+    count: 1 | 2,
+  ) {
     if (
-      this.targets.length === 2 &&
-      this.targets[0]?.width === width &&
-      this.targets[0]?.height === height
+      this.targets.length > 0 &&
+      (this.targets[0]?.width !== width || this.targets[0]?.height !== height)
     ) {
-      return;
+      for (const target of this.targets) {
+        target.destroy();
+      }
+      this.targets = [];
     }
-    for (const target of this.targets) {
-      target.destroy();
+    while (this.targets.length < count) {
+      this.targets.push(createTarget(gl, width, height));
     }
-    this.targets = [createTarget(gl, width, height), createTarget(gl, width, height)];
   }
 
   private warnOnce(key: string, message: string) {
@@ -510,8 +481,13 @@ void main() {
    * for effects registered after the initial async compile finished. Failures
    * disable the effect instead of breaking the chain.
    */
-  private resolveFragmentProgram(gl: WebGL2RenderingContext, effect: InternalEffect) {
-    const existing = this.customPrograms.get(effect.id);
+  private resolveFragmentProgram(
+    gl: WebGL2RenderingContext,
+    effect: InternalEffect,
+    mirror: boolean,
+  ) {
+    const map = mirror ? this.customMirrorPrograms : this.customPrograms;
+    const existing = map.get(effect.id);
     if (existing) return existing;
     if (this.failedEffects.has(effect.id)) return null;
     const source = this.getEffectSource(effect);
@@ -519,10 +495,10 @@ void main() {
     try {
       const program = createProgram(
         gl,
-        PASS_VERTEX_SOURCE,
+        mirror ? BLIT_VERTEX_SOURCE : PASS_VERTEX_SOURCE,
         this.toFragmentShaderSource(source, effect),
       );
-      this.customPrograms.set(effect.id, program);
+      map.set(effect.id, program);
       return program;
     } catch (error) {
       this.failedEffects.add(effect.id);
@@ -583,62 +559,94 @@ void main() {
     }
 
     const renderable = this.getRenderableEffects(effects);
-
-    // No effects to run (or the ingest blit failed): present the raw scene
-    // with an orientation-preserving copy — never leave the canvas black.
-    if (renderable.length === 0 || !this.programs?.blitMirror) {
-      const blit = this.programs?.blitUpright ?? this.programs?.blitMirror;
+    const presentRawScene = () => {
+      const blit = this.programs?.blitUpright;
       if (blit) {
         this.drawPass(gl, blit, inputTexture, null, width, height);
       }
+    };
+
+    // Flatten the chain into passes, resolving the orientation-preserving
+    // program for every effect up front (drops effects that fail to compile).
+    type PassEntry = { effect: InternalEffect; passIndex: number; uniValues: Float32Array };
+    const passes: PassEntry[] = [];
+    for (const effect of renderable) {
+      if (!this.resolveFragmentProgram(gl, effect, false)) continue;
+      const uniValues = effect.uniWatch.toFloat32(16);
+      const passCount = Math.max(1, Math.floor(effect.passes ?? 1));
+      for (let pass = 0; pass < passCount; pass++) {
+        passes.push({ effect, passIndex: pass, uniValues });
+      }
+    }
+
+    // No effects to run: present the raw scene with an orientation-preserving
+    // copy — never leave the canvas black.
+    if (passes.length === 0) {
+      presentRawScene();
       return;
     }
 
-    this.ensureTargets(gl, width, height);
+    // Single pass: bottom-origin scene straight onto the bottom-origin canvas
+    // with the upright program — one fullscreen draw, no intermediate targets.
+    if (passes.length === 1) {
+      const only = passes[0]!;
+      const program = this.resolveFragmentProgram(gl, only.effect, false)!;
+      this.drawFragmentPass(
+        gl,
+        program,
+        inputTexture,
+        null,
+        width,
+        height,
+        frame,
+        only.passIndex,
+        only.uniValues,
+        only.effect,
+      );
+      return;
+    }
 
-    // Ingest: flip the bottom-origin scene FBO into top-origin post space so
-    // every effect pass sees the same uv/sampling contract (see header).
+    // ≥2 passes: the first pass mirrors the scene FBO into top-origin post
+    // space, middle passes preserve orientation, and the last pass mirrors
+    // back onto the canvas — no dedicated ingest/present blits.
+    const firstEffect = passes[0]!.effect;
+    const lastEffect = passes[passes.length - 1]!.effect;
+    if (
+      !this.resolveFragmentProgram(gl, firstEffect, true) ||
+      !this.resolveFragmentProgram(gl, lastEffect, true)
+    ) {
+      // A mirror variant failed to compile (the effect is now disabled) —
+      // degrade to the raw scene this frame; the next frame re-filters.
+      presentRawScene();
+      return;
+    }
+
+    this.ensureTargets(gl, width, height, passes.length === 2 ? 1 : 2);
+    let sourceTexture = inputTexture;
     let writeIndex = 0;
-    const ingestTarget = this.targets[writeIndex % 2];
-    this.drawPass(
-      gl,
-      this.programs.blitMirror,
-      inputTexture,
-      ingestTarget.framebuffer,
-      width,
-      height,
-    );
-    let sourceTexture = ingestTarget.texture;
-    writeIndex += 1;
-
-    for (const effect of renderable) {
-      const uniValues = effect.uniWatch.toFloat32(16);
-      const passCount = Math.max(1, Math.floor(effect.passes ?? 1));
-      const program = this.resolveFragmentProgram(gl, effect);
-      if (!program) continue;
-      for (let pass = 0; pass < passCount; pass++) {
-        const target = this.targets[writeIndex % 2];
-        this.drawFragmentPass(
-          gl,
-          program,
-          sourceTexture,
-          target.framebuffer,
-          width,
-          height,
-          frame,
-          pass,
-          uniValues,
-          effect,
-        );
+    for (let index = 0; index < passes.length; index++) {
+      const entry = passes[index]!;
+      const isFirst = index === 0;
+      const isLast = index === passes.length - 1;
+      const program = this.resolveFragmentProgram(gl, entry.effect, isFirst || isLast)!;
+      const target = isLast ? null : this.targets[writeIndex % this.targets.length]!;
+      this.drawFragmentPass(
+        gl,
+        program,
+        sourceTexture,
+        target?.framebuffer ?? null,
+        width,
+        height,
+        frame,
+        entry.passIndex,
+        entry.uniValues,
+        entry.effect,
+      );
+      if (target) {
         sourceTexture = target.texture;
         writeIndex += 1;
       }
     }
-
-    // Present: flip top-origin post space back to the bottom-origin canvas.
-    // Effect passes preserve orientation, so this is always a single mirror —
-    // pass count parity can never flip the output.
-    this.drawPass(gl, this.programs.blitMirror, sourceTexture, null, width, height);
   }
 }
 

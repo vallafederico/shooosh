@@ -31,16 +31,14 @@ export function createSettleLoop(handlers: {
   render: (timing: SettleTiming) => void;
 }): SettleLoop {
   let running = false;
+  let scheduled = false;
   let rafId = 0;
   let previousFrameAt = 0;
   let lastDirtyAt = 0;
   let wasActive = false;
 
-  const markDirty = () => {
-    lastDirtyAt = performance.now();
-  };
-
   const frame = () => {
+    scheduled = false;
     if (!running) return;
 
     const now = performance.now();
@@ -55,7 +53,19 @@ export function createSettleLoop(handlers: {
     }
     wasActive = active;
 
+    // Settled: stop scheduling entirely. markDirty re-arms the loop.
+    if (active) schedule();
+  };
+
+  const schedule = () => {
+    if (!running || scheduled) return;
+    scheduled = true;
     rafId = window.requestAnimationFrame(frame);
+  };
+
+  const markDirty = () => {
+    lastDirtyAt = performance.now();
+    schedule();
   };
 
   const start = () => {
@@ -64,13 +74,15 @@ export function createSettleLoop(handlers: {
     previousFrameAt = 0;
     wasActive = false;
     markDirty();
-    rafId = window.requestAnimationFrame(frame);
   };
 
   const stop = () => {
     if (!running) return;
     running = false;
-    window.cancelAnimationFrame(rafId);
+    if (scheduled) {
+      window.cancelAnimationFrame(rafId);
+      scheduled = false;
+    }
   };
 
   const onDirtyEvent = () => markDirty();

@@ -58,6 +58,51 @@ test("round-trips a WGSL fragment through GLSL and back", () => {
   expect(back).not.toContain("uUni[0]")
 })
 
+test("converts texture(...) calls to textureSample(..., uSampler, ...)", () => {
+  const wgsl = convertGlslFragmentToWgsl(`#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform vec4 uUni[4];
+uniform sampler2D uTexture;
+out vec4 outColor;
+
+void main() {
+  outColor = texture(uTexture, fitUv(vUv));
+}
+`)
+  expect(wgsl).toContain("textureSample(uTexture, uSampler, fitUv(vUv))")
+  expect(wgsl).not.toContain("sampler2D")
+  expect(wgsl).not.toMatch(/(?<!textureSample\b.*)\btexture\(/)
+})
+
+test("keeps top-level const declarations const in WGSL", () => {
+  const wgsl = convertGlslFragmentToWgsl(`#version 300 es
+precision highp float;
+uniform vec4 uUni[4];
+out vec4 outColor;
+
+const float PI = 3.14159;
+
+void main() {
+  outColor = vec4(sin(PI * uUni[0].x));
+}
+`)
+  expect(wgsl).toContain("const PI: f32 = 3.14159;")
+  expect(wgsl).not.toContain("var PI")
+})
+
+test("round-trips a textured WGSL fragment through GLSL and back", () => {
+  const glsl = convertWgslFragmentToGlsl(
+    `fn fsMain() -> vec4f {
+  return textureSample(uTexture, uSampler, vUv);
+}`,
+    { includeUv: true },
+  )
+  const back = convertGlslFragmentToWgsl(glsl)
+  expect(back).toContain("textureSample(uTexture, uSampler,")
+  expect(back).not.toContain("sampler2D")
+})
+
 test("converts helper function signatures", () => {
   const wgsl = convertGlslFragmentToWgsl(`#version 300 es
 precision highp float;

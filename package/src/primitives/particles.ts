@@ -10,7 +10,9 @@
 
 import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import { compileProgramAsync, type AsyncProgram } from "../shaders/compile";
-import { createLazyGpuFactory, createPendingAttachQueue } from "./pending-attach";
+import { getCachedCanvasRect } from "./item.utils";
+import { createLazyGpuFactory } from "./pending-attach";
+import { createPrimitiveLifecycle, type PrimitiveLifecycle } from "./primitive-lifecycle";
 
 export type ParticlesOptions = {
   /** Float32Array of clip-space positions: [x0, y0, x1, y1, ...] — x/y in [-1, 1]. */
@@ -48,16 +50,16 @@ const ensureGpuParticlesFactory = createLazyGpuFactory({
   load: () => import("./gpu-particles").then((m) => m.createGpuParticlesRenderer),
 });
 
-const pendingParticles = createPendingAttachQueue<ParticlesManager>((p) => {
-  p._attach();
-});
-
 type GpuRenderer = import("./gpu-particles").GpuParticlesRenderer;
+
+type ParticlesRenderer = {
+  render: (frame: EngineFrame) => void;
+  destroy: () => void;
+};
 
 export class ParticlesManager {
   private options: ParticlesOptions;
-  private unsubRender: (() => void) | null = null;
-  private destroyed = false;
+  private lifecycle: PrimitiveLifecycle<ParticlesRenderer>;
   private gl: WebGL2RenderingContext | null = null;
   private vao: WebGLVertexArrayObject | null = null;
   private vbo: WebGLBuffer | null = null;
@@ -71,7 +73,33 @@ export class ParticlesManager {
   constructor(options: ParticlesOptions) {
     this.options = { ...options };
     this.count = Math.floor(options.positions.length / 2);
-    this._connectOrQueue();
+    this.lifecycle = createPrimitiveLifecycle<ParticlesRenderer>({
+      layer: this.options.layer ?? 10,
+      createRenderer: (frame) => {
+        if (frame.backend === "webgpu") {
+          const createGpuRenderer = ensureGpuParticlesFactory();
+          if (!createGpuRenderer) return null;
+          this.gpuRenderer = createGpuRenderer(this.options);
+          return {
+            render: (nextFrame) => this.gpuRenderer?.render(nextFrame),
+            destroy: () => {
+              this.gpuRenderer?.destroy();
+              this.gpuRenderer = null;
+            },
+          };
+        }
+        if (!frame.gl) return null;
+        this._setupGl(frame.gl);
+        return {
+          render: (nextFrame) => this._renderGl(nextFrame),
+          destroy: () => this._destroyGl(),
+        };
+      },
+      renderFrame: (renderer, frame) => {
+        if (this.count === 0) return;
+        renderer.render(frame);
+      },
+    });
   }
 
   setPositions(next: Float32Array) {
@@ -89,43 +117,7 @@ export class ParticlesManager {
   }
 
   destroy() {
-    this.destroyed = true;
-    this.unsubRender?.();
-    this.unsubRender = null;
-    const gl = this.gl;
-    if (gl) {
-      if (this.vao) gl.deleteVertexArray(this.vao);
-      if (this.vbo) gl.deleteBuffer(this.vbo);
-    }
-    this.asyncProgram?.destroy();
-    this.asyncProgram = null;
-    this.gpuRenderer?.destroy();
-    this.gpuRenderer = null;
-    this.program = null;
-    this.vao = null;
-    this.vbo = null;
-    this.gl = null;
-    pendingParticles.dequeue(this);
-  }
-
-  _connectOrQueue() {
-    if (this.destroyed) return;
-    const engine = getDefaultEngine();
-    if (engine) {
-      this._attach();
-      return;
-    }
-    pendingParticles.enqueue(this);
-  }
-
-  _attach() {
-    if (this.destroyed || this.unsubRender) return;
-    const engine = getDefaultEngine();
-    if (!engine) return;
-
-    this.unsubRender = engine.onRender((frame) => this._render(frame), {
-      layer: this.options.layer ?? 10,
-    });
+    this.lifecycle.destroy();
   }
 
   private _setupGl(gl: WebGL2RenderingContext) {
@@ -145,23 +137,23 @@ export class ParticlesManager {
     this.asyncProgram = compileProgramAsync(gl, VERTEX_SRC, FRAGMENT_SRC, "particles");
   }
 
-  private _render(frame: EngineFrame) {
-    if (this.destroyed || this.count === 0) return;
-
-    if (frame.backend === "webgpu") {
-      if (!this.gpuRenderer) {
-        const createGpuRenderer = ensureGpuParticlesFactory();
-        if (!createGpuRenderer) return;
-        this.gpuRenderer = createGpuRenderer(this.options);
-      }
-      this.gpuRenderer.render(frame);
-      return;
+  private _destroyGl() {
+    const gl = this.gl;
+    if (gl) {
+      if (this.vao) gl.deleteVertexArray(this.vao);
+      if (this.vbo) gl.deleteBuffer(this.vbo);
     }
+    this.asyncProgram?.destroy();
+    this.asyncProgram = null;
+    this.program = null;
+    this.vao = null;
+    this.vbo = null;
+    this.gl = null;
+  }
 
+  private _renderGl(frame: EngineFrame) {
     const gl = frame.gl;
-    if (!gl) return;
-    if (!this.gl) this._setupGl(gl);
-    if (this.gl !== gl) return;
+    if (!gl || this.gl !== gl) return;
 
     if (!this.program) {
       this.program = this.asyncProgram?.poll() ?? null;
@@ -180,8 +172,8 @@ export class ParticlesManager {
       gl.bindVertexArray(null);
     }
 
-    // Compute DPR from canvas physical vs CSS width
-    const cssWidth = frame.canvas.getBoundingClientRect().width;
+    // Compute DPR from canvas physical vs CSS width (per-frame cached rect)
+    const cssWidth = getCachedCanvasRect(frame.canvas).width;
     const dpr = cssWidth > 0 ? frame.canvas.width / cssWidth : (window.devicePixelRatio || 1);
     const pointSize = (this.options.size ?? 2) * dpr;
     const color = this.options.color ?? [1, 1, 1, 1];

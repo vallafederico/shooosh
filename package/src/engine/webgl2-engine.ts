@@ -13,8 +13,12 @@ import { WebGLUnavailableError } from "./errors";
 import { resetCanvasRectCache } from "../primitives/item.utils";
 import {
   applyCanvasBackdrop,
-  clampColorChannel,
+  computeCanvasSize,
+  createCanvasSizeTracker,
+  createSubscriberRegistry,
+  ensureSizedTarget,
   getEffectiveDevicePixelRatio,
+  mergeClearColor,
   resolveClearColor,
 } from "./engine-utils";
 import { createSettleLoop } from "./settle-loop";
@@ -26,17 +30,9 @@ import type {
   EnginePostFrame,
   PostRenderCallback,
   RenderCallback,
-  RenderSubscriptionOptions,
   WebGl2RenderTarget,
   WebGLEngine,
 } from "./engine";
-
-type RenderSubscriberEntry = {
-  id: number;
-  layer: number;
-  order: number;
-  callback: RenderCallback;
-};
 
 export function createWebGl2Engine(
   canvas: HTMLCanvasElement,
@@ -55,8 +51,11 @@ export function createWebGl2Engine(
     throw new WebGLUnavailableError();
   }
 
-  gl.getExtension("EXT_color_buffer_half_float");
-  gl.getExtension("EXT_color_buffer_float");
+  // RGBA16F is only renderable with one of these extensions; without either the
+  // post target falls back to RGBA8 below.
+  const halfFloatExt = gl.getExtension("EXT_color_buffer_half_float");
+  const floatExt = gl.getExtension("EXT_color_buffer_float");
+  let useHalfFloatTarget = Boolean(halfFloatExt || floatExt);
 
   const baseClearColor = resolveClearColor(options.clearColor);
   gl.clearColor(baseClearColor.r, baseClearColor.g, baseClearColor.b, baseClearColor.a);
@@ -64,12 +63,6 @@ export function createWebGl2Engine(
 
   let clearColor = baseClearColor;
   let sceneTarget: WebGl2RenderTarget | null = null;
-  let renderSubscriberId = 1;
-  let renderSubscriberOrder = 0;
-
-  const renderSubscribers = new Map<number, RenderSubscriberEntry>();
-  const postRenderSubscribers = new Set<PostRenderCallback>();
-  let sortedRenderSubscribersCache: RenderSubscriberEntry[] | null = null;
 
   const createRenderTarget = (width: number, height: number): WebGl2RenderTarget => {
     const texture = gl.createTexture();
@@ -79,18 +72,22 @@ export function createWebGl2Engine(
       throw new Error("Failed to create WebGL render target.");
     }
 
+    const specColorStorage = (halfFloat: boolean) => {
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        halfFloat ? gl.RGBA16F : gl.RGBA8,
+        width,
+        height,
+        0,
+        gl.RGBA,
+        halfFloat ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE,
+        null,
+      );
+    };
+
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA16F,
-      width,
-      height,
-      0,
-      gl.RGBA,
-      gl.HALF_FLOAT,
-      null,
-    );
+    specColorStorage(useHalfFloatTarget);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -113,6 +110,20 @@ export function createWebGl2Engine(
       gl.RENDERBUFFER,
       depth,
     );
+
+    // One-time completeness check — some drivers reject a renderable RGBA16F
+    // even when the extension probe passed. Fall back to RGBA8, then warn.
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      if (useHalfFloatTarget) {
+        useHalfFloatTarget = false;
+        specColorStorage(false);
+      }
+      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+        console.warn(
+          "shooosh: post render target framebuffer is incomplete; post output may be blank.",
+        );
+      }
+    }
 
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -138,56 +149,16 @@ export function createWebGl2Engine(
   };
 
   const ensureSceneTarget = () => {
-    const width = Math.max(1, canvas.width);
-    const height = Math.max(1, canvas.height);
-    if (sceneTarget && sceneTarget.width === width && sceneTarget.height === height) {
-      return sceneTarget;
-    }
-    sceneTarget?.destroy();
-    sceneTarget = createRenderTarget(width, height);
+    sceneTarget = ensureSizedTarget(canvas, sceneTarget, createRenderTarget);
     return sceneTarget;
   };
 
-  const getSortedRenderSubscribers = () => {
-    if (!sortedRenderSubscribersCache) {
-      sortedRenderSubscribersCache = Array.from(renderSubscribers.values()).sort((a, b) => {
-        if (a.layer !== b.layer) return a.layer - b.layer;
-        return a.order - b.order;
-      });
-    }
-    return sortedRenderSubscribersCache;
-  };
-
-  const subscribeRender = (
-    callback: RenderCallback,
-    subscriptionOptions: RenderSubscriptionOptions = {},
-  ) => {
-    const id = renderSubscriberId++;
-    const layer = Number.isFinite(subscriptionOptions.layer)
-      ? (subscriptionOptions.layer as number)
-      : 0;
-    const entry: RenderSubscriberEntry = {
-      id,
-      layer,
-      order: renderSubscriberOrder++,
-      callback,
-    };
-    renderSubscribers.set(id, entry);
-    sortedRenderSubscribersCache = null;
-    loop.requestFrame();
-    return () => {
-      renderSubscribers.delete(id);
-      sortedRenderSubscribersCache = null;
-    };
-  };
+  const subscribers = createSubscriberRegistry<RenderCallback, PostRenderCallback>(
+    () => loop.requestFrame(),
+  );
 
   const resize = () => {
-    const ratio = getEffectiveDevicePixelRatio(options.dpr?.max);
-    const rect = canvas.getBoundingClientRect();
-    const cssWidth = rect.width > 0 ? rect.width : canvas.clientWidth;
-    const cssHeight = rect.height > 0 ? rect.height : canvas.clientHeight;
-    const width = Math.max(1, Math.round(cssWidth * ratio));
-    const height = Math.max(1, Math.round(cssHeight * ratio));
+    const { ratio, width, height } = computeCanvasSize(canvas, options.dpr?.max);
 
     const didResize = canvas.width !== width || canvas.height !== height;
     if (didResize) {
@@ -198,10 +169,17 @@ export function createWebGl2Engine(
     }
 
     gl.viewport(0, 0, canvas.width, canvas.height);
+    sizeTracker.markClean(ratio);
+  };
+
+  // Per-frame resize is a cheap flag check; getBoundingClientRect (a forced
+  // layout) only runs when the tracker saw the canvas or DPR change.
+  const resizeIfNeeded = () => {
+    if (sizeTracker.needsResize()) resize();
   };
 
   const renderAt = (now: number, delta: number) => {
-    const hasPost = postRenderSubscribers.size > 0;
+    const hasPost = subscribers.hasPostSubscribers();
     const scene = hasPost ? ensureSceneTarget() : null;
     if (scene) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, scene.framebuffer);
@@ -225,7 +203,7 @@ export function createWebGl2Engine(
       delta,
       backend: "webgl2",
     };
-    getSortedRenderSubscribers().forEach(({ callback }) => {
+    subscribers.getSortedRenderSubscribers().forEach(({ callback }) => {
       try {
         callback(frame);
       } catch (error) {
@@ -246,7 +224,7 @@ export function createWebGl2Engine(
         delta,
         backend: "webgl2",
       };
-      postRenderSubscribers.forEach((callback) => {
+      subscribers.forEachPost((callback) => {
         try {
           callback(postFrame);
         } catch (error) {
@@ -257,17 +235,18 @@ export function createWebGl2Engine(
   };
 
   const loop = createSettleLoop({
-    resize,
+    resize: resizeIfNeeded,
     render: ({ now, delta }) => renderAt(now, delta),
   });
 
+  const sizeTracker = createCanvasSizeTracker(
+    canvas,
+    () => getEffectiveDevicePixelRatio(options.dpr?.max),
+    () => loop.requestFrame(),
+  );
+
   const setClearColor = (nextColor: Partial<ClearColor>) => {
-    clearColor = {
-      r: clampColorChannel(nextColor.r ?? clearColor.r),
-      g: clampColorChannel(nextColor.g ?? clearColor.g),
-      b: clampColorChannel(nextColor.b ?? clearColor.b),
-      a: clampColorChannel(nextColor.a ?? clearColor.a),
-    };
+    clearColor = mergeClearColor(clearColor, nextColor);
     applyCanvasBackdrop(canvas, clearColor);
     loop.requestFrame();
   };
@@ -286,20 +265,17 @@ export function createWebGl2Engine(
     requestFrame: loop.requestFrame,
     setClearColor,
     getClearColor: () => clearColor,
-    onRender: subscribeRender,
-    onPostRender: (callback) => {
-      postRenderSubscribers.add(callback);
-      loop.requestFrame();
-      return () => {
-        postRenderSubscribers.delete(callback);
-      };
-    },
+    onRender: subscribers.subscribeRender,
+    onPostRender: subscribers.subscribePostRender,
     destroy() {
       loop.destroy();
+      sizeTracker.destroy();
       sceneTarget?.destroy();
       sceneTarget = null;
-      renderSubscribers.clear();
-      postRenderSubscribers.clear();
+      subscribers.clear();
+      // Release the context instead of waiting for GC — browsers cap live
+      // WebGL contexts per page.
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
       if (getDefaultEngine() === controller) {
         setDefaultEngine(null);
       }

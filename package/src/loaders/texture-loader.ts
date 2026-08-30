@@ -58,11 +58,23 @@ export type TextureUploadOptions = {
    * Vertical flip on upload. Defaults: WebGL2 `true` (so top-origin `vUv`
    * matches image top), WebGPU `false`. For env/matcap maps used with
    * `dir.xy * 0.5 + 0.5`, pass `{ flipY: false }` on both backends.
+   *
+   * On WebGL2 the flip happens at decode time (`createImageBitmap` ignores
+   * `UNPACK_FLIP_Y_WEBGL`). Passing an already-created ImageBitmap re-wraps it
+   * through `createImageBitmap` to flip; if the platform cannot, the image
+   * uploads unflipped with a one-time warning.
    */
   flipY?: boolean;
   sampler?: {
     magFilter?: "linear" | "nearest";
     minFilter?: "linear" | "nearest";
+    /**
+     * Enables mipmap generation on both backends. WebGL2 uses `generateMipmap`
+     * + a `*_MIPMAP_*` min filter; WebGPU allocates the full mip chain and
+     * renders it with a cached blit pipeline (needs the default
+     * TEXTURE_BINDING | RENDER_ATTACHMENT usage — a custom `usage` missing
+     * either keeps the texture single-level, warned once).
+     */
     mipmapFilter?: "linear" | "nearest";
     addressModeU?: "clamp-to-edge" | "repeat" | "mirror-repeat";
     addressModeV?: "clamp-to-edge" | "repeat" | "mirror-repeat";
@@ -115,23 +127,32 @@ async function waitForEngineController(timeoutMs: number) {
   while (performance.now() - start < timeoutMs) {
     const webgl = getDefaultEngine();
     if (webgl) return webgl;
-    await new Promise<void>((resolve) =>
-      window.requestAnimationFrame(() => resolve()),
-    );
+    // rAF stops firing in hidden tabs — race it with a timer so the timeout
+    // above still elapses instead of hanging forever in a background tab.
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, 100);
+      window.requestAnimationFrame(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
   }
   return null;
 }
 
-async function decodeImageFromUrl(url: string) {
+async function decodeImageFromUrl(url: string, bitmapOptions: ImageBitmapOptions) {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch texture "${url}" (${response.status}).`);
   }
   const blob = await response.blob();
-  return createImageBitmap(blob);
+  return createImageBitmap(blob, bitmapOptions);
 }
 
-async function decodeImageFromElement(image: HTMLImageElement) {
+async function decodeImageFromElement(
+  image: HTMLImageElement,
+  bitmapOptions: ImageBitmapOptions,
+) {
   if (
     !image.complete ||
     image.naturalWidth === 0 ||
@@ -139,20 +160,51 @@ async function decodeImageFromElement(image: HTMLImageElement) {
   ) {
     await image.decode();
   }
-  return createImageBitmap(image);
+  return createImageBitmap(image, bitmapOptions);
 }
 
-async function toImageBitmap(source: TextureSource) {
+let warnedBitmapFlip = false;
+
+/**
+ * Decode to an ImageBitmap, applying the vertical flip (WebGL2 flips at decode
+ * time — the WebGL spec ignores UNPACK_FLIP_Y_WEBGL for ImageBitmap sources)
+ * and premultiplying alpha so both backends match the library's
+ * premultiplied-alpha blending. `owned` is true when the loader created the
+ * bitmap (and may close it after upload); a caller-supplied ImageBitmap that
+ * needs no flip is used as-is and never closed.
+ */
+async function toImageBitmap(
+  source: TextureSource,
+  flipY: boolean,
+): Promise<{ bitmap: ImageBitmap; owned: boolean }> {
+  const bitmapOptions: ImageBitmapOptions = {
+    premultiplyAlpha: "premultiply",
+    ...(flipY ? { imageOrientation: "flipY" as const } : {}),
+  };
   if (typeof source === "string") {
-    return decodeImageFromUrl(source);
+    return { bitmap: await decodeImageFromUrl(source, bitmapOptions), owned: true };
   }
   if (source instanceof ImageBitmap) {
-    return source;
+    if (!flipY) return { bitmap: source, owned: false };
+    // A finished ImageBitmap cannot be re-oriented in place; re-wrap it through
+    // createImageBitmap. If the platform cannot, degrade to the unflipped
+    // bitmap instead of failing the load.
+    try {
+      return { bitmap: await createImageBitmap(source, bitmapOptions), owned: true };
+    } catch {
+      if (!warnedBitmapFlip) {
+        warnedBitmapFlip = true;
+        console.warn(
+          "loadTexture: could not flip a caller-supplied ImageBitmap on this platform; uploading unflipped. Pass the original image/blob, or { flipY: false }.",
+        );
+      }
+      return { bitmap: source, owned: false };
+    }
   }
   if (source instanceof HTMLImageElement) {
-    return decodeImageFromElement(source);
+    return { bitmap: await decodeImageFromElement(source, bitmapOptions), owned: true };
   }
-  return createImageBitmap(source);
+  return { bitmap: await createImageBitmap(source, bitmapOptions), owned: true };
 }
 
 export function resolveTextureUvTransform(
@@ -246,7 +298,12 @@ export class TextureLoader {
       );
     }
 
-    const bitmap = await toImageBitmap(source);
+    // WebGL2 flips at decode time (default on; env/matcap opt out with
+    // flipY: false). WebGPU flips during copyExternalImageToTexture instead,
+    // which also covers caller-supplied ImageBitmaps.
+    const wantsDecodeFlip =
+      webglController.backend !== "webgpu" && options.flipY !== false;
+    const { bitmap, owned } = await toImageBitmap(source, wantsDecodeFlip);
     const width = Math.max(1, bitmap.width);
     const height = Math.max(1, bitmap.height);
 
@@ -265,11 +322,16 @@ export class TextureLoader {
       upload = uploadWebGl2Texture(gl, bitmap, options);
     }
 
+    // Both upload paths copy the pixels synchronously, so the decoded bitmap
+    // can be released right away — but never close a caller-owned ImageBitmap.
+    if (owned) {
+      bitmap.close();
+    }
+
     const { texture, view, sampler } = upload;
     const aspect = width / Math.max(1, height);
     const fit = options.fit ?? "cover";
 
-    const shouldCloseBitmap = !(source instanceof ImageBitmap);
     return {
       texture,
       view,
@@ -283,9 +345,6 @@ export class TextureLoader {
         return resolveTextureUvTransform(aspect, targetAspect, nextFit);
       },
       destroy() {
-        if (shouldCloseBitmap) {
-          bitmap.close();
-        }
         texture.destroy();
       },
     };

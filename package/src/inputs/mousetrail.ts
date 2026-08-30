@@ -17,6 +17,12 @@
 import { getDefaultEngine, type EnginePostFrame, type WebGLEngine } from "../engine/engine";
 import { getGpuInternals } from "../engine/gpu-internals";
 import type { TextureHandle } from "../loaders/texture-loader";
+import {
+  createFullscreenTriangle,
+  createProgram,
+  FULLSCREEN_VERTEX_SOURCE,
+  GLSL_NOISE,
+} from "../post/gl-util";
 
 type TrailTarget = {
   texture: WebGLTexture;
@@ -123,6 +129,14 @@ export class MouseTrail {
   private smoothedSize = 0;
   private hasPointer = false;
   private lastPointerAt = 0;
+  /**
+   * Trail-energy model: frames of rendering still owed after the last ink
+   * deposit. Refilled on pointer movement, decremented once per painted frame;
+   * when it reaches zero the trail has faded below the cutoff and the loop can
+   * settle — a merely hovering pointer deposits no ink and stops the loop.
+   */
+  private inkFrames = 0;
+  private readonly inkFrameBudget: number;
   private readonly onPointerMove = (event: PointerEvent) => {
     const now = performance.now();
     const next = this.resolveUv(event);
@@ -137,6 +151,8 @@ export class MouseTrail {
     this.speed = Math.max(this.speed * 0.5, velocity);
     this.hasPointer = true;
     this.lastPointerAt = now;
+    // Movement deposits ink — the trail needs this many frames to fade out.
+    this.inkFrames = this.inkFrameBudget;
   };
   private readonly onPointerLeave = () => {
     this.hasPointer = false;
@@ -155,6 +171,14 @@ export class MouseTrail {
     this.cutoff = clamp(options.cutoff ?? 0.0025, 0.0001, 0.25);
     this.growth = clamp(options.growth ?? 0.24, 0, 1);
     this.dissipate = clamp(options.dissipate ?? 0.992, 0.8, 1);
+    // Frames for a full-strength deposit to decay below the cutoff: the trail
+    // fades geometrically by fade × dissipate per frame and loses ~1.6 × cutoff
+    // linearly (both passes subtract a cutoff) — whichever bound is tighter.
+    const perFrame = this.fade * this.dissipate;
+    const geometric =
+      perFrame < 1 ? Math.log(this.cutoff) / Math.log(perFrame) : Infinity;
+    const linear = 1 / (this.cutoff * 1.6);
+    this.inkFrameBudget = Math.ceil(Math.min(geometric, linear)) + 8;
     this.eventElement.addEventListener("pointermove", this.onPointerMove as EventListener);
     this.eventElement.addEventListener("pointerleave", this.onPointerLeave as EventListener);
 
@@ -274,7 +298,10 @@ export class MouseTrail {
         timeSeconds: ctx.now * 0.001,
       });
       this.settlePointer();
-      if (this.hasPointer || this.speed > 0 || this.smoothedSize > 0) {
+      // Keep requesting frames only while ink remains (or the brush is still
+      // moving/shrinking) — an idle hovering pointer lets the loop settle.
+      if (this.inkFrames > 0) this.inkFrames -= 1;
+      if (this.inkFrames > 0 || this.speed > 0 || this.smoothedSize > 0) {
         engine.requestFrame();
       }
     });
@@ -306,11 +333,6 @@ export class MouseTrail {
 
     const readTarget = this.targets[this.readIndex]!;
     const writeTarget = this.targets[(this.readIndex + 1) % 2]!;
-
-    const prevFbo = gl.getParameter(
-      gl.FRAMEBUFFER_BINDING,
-    ) as WebGLFramebuffer | null;
-    const prevViewport = gl.getParameter(gl.VIEWPORT) as Int32Array;
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, writeTarget.framebuffer);
     gl.viewport(0, 0, writeTarget.width, writeTarget.height);
@@ -360,20 +382,22 @@ export class MouseTrail {
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, prevFbo);
-    gl.viewport(
-      prevViewport[0],
-      prevViewport[1],
-      prevViewport[2],
-      prevViewport[3],
-    );
+    // The post phase runs against the default framebuffer at full canvas size
+    // (the engine binds both before the onPostRender hooks), so restore that
+    // known state instead of querying gl.getParameter every frame — the
+    // queries allocate and can stall the driver pipeline.
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, frame.canvas.width, frame.canvas.height);
 
     // Final texture stays on read target (index unchanged).
     this.settlePointer();
 
     // Trail decay is GPU-side state, invisible to the uni dirty system — keep
-    // requesting frames while there's still motion or a fading trail to paint.
-    if (this.hasPointer || this.speed > 0 || this.smoothedSize > 0) {
+    // requesting frames while ink remains (or the brush is still moving or
+    // shrinking). An idle hovering pointer deposits no ink, so the loop
+    // settles instead of running at full rate on hover.
+    if (this.inkFrames > 0) this.inkFrames -= 1;
+    if (this.inkFrames > 0 || this.speed > 0 || this.smoothedSize > 0) {
       getDefaultEngine()?.requestFrame();
     }
   }
@@ -453,13 +477,7 @@ export class MouseTrail {
 }
 
 function createTrailProgram(gl: WebGL2RenderingContext): TrailProgramBundle {
-  const vertexSource = `#version 300 es
-layout(location = 0) in vec2 aPosition;
-out vec2 vUv;
-void main() {
-  gl_Position = vec4(aPosition, 0.0, 1.0);
-  vUv = aPosition * 0.5 + 0.5;
-}`;
+  const vertexSource = FULLSCREEN_VERTEX_SOURCE;
   const fragmentSource = `#version 300 es
 precision highp float;
 in vec2 vUv;
@@ -485,24 +503,7 @@ float distanceToSegment(vec2 p, vec2 a, vec2 b) {
   return length(p - q);
 }
 
-float hash12(vec2 p) {
-  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-  p3 += dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
-}
-
-float valueNoise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-
-  float a = hash12(i + vec2(0.0, 0.0));
-  float b = hash12(i + vec2(1.0, 0.0));
-  float c = hash12(i + vec2(0.0, 1.0));
-  float d2 = hash12(i + vec2(1.0, 1.0));
-
-  return mix(mix(a, b, u.x), mix(c, d2, u.x), u.y);
-}
+${GLSL_NOISE}
 
 float fbm(vec2 p) {
   float v = 0.0;
@@ -555,22 +556,7 @@ uniform float uTime;
 uniform float uCutoff;
 out vec4 outColor;
 
-float hash12(vec2 p) {
-  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-  p3 += dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
-}
-
-float valueNoise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  float a = hash12(i + vec2(0.0, 0.0));
-  float b = hash12(i + vec2(1.0, 0.0));
-  float c = hash12(i + vec2(0.0, 1.0));
-  float d = hash12(i + vec2(1.0, 1.0));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
+${GLSL_NOISE}
 
 void main() {
   vec2 texel = 1.0 / max(uResolution, vec2(1.0));
@@ -596,22 +582,7 @@ void main() {
 
   const paintProgram = createProgram(gl, vertexSource, fragmentSource);
   const growProgram = createProgram(gl, vertexSource, growFragmentSource);
-  const vao = gl.createVertexArray();
-  const buffer = gl.createBuffer();
-  if (!vao || !buffer) {
-    throw new Error("Failed to create mouse trail geometry.");
-  }
-  gl.bindVertexArray(vao);
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([-1, -1, 3, -1, -1, 3]),
-    gl.STATIC_DRAW,
-  );
-  gl.enableVertexAttribArray(0);
-  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  gl.bindVertexArray(null);
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  const { vao, buffer } = createFullscreenTriangle(gl);
 
   const paintLocs: PaintLocs = {
     uPrev: gl.getUniformLocation(paintProgram, "uPrev"),
@@ -685,45 +656,6 @@ function createTrailTarget(
       gl.deleteFramebuffer(framebuffer);
     },
   };
-}
-
-function createShader(
-  gl: WebGL2RenderingContext,
-  type: number,
-  source: string,
-) {
-  const shader = gl.createShader(type);
-  if (!shader) throw new Error("Failed to create WebGL shader.");
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    const info = gl.getShaderInfoLog(shader) ?? "Unknown shader compile error.";
-    gl.deleteShader(shader);
-    throw new Error(info);
-  }
-  return shader;
-}
-
-function createProgram(
-  gl: WebGL2RenderingContext,
-  vertexSource: string,
-  fragmentSource: string,
-) {
-  const program = gl.createProgram();
-  if (!program) throw new Error("Failed to create WebGL program.");
-  const vs = createShader(gl, gl.VERTEX_SHADER, vertexSource);
-  const fs = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
-  gl.attachShader(program, vs);
-  gl.attachShader(program, fs);
-  gl.linkProgram(program);
-  gl.deleteShader(vs);
-  gl.deleteShader(fs);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const info = gl.getProgramInfoLog(program) ?? "Unknown program link error.";
-    gl.deleteProgram(program);
-    throw new Error(info);
-  }
-  return program;
 }
 
 function clamp(value: number, min: number, max: number) {

@@ -22,8 +22,6 @@ export type PostEffect = {
   kind?: PostEffectKind;
   /** Reserved for site tuning; fragment effects ignore this. */
   params?: Record<string, number>;
-  /** @deprecated Ignored — use fragmentShader / fragmentShaderWgsl. */
-  computeShader?: string;
   /** GLSL `applyEffect` — WebGL2. */
   fragmentShader?: string;
   /** WGSL `applyEffect` — WebGPU. */
@@ -45,7 +43,6 @@ export type InternalEffect = Omit<PostEffect, "kind" | "params"> & {
   kind: PostEffectKind | null;
   params: Record<string, number>;
   uniWatch: UniWatchController;
-  uniUnsubscribe: (() => void) | null;
 };
 
 /** One backend's post chain. Loaded on demand by the PostProcessor facade. */
@@ -66,20 +63,16 @@ export function createInternalEffect(
   const hasFragment =
     Boolean(options.fragmentShader?.trim()) ||
     Boolean(options.fragmentShaderWgsl?.trim());
-  const effect: InternalEffect = {
+  return {
     id: options.id ?? createEffectId(),
     enabled: options.enabled ?? true,
     kind: hasFragment || options.kind === "fragment" ? "fragment" : null,
     params: options.params ?? {},
-    computeShader: options.computeShader,
     fragmentShader: options.fragmentShader,
     fragmentShaderWgsl: options.fragmentShaderWgsl,
     passes: Math.max(1, Math.floor(options.passes ?? 1)),
     textureUniforms: options.textureUniforms,
     uni: options.uni,
     uniWatch: ensureWatchableUni(options.uni ?? {}),
-    uniUnsubscribe: null,
   };
-  effect.uniUnsubscribe = effect.uniWatch.subscribe(() => {});
-  return effect;
 }

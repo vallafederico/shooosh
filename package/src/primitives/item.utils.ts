@@ -8,6 +8,8 @@
 export type ItemClipData = {
   vertices: Float32Array;
   isVisible: boolean;
+  /** The element's getBoundingClientRect for this frame — reuse instead of re-querying. */
+  rect: DOMRect;
 };
 
 // Module-level canvas rect cache — one getBoundingClientRect per canvas per frame.
@@ -20,16 +22,25 @@ export function resetCanvasRectCache() {
   cachedCanvasRect = null;
 }
 
-export function getElementClipData(
-  element: HTMLElement,
-  canvas: HTMLCanvasElement,
-): ItemClipData {
-  const elementRect = element.getBoundingClientRect();
+/** Per-frame cached canvas rect — shared by items, glyphs and particles. */
+export function getCachedCanvasRect(canvas: HTMLCanvasElement): DOMRect {
   if (canvas !== cachedCanvas || cachedCanvasRect === null) {
     cachedCanvas = canvas;
     cachedCanvasRect = canvas.getBoundingClientRect();
   }
-  const canvasRect = cachedCanvasRect;
+  return cachedCanvasRect;
+}
+
+const EMPTY_VERTICES = new Float32Array(0);
+
+export function getElementClipData(
+  element: HTMLElement,
+  canvas: HTMLCanvasElement,
+  /** Optional scratch Float32Array(16) — reused instead of allocating. */
+  out?: Float32Array,
+): ItemClipData {
+  const elementRect = element.getBoundingClientRect();
+  const canvasRect = getCachedCanvasRect(canvas);
 
   const left = elementRect.left - canvasRect.left;
   const right = elementRect.right - canvasRect.left;
@@ -45,7 +56,8 @@ export function getElementClipData(
   if (!overlapsCanvas) {
     return {
       isVisible: false,
-      vertices: new Float32Array(0),
+      vertices: out ?? EMPTY_VERTICES,
+      rect: elementRect,
     };
   }
 
@@ -56,27 +68,29 @@ export function getElementClipData(
   const ndcTop = 1 - (top / canvasHeight) * 2;
   const ndcBottom = 1 - (bottom / canvasHeight) * 2;
 
+  // Vertex layout: [position.x, position.y, uv.x, uv.y]
+  // 0: top-left, 1: bottom-left, 2: top-right, 3: bottom-right
+  const vertices = out ?? new Float32Array(16);
+  vertices[0] = ndcLeft;
+  vertices[1] = ndcTop;
+  vertices[2] = 0;
+  vertices[3] = 0;
+  vertices[4] = ndcLeft;
+  vertices[5] = ndcBottom;
+  vertices[6] = 0;
+  vertices[7] = 1;
+  vertices[8] = ndcRight;
+  vertices[9] = ndcTop;
+  vertices[10] = 1;
+  vertices[11] = 0;
+  vertices[12] = ndcRight;
+  vertices[13] = ndcBottom;
+  vertices[14] = 1;
+  vertices[15] = 1;
+
   return {
     isVisible: true,
-    // Vertex layout: [position.x, position.y, uv.x, uv.y]
-    // 0: top-left, 1: bottom-left, 2: top-right, 3: bottom-right
-    vertices: new Float32Array([
-      ndcLeft,
-      ndcTop,
-      0,
-      0,
-      ndcLeft,
-      ndcBottom,
-      0,
-      1,
-      ndcRight,
-      ndcTop,
-      1,
-      0,
-      ndcRight,
-      ndcBottom,
-      1,
-      1,
-    ]),
+    vertices,
+    rect: elementRect,
   };
 }

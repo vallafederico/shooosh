@@ -19,7 +19,6 @@
 import {
   getDefaultEngine,
   initEngine,
-  setDefaultEngine,
   type EngineOptions,
   type WebGLEngine,
 } from "../engine/engine";
@@ -79,13 +78,30 @@ export class Scene {
     };
 
     if (this.options.autoInit) {
-      this.initPromise = this.init().catch((error) => {
+      this.init().catch((error) => {
         this.options.onInitError?.(error);
       });
     }
   }
 
-  async init() {
+  /** Idempotent: concurrent / repeat calls share the same init promise. */
+  init(): Promise<void> {
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    const promise = this.runInit();
+    this.initPromise = promise;
+    // A failed init is not memoized, so a later call can retry.
+    promise.catch(() => {
+      if (this.initPromise === promise) {
+        this.initPromise = null;
+      }
+    });
+    return promise;
+  }
+
+  private async runInit() {
     if (!this.canvas) {
       throw new Error("Scene requires a canvas element.");
     }
@@ -96,13 +112,20 @@ export class Scene {
       backend: this.options.backend,
     };
 
-    this.engine = await initEngine(this.canvas, engineOptions);
+    const engine = await initEngine(this.canvas, engineOptions);
+    if (!this.canvas) {
+      // Scene was destroyed while init was in flight — don't leak the engine.
+      engine.destroy();
+      return;
+    }
+    this.engine = engine;
 
     if (this.options.autoStart) {
       this.engine.start();
     }
 
     if (this.options.post?.length) {
+      this.postProcessor?.destroy();
       this.postProcessor = createPostProcessor();
       this.applyPostPresets(this.options.post);
     }
@@ -209,18 +232,18 @@ export class Scene {
     this.screenTexture?.destroy();
     this.screenTexture = null;
 
-    const activeEngine = getDefaultEngine();
-    if (this.canvas && activeEngine?.canvas === this.canvas) {
-      activeEngine.destroy();
-      setDefaultEngine(null);
+    // Destroy this scene's own engine (default or not) — engine.destroy()
+    // already clears the default engine when it matches.
+    const activeEngine = this.engine;
+    activeEngine?.destroy();
 
-      if (this.options.debug && window.__webglEngine === activeEngine) {
-        delete window.__webglEngine;
-      }
+    if (this.options.debug && activeEngine && window.__webglEngine === activeEngine) {
+      delete window.__webglEngine;
     }
 
     this.engine = null;
     this.canvas = null;
+    this.initPromise = null;
   }
 }
 

@@ -11,6 +11,8 @@
  * Docs: docs/api.md
  */
 
+import type { GpuAdapter } from "./gpu-api";
+
 export type RendererKind = "webgpu" | "webgl2";
 
 export type ProbeRendererOptions = {
@@ -22,7 +24,21 @@ function canCreateWebGl2() {
   if (typeof document === "undefined") return false;
   const canvas = document.createElement("canvas");
   const gl = canvas.getContext("webgl2");
+  // Release the throwaway probe context — browsers cap live WebGL contexts.
+  gl?.getExtension("WEBGL_lose_context")?.loseContext();
   return Boolean(gl);
+}
+
+// Adapter from the last successful probe, handed to createWebGpuEngine so
+// startup does not request it twice. Consumed once — an adapter is spent after
+// requestDevice — and never caches a failure, so retries probe fresh.
+let probedGpuAdapter: GpuAdapter | null = null;
+
+/** Take (and clear) the adapter cached by the last successful WebGPU probe. */
+export function takeProbedGpuAdapter(): GpuAdapter | null {
+  const adapter = probedGpuAdapter;
+  probedGpuAdapter = null;
+  return adapter;
 }
 
 async function canCreateWebGpu() {
@@ -34,6 +50,7 @@ async function canCreateWebGpu() {
   if (!gpu) return false;
   try {
     const adapter = await gpu.requestAdapter();
+    if (adapter) probedGpuAdapter = adapter as unknown as GpuAdapter;
     return Boolean(adapter);
   } catch {
     return false;

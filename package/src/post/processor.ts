@@ -139,17 +139,12 @@ export class PostProcessor {
   }
 
   removeEffect(id: string) {
-    this.effects = this.effects.filter((entry) => {
-      if (entry.id !== id) return true;
-      entry.uniUnsubscribe?.();
-      return false;
-    });
+    this.effects = this.effects.filter((entry) => entry.id !== id);
     this.backend?.invalidate(id);
   }
 
   clearEffects() {
     this.effects.forEach((effect) => {
-      effect.uniUnsubscribe?.();
       this.backend?.invalidate(effect.id);
     });
     this.effects = [];
@@ -159,9 +154,6 @@ export class PostProcessor {
     this.destroyed = true;
     this.unsubscribe?.();
     this.unsubscribe = null;
-    this.effects.forEach((effect) => {
-      effect.uniUnsubscribe?.();
-    });
     this.effects = [];
     this.backend?.destroy();
     this.backend = null;

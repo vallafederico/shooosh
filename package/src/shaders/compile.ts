@@ -37,7 +37,7 @@ export type AsyncProgram = {
   destroy: () => void;
 };
 
-export function compileProgramAsync(
+function compileProgramUncached(
   gl: WebGL2RenderingContext,
   vertexSource: string,
   fragmentSource: string,
@@ -106,6 +106,61 @@ export function compileProgramAsync(
       deleteShaders();
       if (state !== "failed") {
         gl.deleteProgram(program);
+      }
+    },
+  };
+}
+
+type ProgramCacheEntry = { inner: AsyncProgram; refs: number };
+
+/**
+ * Per-context program cache — N planes with the same vs+fs share one link.
+ * Keyed per WebGL2 context (WeakMap) so a second canvas / restored context
+ * never sees another context's programs.
+ */
+const programCacheByGl = new WeakMap<
+  WebGL2RenderingContext,
+  Map<string, ProgramCacheEntry>
+>();
+
+export function compileProgramAsync(
+  gl: WebGL2RenderingContext,
+  vertexSource: string,
+  fragmentSource: string,
+  label = "program",
+): AsyncProgram {
+  let cache = programCacheByGl.get(gl);
+  if (!cache) {
+    cache = new Map();
+    programCacheByGl.set(gl, cache);
+  }
+  const key = `${vertexSource}\u0000${fragmentSource}`;
+  let entry = cache.get(key);
+  if (!entry) {
+    entry = { inner: compileProgramUncached(gl, vertexSource, fragmentSource, label), refs: 0 };
+    cache.set(key, entry);
+  }
+  entry.refs += 1;
+  const shared = entry;
+
+  // Refcounted handle — the program is deleted only when the last user
+  // releases it, so destroy() on one plane never blanks its twins.
+  let released = false;
+  return {
+    poll() {
+      if (released) return null;
+      return shared.inner.poll();
+    },
+    status() {
+      return shared.inner.status();
+    },
+    destroy() {
+      if (released) return;
+      released = true;
+      shared.refs -= 1;
+      if (shared.refs <= 0) {
+        cache.delete(key);
+        shared.inner.destroy();
       }
     },
   };

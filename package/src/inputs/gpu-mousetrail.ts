@@ -12,7 +12,6 @@
  */
 
 import {
-  GPU_SHADER_STAGE,
   GPU_TEXTURE_USAGE,
   type GpuBindGroup,
   type GpuBuffer,
@@ -22,6 +21,12 @@ import {
   type GpuTexture,
   type GpuTextureView,
 } from "../engine/gpu-api";
+import {
+  createFullscreenBindGroupLayout,
+  createLinearClampSampler,
+  WGSL_NOISE,
+  wgslFullscreenPreamble,
+} from "../post/gpu-util";
 import { compileGpuPipeline, type GpuProgram } from "../shaders/gpu-compile";
 
 const TRAIL_FORMAT = "rgba8unorm";
@@ -73,43 +78,8 @@ const PREAMBLE = `struct Uni {
   flow: vec4f,
 }
 
-@group(0) @binding(0) var<uniform> uUni: Uni;
-@group(0) @binding(1) var uSampler: sampler;
-@group(0) @binding(2) var uPrev: texture_2d<f32>;
-
-struct VsOut {
-  @builtin(position) position: vec4f,
-  @location(0) uv: vec2f,
-}
-
-@vertex
-fn vsMain(@builtin(vertex_index) index: u32) -> VsOut {
-  var corners = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
-  let p = corners[index];
-  var out: VsOut;
-  out.position = vec4f(p, 0.0, 1.0);
-  // Top-origin uv so a write at uv X reads back at uv X on the next pass.
-  out.uv = vec2f(p.x * 0.5 + 0.5, 1.0 - (p.y * 0.5 + 0.5));
-  return out;
-}
-
-fn hash12(p: vec2f) -> f32 {
-  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.1031);
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
-}
-
-fn valueNoise(p: vec2f) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  let a = hash12(i + vec2f(0.0, 0.0));
-  let b = hash12(i + vec2f(1.0, 0.0));
-  let c = hash12(i + vec2f(0.0, 1.0));
-  let d = hash12(i + vec2f(1.0, 1.0));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
-`;
+${wgslFullscreenPreamble("uPrev")}
+${WGSL_NOISE}`;
 
 const PAINT_WGSL = `${PREAMBLE}
 fn distanceToSegment(p: vec2f, a: vec2f, b: vec2f) -> f32 {
@@ -213,29 +183,12 @@ export function createGpuMouseTrail(
   device: GpuDevice,
   params: GpuTrailParams,
 ): GpuMouseTrail {
-  const bindGroupLayout = device.createBindGroupLayout({
-    label: "trail-bind-layout",
-    entries: [
-      { binding: 0, visibility: GPU_SHADER_STAGE.FRAGMENT, buffer: { type: "uniform" } },
-      { binding: 1, visibility: GPU_SHADER_STAGE.FRAGMENT, sampler: { type: "filtering" } },
-      {
-        binding: 2,
-        visibility: GPU_SHADER_STAGE.FRAGMENT,
-        texture: { sampleType: "float", viewDimension: "2d" },
-      },
-    ],
-  });
+  const bindGroupLayout = createFullscreenBindGroupLayout(device, "trail-bind-layout");
   const pipelineLayout = device.createPipelineLayout({
     label: "trail-pipeline-layout",
     bindGroupLayouts: [bindGroupLayout],
   });
-  const sampler = device.createSampler({
-    label: "trail-sampler",
-    magFilter: "linear",
-    minFilter: "linear",
-    addressModeU: "clamp-to-edge",
-    addressModeV: "clamp-to-edge",
-  });
+  const sampler = createLinearClampSampler(device, "trail-sampler");
 
   const compile = (code: string, label: string): GpuProgram =>
     compileGpuPipeline(device, code, TRAIL_FORMAT, label, {

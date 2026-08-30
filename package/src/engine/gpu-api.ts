@@ -91,7 +91,13 @@ export type GpuBuffer = {
 export type GpuTextureView = { readonly __textureView?: never };
 
 export type GpuTexture = {
-  createView: (descriptor?: { format?: string; dimension?: string }) => GpuTextureView;
+  createView: (descriptor?: {
+    format?: string;
+    dimension?: string;
+    baseMipLevel?: number;
+    mipLevelCount?: number;
+    label?: string;
+  }) => GpuTextureView;
   destroy: () => void;
 };
 
@@ -158,11 +164,13 @@ export type GpuDevice = {
     size: { width: number; height: number; depthOrArrayLayers?: number };
     format: string;
     usage: number;
+    mipLevelCount?: number;
     label?: string;
   }) => GpuTexture;
   createSampler: (descriptor?: {
     magFilter?: "nearest" | "linear";
     minFilter?: "nearest" | "linear";
+    mipmapFilter?: "nearest" | "linear";
     addressModeU?: "clamp-to-edge" | "repeat" | "mirror-repeat";
     addressModeV?: "clamp-to-edge" | "repeat" | "mirror-repeat";
     label?: string;

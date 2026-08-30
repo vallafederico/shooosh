@@ -105,8 +105,7 @@ function pipelineDescriptor(
   };
 }
 
-/** Compile a WGSL module into a render pipeline without throwing. Last good pipeline stays if recreate fails. */
-export function compileGpuPipeline(
+function compileGpuPipelineUncached(
   device: GpuDevice,
   code: string,
   format: string,
@@ -168,6 +167,96 @@ export function compileGpuPipeline(
     destroy() {
       destroyed = true;
       pipeline = null;
+    },
+  };
+}
+
+/**
+ * Stable cache-key fragment for a pipeline option value. Plain objects and
+ * arrays serialize structurally; anything else (a GPUPipelineLayout, …) keys
+ * by identity so two different layouts can never collide on "{}".
+ */
+const optionObjectIds = new WeakMap<object, number>();
+let nextOptionObjectId = 1;
+
+function optionKeyPart(value: unknown): string {
+  if (value === undefined) return "u";
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(optionKeyPart).join(",")}]`;
+  const proto = Object.getPrototypeOf(value);
+  if (proto === Object.prototype || proto === null) {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .map(([key, entry]) => `${key}:${optionKeyPart(entry)}`)
+      .join(",")}}`;
+  }
+  let id = optionObjectIds.get(value);
+  if (!id) {
+    id = nextOptionObjectId++;
+    optionObjectIds.set(value, id);
+  }
+  return `#${id}`;
+}
+
+type PipelineCacheEntry = { inner: GpuProgram; refs: number };
+
+/**
+ * Per-device pipeline cache — N items with the same wrapped WGSL share one
+ * pipeline. Keyed per GpuDevice (WeakMap) so a replaced/lost device never
+ * serves another device's pipelines.
+ */
+const pipelineCacheByDevice = new WeakMap<GpuDevice, Map<string, PipelineCacheEntry>>();
+
+/** Compile a WGSL module into a render pipeline without throwing. Last good pipeline stays if recreate fails. */
+export function compileGpuPipeline(
+  device: GpuDevice,
+  code: string,
+  format: string,
+  label: string,
+  options: GpuPipelineOptions = {},
+): GpuProgram {
+  let cache = pipelineCacheByDevice.get(device);
+  if (!cache) {
+    cache = new Map();
+    pipelineCacheByDevice.set(device, cache);
+  }
+  const key = [
+    format,
+    optionKeyPart(options.layout),
+    optionKeyPart(options.vertexBuffers),
+    optionKeyPart(options.blend),
+    optionKeyPart(options.depthStencil),
+    optionKeyPart(options.vertexEntryPoint),
+    optionKeyPart(options.fragmentEntryPoint),
+    optionKeyPart(options.primitive),
+    code,
+  ].join("\u0000");
+  let entry = cache.get(key);
+  if (!entry) {
+    entry = { inner: compileGpuPipelineUncached(device, code, format, label, options), refs: 0 };
+    cache.set(key, entry);
+  }
+  entry.refs += 1;
+  const shared = entry;
+
+  // Refcounted handle — the cache entry is dropped only when the last user
+  // releases it, so destroy() on one item never stalls its twins.
+  let released = false;
+  return {
+    poll() {
+      if (released) return null;
+      return shared.inner.poll();
+    },
+    status() {
+      return shared.inner.status();
+    },
+    destroy() {
+      if (released) return;
+      released = true;
+      shared.refs -= 1;
+      if (shared.refs <= 0) {
+        cache.delete(key);
+        shared.inner.destroy();
+      }
     },
   };
 }

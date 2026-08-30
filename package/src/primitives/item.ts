@@ -7,18 +7,22 @@
  * Docs: docs/site-patterns.md
  */
 
-import { getDefaultEngine, type EngineFrame } from "../engine/engine";
-import type { FullscreenPlaneShaders, FullscreenPlaneTexture } from "./plane";
+import type { EngineFrame } from "../engine/engine";
+import {
+  resolveGlslShaderSource,
+  type FullscreenPlaneShaders,
+  type FullscreenPlaneTexture,
+} from "./plane";
 import { ensureWatchableUni, type UniValues, type UniWatchController } from "../engine/uni";
 import { getElementClipData } from "./item.utils";
-import { convertWgslFragmentToGlsl } from "../shaders/wgsl-compat";
 import { compileProgramAsync } from "../shaders/compile";
 import {
   resolveTextureUvTransform,
   textureFitToUni,
   type TextureFitMode,
 } from "../loaders/texture-loader";
-import { createLazyGpuFactory, createPendingAttachQueue } from "./pending-attach";
+import { createLazyGpuFactory } from "./pending-attach";
+import { createPrimitiveLifecycle, type PrimitiveLifecycle } from "./primitive-lifecycle";
 
 type ItemRenderer = {
   render: (frame: EngineFrame) => void;
@@ -28,10 +32,6 @@ type ItemRenderer = {
 const ensureGpuItemFactory = createLazyGpuFactory({
   label: "item",
   load: () => import("./gpu-item").then((m) => m.createGpuItemRenderer),
-});
-
-const pendingItems = createPendingAttachQueue<ItemManager>((item) => {
-  item.attachFromPending();
 });
 
 export type ItemOptions = {
@@ -50,16 +50,30 @@ export class ItemManager {
   private element: HTMLElement;
   private options: ItemOptions;
   private uni: UniWatchController;
-  private renderer: ItemRenderer | null = null;
-  private unsubscribeRender: (() => void) | null = null;
-  private canvas: HTMLCanvasElement | null = null;
-  private destroyed = false;
+  private lifecycle: PrimitiveLifecycle<ItemRenderer>;
 
   constructor(element: HTMLElement, options: ItemOptions = {}) {
     this.element = element;
     this.options = options;
     this.uni = ensureWatchableUni(options.uni ?? { value1: 1 });
-    this.connectOrQueue();
+    this.lifecycle = createPrimitiveLifecycle<ItemRenderer>({
+      layer: options.layer ?? 10,
+      createRenderer: (frame) => {
+        if (frame.backend === "webgpu") {
+          const createGpuRenderer = ensureGpuItemFactory();
+          if (!createGpuRenderer) return null;
+          return createGpuRenderer(this.element, this.options, this.uni);
+        }
+        if (frame.gl) {
+          return createItemRenderer(this.element, frame, this.options, this.uni);
+        }
+        return null;
+      },
+      renderFrame: (renderer, frame) => {
+        this.options.onFrame?.(this, frame);
+        renderer.render(frame);
+      },
+    });
   }
 
   setUni(next: Partial<UniValues>) {
@@ -71,128 +85,8 @@ export class ItemManager {
   }
 
   destroy() {
-    this.destroyed = true;
-    this.unsubscribeRender?.();
-    this.unsubscribeRender = null;
-    this.renderer?.destroy();
-    this.renderer = null;
-    this.canvas = null;
-    pendingItems.dequeue(this);
+    this.lifecycle.destroy();
   }
-
-  private connectOrQueue() {
-    if (this.destroyed) return;
-
-    const webgl = getDefaultEngine();
-    if (webgl) {
-      this.attach();
-      return;
-    }
-
-    pendingItems.enqueue(this);
-  }
-
-  /** @internal pending-attach queue */
-  attachFromPending() {
-    this.attach();
-  }
-
-  private attach() {
-    if (this.destroyed || this.unsubscribeRender) return;
-
-    this.unsubscribeRender = getDefaultEngine()!.onRender(
-      (frame) => {
-        if (this.destroyed) return;
-
-        if (!this.canvas) {
-          this.canvas = frame.canvas;
-        }
-        if (this.canvas !== frame.canvas) {
-          return;
-        }
-
-        if (!this.renderer) {
-          if (frame.backend === "webgpu") {
-            const createGpuRenderer = ensureGpuItemFactory();
-            if (!createGpuRenderer) return;
-            this.renderer = createGpuRenderer(this.element, this.options, this.uni);
-          } else if (frame.gl) {
-            this.renderer = createItemRenderer(this.element, frame, this.options, this.uni);
-          } else {
-            return;
-          }
-        }
-
-        this.options.onFrame?.(this, frame);
-        this.renderer.render(frame);
-      },
-      { layer: this.options.layer ?? 10 },
-    );
-  }
-}
-
-function getDefaultVertexShader() {
-  return `#version 300 es
-in vec2 aPosition;
-in vec2 aUv;
-out vec2 vUv;
-void main() {
-  gl_Position = vec4(aPosition, 0.0, 1.0);
-  vUv = aUv;
-}`;
-}
-
-function getDefaultFragmentShader(debugUv: boolean) {
-  if (debugUv) {
-    return `#version 300 es
-precision highp float;
-in vec2 vUv;
-uniform vec4 uUni[4];
-out vec4 outColor;
-void main() {
-  outColor = vec4(vUv, 0.5 + 0.5 * uUni[0].x, 1.0);
-}`;
-  }
-  return `#version 300 es
-precision highp float;
-uniform vec4 uUni[4];
-out vec4 outColor;
-void main() {
-  float c = max(0.0, uUni[0].x);
-  outColor = vec4(vec3(c), 1.0);
-}`;
-}
-
-function getShaderSource(options: ItemOptions) {
-  const wgslFragment = options.shaders?.fragment ?? options.shaders?.wgsl ?? null;
-  if (wgslFragment) {
-    // raw GLSL passthrough — full #version 300 es sources skip the WGSL shim
-    if (/^\s*#version\s+300\s+es/.test(wgslFragment)) {
-      return {
-        vertex: getDefaultVertexShader(),
-        fragment: wgslFragment,
-      };
-    }
-    try {
-      return {
-        vertex: getDefaultVertexShader(),
-        fragment: convertWgslFragmentToGlsl(wgslFragment, { includeUv: true }),
-      };
-    } catch (error) {
-      console.warn(
-        "Failed to compile custom WGSL fragment for WebGL, using default shader:",
-        error,
-      );
-    }
-  }
-  if (options.shaders?.vertex) {
-    console.warn("Custom WGSL vertex shaders are not supported on the WebGL runtime.");
-  }
-
-  return {
-    vertex: getDefaultVertexShader(),
-    fragment: getDefaultFragmentShader(Boolean(options.debugUv)),
-  };
 }
 
 function createItemRenderer(
@@ -215,7 +109,14 @@ function createItemRenderer(
   const texture = options.texture ?? null;
   const glTexture =
     (texture?.view as { texture?: WebGLTexture } | undefined)?.texture ?? null;
-  const shaderSource = getShaderSource(options);
+  const shaderSource = resolveGlslShaderSource({
+    debugUv: Boolean(options.debugUv),
+    shaders: options.shaders,
+    kind: "item",
+  });
+  // Match the WebGPU path's wgsl.usesTexture guard — skip the per-frame fit
+  // block entirely when the shader never samples the texture.
+  const usesTexture = Boolean(glTexture) && /\buTexture\b/.test(shaderSource.fragment);
   const asyncProgram = compileProgramAsync(
     gl,
     shaderSource.vertex,
@@ -243,6 +144,14 @@ function createItemRenderer(
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexData, gl.STATIC_DRAW);
   gl.bindVertexArray(null);
 
+  // Per-renderer scratch — getElementClipData fills this instead of allocating.
+  const clipVertices = new Float32Array(16);
+  // Texture-fit cache — recompute only when the (textureAspect, targetAspect,
+  // fit) triple changes, so static frames stay clean for the settle loop.
+  let lastFitTextureAspect = Number.NaN;
+  let lastFitTargetAspect = Number.NaN;
+  let lastFitMode: TextureFitMode | null = null;
+
   return {
     render(nextFrame) {
       if (!program) {
@@ -252,19 +161,25 @@ function createItemRenderer(
         uTextureLoc = gl.getUniformLocation(program, "uTexture");
       }
 
-      const clipData = getElementClipData(element, nextFrame.canvas);
+      const clipData = getElementClipData(element, nextFrame.canvas, clipVertices);
       if (!clipData.isVisible) return;
 
-      if (texture) {
-        const rect = element.getBoundingClientRect();
+      if (texture && usesTexture) {
+        const rect = clipData.rect;
         const targetAspect =
           Math.max(1, rect.width) / Math.max(1, rect.height);
-        const uvTransform = resolveTextureUvTransform(
-          texture.aspect,
-          targetAspect,
-          options.textureFit ?? "cover",
-        );
-        uni.set(textureFitToUni(uvTransform));
+        const fit = options.textureFit ?? "cover";
+        if (
+          texture.aspect !== lastFitTextureAspect ||
+          targetAspect !== lastFitTargetAspect ||
+          fit !== lastFitMode
+        ) {
+          lastFitTextureAspect = texture.aspect;
+          lastFitTargetAspect = targetAspect;
+          lastFitMode = fit;
+          const uvTransform = resolveTextureUvTransform(texture.aspect, targetAspect, fit);
+          uni.set(textureFitToUni(uvTransform));
+        }
       }
 
       gl.disable(gl.DEPTH_TEST);

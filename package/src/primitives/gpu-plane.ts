@@ -26,7 +26,11 @@ import {
   type GpuProgram,
 } from "../shaders/gpu-compile";
 import { resolveWgslModule } from "../shaders/wgsl-wrap";
-import { resolveTextureUvTransform, textureFitToUni } from "../loaders/texture-loader";
+import {
+  resolveTextureUvTransform,
+  textureFitToUni,
+  type TextureFitMode,
+} from "../loaders/texture-loader";
 import {
   createFullscreenPlaneGeometry,
   type FullscreenPlaneGeometry,
@@ -79,6 +83,15 @@ export function createGpuFullscreenPlaneRenderer(
   const indexFormat = geometry.indices instanceof Uint32Array ? "uint32" : "uint16";
   let bindGroup: GpuBindGroup | null = null;
 
+  // Auto-time keeps the settle loop hot, so only shaders that actually read
+  // the time slot (the default animated texture look included) get it.
+  const usesTime = /values0\s*\.\s*w/.test(wgsl.code);
+  // Texture-fit cache — recompute only when the (textureAspect, targetAspect,
+  // fit) triple changes, so static frames stay clean for the settle loop.
+  let lastFitTextureAspect = Number.NaN;
+  let lastFitTargetAspect = Number.NaN;
+  let lastFitMode: TextureFitMode | null = null;
+
   return {
     geometry,
     render(nextFrame) {
@@ -97,18 +110,26 @@ export function createGpuFullscreenPlaneRenderer(
         );
       }
 
-      uniWatch.set({
-        value4: performance.now() * 0.001,
-      });
+      if (usesTime) {
+        uniWatch.set({
+          value4: performance.now() * 0.001,
+        });
+      }
       if (texture) {
         const canvas = nextFrame.canvas;
         const targetAspect = canvas.width / Math.max(1, canvas.height);
-        const uvTransform = resolveTextureUvTransform(
-          texture.aspect,
-          targetAspect,
-          options.textureFit ?? "cover",
-        );
-        uniWatch.set(textureFitToUni(uvTransform));
+        const fit = options.textureFit ?? "cover";
+        if (
+          texture.aspect !== lastFitTextureAspect ||
+          targetAspect !== lastFitTargetAspect ||
+          fit !== lastFitMode
+        ) {
+          lastFitTextureAspect = texture.aspect;
+          lastFitTargetAspect = targetAspect;
+          lastFitMode = fit;
+          const uvTransform = resolveTextureUvTransform(texture.aspect, targetAspect, fit);
+          uniWatch.set(textureFitToUni(uvTransform));
+        }
       }
       writeBufferFromArray(device, uniformBuffer, uniValues);
 

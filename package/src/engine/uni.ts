@@ -80,6 +80,42 @@ export function ensureWatchableUni(target: UniValues = {}): UniWatchController {
   let float32Cache: Float32Array | null = null;
   let float32CacheSize = 0;
 
+  // Cached key → slot assignment. Rebuilt only when a key is added (set()) or
+  // maxValues changes, so the per-frame toFloat32 path allocates nothing and
+  // slots stay stable regardless of the values passing through them.
+  let slotMapCache: Array<{ key: string; slot: number }> | null = null;
+  let slotMapMaxValues = 0;
+
+  const buildSlotMap = (maxValues: number) => {
+    const keys = Object.keys(values);
+    const occupied = new Array<boolean>(maxValues).fill(false);
+    const consumed = new Set<string>();
+    const map: Array<{ key: string; slot: number }> = [];
+
+    // Deterministic slot mapping for `value1`, `value2`, ... keys.
+    for (const key of keys) {
+      const slot = getIndexedUniSlot(key);
+      if (slot === null || slot >= maxValues) continue;
+      occupied[slot] = true;
+      consumed.add(key);
+      map.push({ key, slot });
+    }
+
+    // Fill remaining slots with any other keys in stable order.
+    let fallbackIndex = 0;
+    for (const key of keys) {
+      if (consumed.has(key)) continue;
+      while (fallbackIndex < maxValues && occupied[fallbackIndex]) {
+        fallbackIndex += 1;
+      }
+      if (fallbackIndex >= maxValues) break;
+      occupied[fallbackIndex] = true;
+      map.push({ key, slot: fallbackIndex });
+      fallbackIndex += 1;
+    }
+    return map;
+  };
+
   const meta: WatchMeta = {
     values,
     listeners,
@@ -96,6 +132,7 @@ export function ensureWatchableUni(target: UniValues = {}): UniWatchController {
           if (!(key in values)) {
             values[key] = value;
             defineReactiveKey(target, meta, key);
+            slotMapCache = null;
             changed = true;
             return;
           }
@@ -116,27 +153,12 @@ export function ensureWatchableUni(target: UniValues = {}): UniWatchController {
         }
         const out = float32Cache;
         out.fill(0);
-        const keys = Object.keys(values);
-        const consumed = new Set<string>();
-
-        // Deterministic slot mapping for `value1`, `value2`, ... keys.
-        for (const key of keys) {
-          const slot = getIndexedUniSlot(key);
-          if (slot === null || slot >= maxValues) continue;
-          out[slot] = values[key] ?? 0;
-          consumed.add(key);
+        if (slotMapCache === null || slotMapMaxValues !== maxValues) {
+          slotMapCache = buildSlotMap(maxValues);
+          slotMapMaxValues = maxValues;
         }
-
-        // Fill remaining slots with any other keys in stable order.
-        let fallbackIndex = 0;
-        for (const key of keys) {
-          if (consumed.has(key)) continue;
-          while (fallbackIndex < maxValues && out[fallbackIndex] !== 0) {
-            fallbackIndex += 1;
-          }
-          if (fallbackIndex >= maxValues) break;
-          out[fallbackIndex] = values[key] ?? 0;
-          fallbackIndex += 1;
+        for (const entry of slotMapCache) {
+          out[entry.slot] = values[entry.key] ?? 0;
         }
         return out;
       },

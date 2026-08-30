@@ -34,17 +34,12 @@ import {
 } from "../shaders/gpu-compile";
 import { isGlsl300 } from "../shaders/wgsl-wrap";
 import {
+  computeObjectMatrices,
   createObjectGeometry,
+  createObjectMatrixScratch,
   getElementObjectPlacement,
   getScreenObjectPlacement,
   isMvpVisible,
-  mat4Multiply,
-  mat4PerspectiveZeroToOne,
-  mat4RotationX,
-  mat4RotationY,
-  mat4RotationZ,
-  mat4Scale,
-  mat4Translation,
 } from "./object.utils";
 import type { ObjectOptions } from "./object";
 
@@ -260,6 +255,7 @@ export function createGpuObjectRenderer(
   const indexFormat = geometry.indices instanceof Uint32Array ? "uint32" : "uint16";
   const uniformBuffer = createUniformBuffer(device, "object-uni", UNIFORM_FLOATS * 4);
   const uniformValues = new Float32Array(UNIFORM_FLOATS);
+  const matrixScratch = createObjectMatrixScratch();
 
   let sampler: GpuSampler | null = null;
   let fallbackWhite: ReturnType<typeof createSolidView> | null = null;
@@ -309,28 +305,14 @@ export function createGpuObjectRenderer(
         : getElementObjectPlacement(element!, nextFrame.canvas);
       if (!placement.isVisible) return false;
 
-      const objectScale = Math.max(0.001, placement.scale * transform.scale);
-      const s = mat4Scale(objectScale, objectScale, objectScale);
-      const rx = mat4RotationX(transform.rotationX);
-      const ry = mat4RotationY(transform.rotationY);
-      const rz = mat4RotationZ(transform.rotationZ);
-      const model = mat4Multiply(rz, mat4Multiply(ry, mat4Multiply(rx, s)));
-
-      const cameraEnabled = options.camera?.enabled ?? true;
-      let mvp = model;
-      if (cameraEnabled) {
-        const canvas = nextFrame.canvas;
-        const aspect = Math.max(0.0001, canvas.width / canvas.height);
-        const fov = ((options.camera?.fov ?? 50) * Math.PI) / 180;
-        const near = options.camera?.near ?? 0.1;
-        const far = options.camera?.far ?? 10;
-        const distance = options.camera?.distance ?? 2.6;
-        const projection = mat4PerspectiveZeroToOne(fov, aspect, near, far);
-        const view = mat4Translation(0, 0, -distance);
-        const vp = mat4Multiply(projection, view);
-        const clipOffset = mat4Translation(placement.centerX, placement.centerY, 0);
-        mvp = mat4Multiply(clipOffset, mat4Multiply(vp, model));
-      }
+      const { model, mvp } = computeObjectMatrices({
+        placement,
+        transform,
+        camera: options.camera,
+        canvas: nextFrame.canvas,
+        zeroToOneDepth: true,
+        scratch: matrixScratch,
+      });
 
       const cullingEnabled = !useScreenPlacement && (options.frustumCulling ?? true);
       if (cullingEnabled && !isMvpVisible(mvp)) return false;

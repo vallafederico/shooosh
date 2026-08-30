@@ -192,6 +192,9 @@ export function createGpuMsdfGlyphsRenderer(
     return instanceBuffer;
   };
 
+  // Per-renderer scratch — getElementClipData fills this instead of allocating.
+  const clipVertices = new Float32Array(16);
+
   return {
     render(nextFrame: EngineFrame) {
       const frame = getGpuFrame();
@@ -199,9 +202,9 @@ export function createGpuMsdfGlyphsRenderer(
       const pipeline = program.poll();
       if (!pipeline) return;
 
-      const elementRect = element.getBoundingClientRect();
-      const clipData = getElementClipData(element, nextFrame.canvas);
+      const clipData = getElementClipData(element, nextFrame.canvas, clipVertices);
       if (!clipData.isVisible) return;
+      const elementRect = clipData.rect;
 
       if (!bindGroup) {
         bindGroup = createBindGroup(
@@ -252,11 +255,14 @@ export function createGpuMsdfGlyphsRenderer(
       getDefaultEngine()?.requestFrame();
     },
     setUni(next) {
-      if (next.value1 !== undefined) uni.value1 = next.value1;
-      if (next.value2 !== undefined) uni.value2 = next.value2;
-      if (next.value3 !== undefined) uni.value3 = next.value3;
-      if (next.value4 !== undefined) uni.value4 = next.value4;
-      getDefaultEngine()?.requestFrame();
+      // Same per-key change detection as the WebGL2 path — a no-op setUni must
+      // not requestFrame or the settle loop never goes idle.
+      let changed = false;
+      if (next.value1 !== undefined && next.value1 !== uni.value1) { uni.value1 = next.value1; changed = true; }
+      if (next.value2 !== undefined && next.value2 !== uni.value2) { uni.value2 = next.value2; changed = true; }
+      if (next.value3 !== undefined && next.value3 !== uni.value3) { uni.value3 = next.value3; changed = true; }
+      if (next.value4 !== undefined && next.value4 !== uni.value4) { uni.value4 = next.value4; changed = true; }
+      if (changed) getDefaultEngine()?.requestFrame();
     },
     destroy() {
       program.destroy();

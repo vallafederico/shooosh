@@ -7,35 +7,12 @@
  * Docs: docs/shader-translation.md · skill glsl-to-wgsl
  */
 
-import { isGlsl300 } from "./wgsl-wrap";
+import { extractFunctionBody, isGlsl300 } from "./wgsl-wrap";
 
 const GLSL_TYPES = "void|f32|i32|u32|vec2f|vec3f|vec4f|mat4x4<f32>";
 
 function extractFunction(source: string, name: string) {
-  const fnMatch = new RegExp(`\\b(?:void|fn)\\s+${name}\\s*\\(`).exec(source);
-  if (!fnMatch || typeof fnMatch.index !== "number") return null;
-  const fnStart = fnMatch.index;
-  const braceStart = source.indexOf("{", fnStart);
-  if (braceStart < 0) return null;
-  let depth = 0;
-  let end = -1;
-  for (let i = braceStart; i < source.length; i++) {
-    const ch = source[i];
-    if (ch === "{") depth += 1;
-    if (ch === "}") {
-      depth -= 1;
-      if (depth === 0) {
-        end = i;
-        break;
-      }
-    }
-  }
-  if (end < 0) return null;
-  return {
-    fnStart,
-    fnEnd: end + 1,
-    body: source.slice(braceStart + 1, end),
-  };
+  return extractFunctionBody(source, new RegExp(`\\b(?:void|fn)\\s+${name}\\s*\\(`));
 }
 
 function convertHelperSignatures(source: string) {
@@ -65,9 +42,11 @@ function convertHelperSignatures(source: string) {
 
 function convertTypedDeclarations(source: string) {
   return source.replace(
-    new RegExp(`\\b(?:const\\s+)?(${GLSL_TYPES})\\s+([A-Za-z_]\\w*)\\s*=\\s*([^;]+);`, "g"),
-    (_m, type: string, name: string, expr: string) => {
+    new RegExp(`\\b(const\\s+)?(${GLSL_TYPES})\\s+([A-Za-z_]\\w*)\\s*=\\s*([^;]+);`, "g"),
+    (_m, constKeyword: string | undefined, type: string, name: string, expr: string) => {
       if (type === "void") return _m;
+      // `const float PI = …` must stay const — WGSL rejects module-scope `var`.
+      if (constKeyword) return `const ${name}: ${type} = ${expr};`;
       return `var ${name}: ${type} = ${expr};`;
     },
   );
@@ -96,6 +75,10 @@ export function convertGlslFragmentToWgsl(source: string) {
   out = out.replace(/\b(?:highp|mediump|lowp)\s+/g, "");
   out = out.replace(/\buUni\[(\d+)\]/g, "uUni.values$1");
   out = out.replace(/\batan\s*\(([^,()]+),([^()]+)\)/g, "atan2($1,$2)");
+  // GLSL texture(tex, uv) → WGSL textureSample(tex, uSampler, uv) — inverse of
+  // the textureSample rewrite in wgsl-compat.ts. The sampler2D uniform itself
+  // is stripped above; the injected uSampler binding takes its place.
+  out = out.replace(/\btexture\s*\(\s*([A-Za-z_]\w*)\s*,/g, "textureSample($1, uSampler,");
 
   out = out.replace(/\bvec4\b/g, "vec4f");
   out = out.replace(/\bvec3\b/g, "vec3f");

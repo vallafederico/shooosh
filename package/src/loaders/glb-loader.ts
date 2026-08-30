@@ -51,13 +51,12 @@ function parseGlbHeader(data: ArrayBuffer): {
   binLength: number;
   binOffset: number;
 } {
+  if (data.byteLength < 12) {
+    throw new Error("Invalid GLB: file too short");
+  }
   const view = new DataView(data);
   if (view.getUint32(0, true) !== GLB_MAGIC) {
     throw new Error("Invalid GLB: bad magic");
-  }
-  const totalLength = view.getUint32(8, true);
-  if (data.byteLength < 12) {
-    throw new Error("Invalid GLB: file too short");
   }
   let offset = 12;
   const chunk0Length = view.getUint32(offset, true);
@@ -107,12 +106,15 @@ function getAccessorData(
   // Fast path: data is tightly packed and properly aligned, so we can wrap the
   // underlying ArrayBuffer in a single typed-array view with zero per-element
   // copies via DataView (which would otherwise allocate/branch per component).
+  // The views returned here are transient — parseGlb copies them into the
+  // interleaved vertex array — so no detaching .slice() is needed (readIndices
+  // keeps its copy because that array escapes to the caller).
   const isPacked = stride === packedStride;
   const isAligned = start % bytesPerComponent === 0;
 
   if (componentType === COMPONENT_TYPE_FLOAT) {
     if (isPacked && isAligned) {
-      return new Float32Array(data, start, count).slice();
+      return new Float32Array(data, start, count);
     }
     const dv = new DataView(data);
     const out = new Float32Array(count);
@@ -129,7 +131,7 @@ function getAccessorData(
   }
   if (componentType === COMPONENT_TYPE_UNSIGNED_SHORT) {
     if (isPacked && isAligned) {
-      return new Uint16Array(data, start, count).slice();
+      return new Uint16Array(data, start, count);
     }
     const dv = new DataView(data);
     const out = new Uint16Array(count);
@@ -146,7 +148,7 @@ function getAccessorData(
   }
   if (componentType === COMPONENT_TYPE_UNSIGNED_INT) {
     if (isPacked && isAligned) {
-      return new Uint32Array(data, start, count).slice();
+      return new Uint32Array(data, start, count);
     }
     const dv = new DataView(data);
     const out = new Uint32Array(count);

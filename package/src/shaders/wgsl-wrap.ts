@@ -49,6 +49,48 @@ fn fitUv(uv: vec2f) -> vec2f {
 }
 `;
 
+/**
+ * GLSL twin of the WGSL fitUv in TEXTURE_BINDINGS above (uUni.values1 ↔
+ * uUni[1]). Injected by convertWgslFragmentToGlsl for the WebGL2 fallback —
+ * keep the two bodies in lockstep.
+ */
+export const FIT_UV_GLSL = `vec2 fitUv(vec2 uv) {
+  return uv * uUni[1].xy + uUni[1].zw;
+}`;
+
+/**
+ * Find a function by signature regex and return its brace-balanced body.
+ * Shared by wgsl-compat (fsMain) and glsl-compat (main) so the depth-counting
+ * extractor cannot drift between the two converters.
+ */
+export function extractFunctionBody(source: string, nameRegex: RegExp) {
+  const fnMatch = nameRegex.exec(source);
+  if (!fnMatch || typeof fnMatch.index !== "number") return null;
+  const fnStart = fnMatch.index;
+  const braceStart = source.indexOf("{", fnStart);
+  if (braceStart < 0) return null;
+  let depth = 0;
+  let end = -1;
+  for (let i = braceStart; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === "{") depth += 1;
+    if (ch === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        end = i;
+        break;
+      }
+    }
+  }
+  if (end < 0) return null;
+  return {
+    fnStart,
+    braceStart,
+    fnEnd: end + 1,
+    body: source.slice(braceStart + 1, end),
+  };
+}
+
 const FS_ENTRY = `
 @fragment
 fn fsEntry(in: VsOut) -> @location(0) vec4f {

@@ -147,6 +147,11 @@ export async function createEngine(
   const prefer = options.backend ?? "auto";
   const kind = await probeRenderer({ backend: prefer });
 
+  // backend: "webgpu" is documented to fail hard — never fall through to WebGL2.
+  if (prefer === "webgpu" && kind !== "webgpu") {
+    throw new GpuUnavailableError("WebGPU is not available in this browser.");
+  }
+
   if (kind === "webgpu") {
     const { createWebGpuEngine } = await import("./webgpu-engine");
     try {
@@ -167,6 +172,10 @@ export async function createEngine(
   throw new GpuUnavailableError();
 }
 
+// In-flight initEngine promises, keyed by canvas, so concurrent calls share one
+// engine instead of racing two onto the same canvas (the loser would leak).
+const pendingEngineInits = new Map<HTMLCanvasElement, Promise<WebGLEngine>>();
+
 export async function initEngine(
   canvas: HTMLCanvasElement,
   options: EngineOptions = {},
@@ -176,7 +185,20 @@ export async function initEngine(
     return existing;
   }
 
-  const engine = await createEngine(canvas, options);
-  setDefaultEngine(engine);
-  return engine;
+  const pending = pendingEngineInits.get(canvas);
+  if (pending) {
+    return pending;
+  }
+
+  const promise = (async () => {
+    try {
+      const engine = await createEngine(canvas, options);
+      setDefaultEngine(engine);
+      return engine;
+    } finally {
+      pendingEngineInits.delete(canvas);
+    }
+  })();
+  pendingEngineInits.set(canvas, promise);
+  return promise;
 }

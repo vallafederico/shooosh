@@ -15,30 +15,22 @@ import {
   type UniValues,
 } from "../engine/uni";
 import {
+  computeObjectMatrices,
   createObjectGeometry,
+  createObjectMatrixScratch,
   getElementObjectPlacement,
   getScreenObjectPlacement,
   isMvpVisible,
-  mat4Multiply,
-  mat4Perspective,
-  mat4RotationX,
-  mat4RotationY,
-  mat4RotationZ,
-  mat4Scale,
-  mat4Translation,
   type ObjectShape,
 } from "./object.utils";
 import { convertWgslFragmentToGlsl } from "../shaders/wgsl-compat";
 import { compileProgramAsync } from "../shaders/compile";
-import { createLazyGpuFactory, createPendingAttachQueue } from "./pending-attach";
+import { createLazyGpuFactory } from "./pending-attach";
+import { createPrimitiveLifecycle, type PrimitiveLifecycle } from "./primitive-lifecycle";
 
 const ensureGpuObjectFactory = createLazyGpuFactory({
   label: "object",
   load: () => import("./gpu-object").then((m) => m.createGpuObjectRenderer),
-});
-
-const pendingObjects = createPendingAttachQueue<ObjectManager>((object) => {
-  object.attachFromPending();
 });
 
 type ObjectRenderer = {
@@ -71,17 +63,16 @@ type ObjectMaskMapHandle = ObjectEnvMapHandle;
 function resolveGlMapTexture(
   handle: ObjectEnvMapHandle | null | undefined,
   gl: WebGL2RenderingContext,
-  fallback: WebGLTexture,
-): WebGLTexture {
-  if (!handle) return fallback;
+): WebGLTexture | null {
+  if (!handle) return null;
   const inner =
     typeof handle.createView === "function"
       ? handle
       : ((handle.texture as ObjectEnvMapHandle | undefined) ?? null);
-  if (!inner || inner.gl !== gl) return fallback;
+  if (!inner || inner.gl !== gl) return null;
   const tex = inner.texture;
   if (!tex || typeof (tex as { createView?: unknown }).createView === "function") {
-    return fallback;
+    return null;
   }
   return tex as WebGLTexture;
 }
@@ -132,10 +123,7 @@ export class ObjectManager {
     rotationY: 0,
     rotationZ: 0,
   };
-  private renderer: ObjectRenderer | null = null;
-  private unsubscribeRender: (() => void) | null = null;
-  private canvas: HTMLCanvasElement | null = null;
-  private destroyed = false;
+  private lifecycle: PrimitiveLifecycle<ObjectRenderer>;
 
   constructor(element: HTMLElement | null, options: ObjectOptions = {}) {
     this.element = element;
@@ -145,7 +133,37 @@ export class ObjectManager {
     this.transform.rotationX = options.rotationX ?? 0;
     this.transform.rotationY = options.rotationY ?? 0;
     this.transform.rotationZ = options.rotationZ ?? 0;
-    this.connectOrQueue();
+    this.lifecycle = createPrimitiveLifecycle<ObjectRenderer>({
+      layer: options.layer ?? 20,
+      createRenderer: (frame) => {
+        if (frame.backend === "webgpu") {
+          const createGpuRenderer = ensureGpuObjectFactory();
+          if (!createGpuRenderer) return null;
+          return createGpuRenderer(
+            this.element,
+            this.options,
+            this.uni,
+            this.transform,
+          );
+        }
+        if (frame.gl) {
+          return createObjectRenderer(
+            this.element,
+            frame,
+            this.options,
+            this.uni,
+            this.transform,
+          );
+        }
+        return null;
+      },
+      renderFrame: (renderer, frame) => {
+        // Match createItem: onFrame first so setTransform/setUni keep the settle
+        // loop hot before (and even if) this draw is skipped.
+        this.options.onFrame?.(this, frame);
+        renderer.render(frame);
+      },
+    });
   }
 
   setUni(next: Partial<UniValues>) {
@@ -191,75 +209,7 @@ export class ObjectManager {
   }
 
   destroy() {
-    this.destroyed = true;
-    this.unsubscribeRender?.();
-    this.unsubscribeRender = null;
-    this.renderer?.destroy();
-    this.renderer = null;
-    this.canvas = null;
-    pendingObjects.dequeue(this);
-  }
-
-  private connectOrQueue() {
-    if (this.destroyed) return;
-
-    const webgl = getDefaultEngine();
-    if (webgl) {
-      this.attach();
-      return;
-    }
-
-    pendingObjects.enqueue(this);
-  }
-
-  /** @internal pending-attach queue */
-  attachFromPending() {
-    this.attach();
-  }
-
-  private attach() {
-    if (this.destroyed || this.unsubscribeRender) return;
-
-    this.unsubscribeRender = getDefaultEngine()!.onRender(
-      (frame) => {
-        if (this.destroyed) return;
-
-        if (!this.canvas) {
-          this.canvas = frame.canvas;
-        }
-        if (this.canvas !== frame.canvas) {
-          return;
-        }
-
-        if (!this.renderer) {
-          if (frame.backend === "webgpu") {
-            const createGpuRenderer = ensureGpuObjectFactory();
-            if (!createGpuRenderer) return;
-            this.renderer = createGpuRenderer(
-              this.element,
-              this.options,
-              this.uni,
-              this.transform,
-            );
-          } else if (frame.gl) {
-            this.renderer = createObjectRenderer(
-              this.element,
-              frame,
-              this.options,
-              this.uni,
-              this.transform,
-            );
-          } else {
-            return;
-          }
-        }
-        // Match createItem: onFrame first so setTransform/setUni keep the settle
-        // loop hot before (and even if) this draw is skipped.
-        this.options.onFrame?.(this, frame);
-        this.renderer.render(frame);
-      },
-      { layer: this.options.layer ?? 20 },
-    );
+    this.lifecycle.destroy();
   }
 }
 
@@ -425,18 +375,29 @@ function createObjectRenderer(
   let uMaskMapLoc: WebGLUniformLocation | null = null;
   let uHasUvLoc: WebGLUniformLocation | null = null;
   let uUniLoc: WebGLUniformLocation | null = null;
-  const fallbackWhiteTexture = getSolidTexture(gl, [255, 255, 255, 255]);
-  const fallbackBlackTexture = getSolidTexture(gl, [0, 0, 0, 255]);
-  const envMapTexture = resolveGlMapTexture(
-    options.envMap,
-    gl,
-    fallbackWhiteTexture,
-  );
-  const maskMapTexture = resolveGlMapTexture(
-    options.maskMap,
-    gl,
-    fallbackBlackTexture,
-  );
+  // Mirror the WebGPU path: only shaders that name uEnvMap / uMaskMap get a
+  // texture, and the 1×1 fallbacks exist only when no real map resolved.
+  const usesEnvMap = /\buEnvMap\b/.test(shader.fragment);
+  const usesMaskMap = /\buMaskMap\b/.test(shader.fragment);
+  let fallbackWhiteTexture: WebGLTexture | null = null;
+  let fallbackBlackTexture: WebGLTexture | null = null;
+  let envMapTexture: WebGLTexture | null = null;
+  let maskMapTexture: WebGLTexture | null = null;
+  if (usesEnvMap) {
+    envMapTexture = resolveGlMapTexture(options.envMap, gl);
+    if (!envMapTexture) {
+      fallbackWhiteTexture = getSolidTexture(gl, [255, 255, 255, 255]);
+      envMapTexture = fallbackWhiteTexture;
+    }
+  }
+  if (usesMaskMap) {
+    maskMapTexture = resolveGlMapTexture(options.maskMap, gl);
+    if (!maskMapTexture) {
+      fallbackBlackTexture = getSolidTexture(gl, [0, 0, 0, 255]);
+      maskMapTexture = fallbackBlackTexture;
+    }
+  }
+  const matrixScratch = createObjectMatrixScratch();
   let uniValues = uni.toFloat32(16);
   const unsubscribeUni = uni.subscribe(() => {
     uniValues = uni.toFloat32(16);
@@ -459,36 +420,14 @@ function createObjectRenderer(
         : getElementObjectPlacement(element!, nextFrame.canvas);
       if (!placement.isVisible) return false;
 
-      const objectScale = Math.max(0.001, placement.scale * transform.scale);
-      const s = mat4Scale(objectScale, objectScale, objectScale);
-      const rx = mat4RotationX(transform.rotationX);
-      const ry = mat4RotationY(transform.rotationY);
-      const rz = mat4RotationZ(transform.rotationZ);
-      const model = mat4Multiply(rz, mat4Multiply(ry, mat4Multiply(rx, s)));
-
-      const cameraEnabled = options.camera?.enabled ?? true;
-      const mvp = (() => {
-        if (!cameraEnabled) {
-          return model;
-        }
-
-        const canvas = nextFrame.canvas;
-        const aspect = Math.max(0.0001, canvas.width / canvas.height);
-        const fov = ((options.camera?.fov ?? 50) * Math.PI) / 180;
-        const near = options.camera?.near ?? 0.1;
-        const far = options.camera?.far ?? 10;
-        const distance = options.camera?.distance ?? 2.6;
-        const projection = mat4Perspective(fov, aspect, near, far);
-        const view = mat4Translation(0, 0, -distance);
-        const vp = mat4Multiply(projection, view);
-        const objectClip = mat4Multiply(vp, model);
-        const clipOffset = mat4Translation(
-          placement.centerX,
-          placement.centerY,
-          0,
-        );
-        return mat4Multiply(clipOffset, objectClip);
-      })();
+      const { model, mvp } = computeObjectMatrices({
+        placement,
+        transform,
+        camera: options.camera,
+        canvas: nextFrame.canvas,
+        zeroToOneDepth: false,
+        scratch: matrixScratch,
+      });
 
       const cullingEnabled =
         !useScreenPlacement && (options.frustumCulling ?? true);
@@ -505,12 +444,12 @@ function createObjectRenderer(
       if (uMvpLoc) gl.uniformMatrix4fv(uMvpLoc, false, mvp);
       if (uModelLoc) gl.uniformMatrix4fv(uModelLoc, false, model);
       if (uUniLoc) gl.uniform4fv(uUniLoc, uniValues);
-      if (uEnvMapLoc) {
+      if (uEnvMapLoc && envMapTexture) {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, envMapTexture);
         gl.uniform1i(uEnvMapLoc, 0);
       }
-      if (uMaskMapLoc) {
+      if (uMaskMapLoc && maskMapTexture) {
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, maskMapTexture);
         gl.uniform1i(uMaskMapLoc, 1);
@@ -529,8 +468,8 @@ function createObjectRenderer(
       gl.deleteBuffer(indexBuffer);
       gl.deleteVertexArray(vao);
       asyncProgram.destroy();
-      gl.deleteTexture(fallbackWhiteTexture);
-      gl.deleteTexture(fallbackBlackTexture);
+      if (fallbackWhiteTexture) gl.deleteTexture(fallbackWhiteTexture);
+      if (fallbackBlackTexture) gl.deleteTexture(fallbackBlackTexture);
     },
   };
 }

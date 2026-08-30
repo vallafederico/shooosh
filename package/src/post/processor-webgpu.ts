@@ -22,7 +22,6 @@ import type { EnginePostFrame, WebGpuRenderTarget } from "../engine/engine";
 import {
   getGpuPostFrame,
   GPU_BUFFER_USAGE,
-  GPU_SHADER_STAGE,
   GPU_TEXTURE_USAGE,
   type GpuBindGroup,
   type GpuBuffer,
@@ -34,6 +33,11 @@ import {
   type GpuTextureView,
 } from "../engine/gpu-api";
 import { compileGpuPipeline, type GpuProgram } from "../shaders/gpu-compile";
+import {
+  createFullscreenBindGroupLayout,
+  createLinearClampSampler,
+  wgslFullscreenPreamble,
+} from "./gpu-util";
 import type { InternalEffect, PostBackend } from "./types";
 
 /** uni (4 × vec4f) + resolution/time/delta/passIndex, padded to 16 bytes. */
@@ -51,26 +55,7 @@ const POST_PREAMBLE = `struct Uni {
   passIndex: f32,
 }
 
-@group(0) @binding(0) var<uniform> uUni: Uni;
-@group(0) @binding(1) var uSampler: sampler;
-@group(0) @binding(2) var uTexture: texture_2d<f32>;
-
-struct VsOut {
-  @builtin(position) position: vec4f,
-  @location(0) uv: vec2f,
-}
-
-@vertex
-fn vsMain(@builtin(vertex_index) index: u32) -> VsOut {
-  var corners = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
-  let p = corners[index];
-  var out: VsOut;
-  out.position = vec4f(p, 0.0, 1.0);
-  // Top-origin uv: matches the framebuffer row order, so passes never flip.
-  out.uv = vec2f(p.x * 0.5 + 0.5, 1.0 - (p.y * 0.5 + 0.5));
-  return out;
-}
-`;
+${wgslFullscreenPreamble("uTexture")}`;
 
 const POST_ENTRY = `
 @fragment
@@ -172,29 +157,12 @@ class WebGpuPostBackend implements PostBackend {
     this.destroy();
     this.device = device;
     this.format = format;
-    this.bindGroupLayout = device.createBindGroupLayout({
-      label: "post-bind-layout",
-      entries: [
-        { binding: 0, visibility: GPU_SHADER_STAGE.FRAGMENT, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPU_SHADER_STAGE.FRAGMENT, sampler: { type: "filtering" } },
-        {
-          binding: 2,
-          visibility: GPU_SHADER_STAGE.FRAGMENT,
-          texture: { sampleType: "float", viewDimension: "2d" },
-        },
-      ],
-    });
+    this.bindGroupLayout = createFullscreenBindGroupLayout(device, "post-bind-layout");
     this.pipelineLayout = device.createPipelineLayout({
       label: "post-pipeline-layout",
       bindGroupLayouts: [this.bindGroupLayout],
     });
-    this.sampler = device.createSampler({
-      label: "post-sampler",
-      magFilter: "linear",
-      minFilter: "linear",
-      addressModeU: "clamp-to-edge",
-      addressModeV: "clamp-to-edge",
-    });
+    this.sampler = createLinearClampSampler(device, "post-sampler");
     this.corePrograms.set("copy", this.compile(COPY_EFFECT, "post:copy"));
   }
 

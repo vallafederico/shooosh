@@ -300,87 +300,99 @@ export function getElementObjectPlacement(
   };
 }
 
-export function mat4Identity() {
-  return new Float32Array([
-    1, 0, 0, 0, //
-    0, 1, 0, 0, //
-    0, 0, 1, 0, //
-    0, 0, 0, 1,
-  ]);
+// All mat4 helpers accept an optional `out` (Float32Array(16)) so per-frame
+// callers can reuse scratch matrices; the no-arg form still allocates.
+
+export function mat4Identity(out?: Float32Array) {
+  const m = out ?? new Float32Array(16);
+  m[0] = 1; m[1] = 0; m[2] = 0; m[3] = 0;
+  m[4] = 0; m[5] = 1; m[6] = 0; m[7] = 0;
+  m[8] = 0; m[9] = 0; m[10] = 1; m[11] = 0;
+  m[12] = 0; m[13] = 0; m[14] = 0; m[15] = 1;
+  return m;
 }
 
-export function mat4Multiply(a: Float32Array, b: Float32Array) {
-  const out = new Float32Array(16);
+/** `out` must not alias `a` or `b`. */
+export function mat4Multiply(a: Float32Array, b: Float32Array, out?: Float32Array) {
+  const m = out ?? new Float32Array(16);
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
-      out[c * 4 + r] =
+      m[c * 4 + r] =
         a[0 * 4 + r] * b[c * 4 + 0] +
         a[1 * 4 + r] * b[c * 4 + 1] +
         a[2 * 4 + r] * b[c * 4 + 2] +
         a[3 * 4 + r] * b[c * 4 + 3];
     }
   }
-  return out;
+  return m;
 }
 
-export function mat4Translation(x: number, y: number, z: number) {
-  const out = mat4Identity();
-  out[12] = x;
-  out[13] = y;
-  out[14] = z;
-  return out;
+export function mat4Translation(x: number, y: number, z: number, out?: Float32Array) {
+  const m = mat4Identity(out);
+  m[12] = x;
+  m[13] = y;
+  m[14] = z;
+  return m;
 }
 
-export function mat4Scale(x: number, y: number, z: number) {
-  const out = mat4Identity();
-  out[0] = x;
-  out[5] = y;
-  out[10] = z;
-  return out;
+export function mat4Scale(x: number, y: number, z: number, out?: Float32Array) {
+  const m = mat4Identity(out);
+  m[0] = x;
+  m[5] = y;
+  m[10] = z;
+  return m;
 }
 
-export function mat4RotationX(angle: number) {
+export function mat4RotationX(angle: number, out?: Float32Array) {
   const c = Math.cos(angle);
   const s = Math.sin(angle);
-  return new Float32Array([
-    1, 0, 0, 0, //
-    0, c, s, 0, //
-    0, -s, c, 0, //
-    0, 0, 0, 1,
-  ]);
+  const m = mat4Identity(out);
+  m[5] = c;
+  m[6] = s;
+  m[9] = -s;
+  m[10] = c;
+  return m;
 }
 
-export function mat4RotationY(angle: number) {
+export function mat4RotationY(angle: number, out?: Float32Array) {
   const c = Math.cos(angle);
   const s = Math.sin(angle);
-  return new Float32Array([
-    c, 0, -s, 0, //
-    0, 1, 0, 0, //
-    s, 0, c, 0, //
-    0, 0, 0, 1,
-  ]);
+  const m = mat4Identity(out);
+  m[0] = c;
+  m[2] = -s;
+  m[8] = s;
+  m[10] = c;
+  return m;
 }
 
-export function mat4RotationZ(angle: number) {
+export function mat4RotationZ(angle: number, out?: Float32Array) {
   const c = Math.cos(angle);
   const s = Math.sin(angle);
-  return new Float32Array([
-    c, s, 0, 0, //
-    -s, c, 0, 0, //
-    0, 0, 1, 0, //
-    0, 0, 0, 1,
-  ]);
+  const m = mat4Identity(out);
+  m[0] = c;
+  m[1] = s;
+  m[4] = -s;
+  m[5] = c;
+  return m;
 }
 
-export function mat4Perspective(fovRad: number, aspect: number, near: number, far: number) {
+export function mat4Perspective(
+  fovRad: number,
+  aspect: number,
+  near: number,
+  far: number,
+  out?: Float32Array,
+) {
   const f = 1 / Math.tan(fovRad / 2);
   const nf = 1 / (near - far);
-  return new Float32Array([
-    f / aspect, 0, 0, 0, //
-    0, f, 0, 0, //
-    0, 0, (far + near) * nf, -1, //
-    0, 0, 2 * far * near * nf, 0,
-  ]);
+  const m = out ?? new Float32Array(16);
+  m.fill(0);
+  m[0] = f / aspect;
+  m[5] = f;
+  m[10] = (far + near) * nf;
+  m[11] = -1;
+  m[14] = 2 * far * near * nf;
+  return m;
 }
 
 /** Same projection with clip z in [0, 1] — WebGPU's depth range. */
@@ -389,36 +401,31 @@ export function mat4PerspectiveZeroToOne(
   aspect: number,
   near: number,
   far: number,
+  out?: Float32Array,
 ) {
   const f = 1 / Math.tan(fovRad / 2);
   const nf = 1 / (near - far);
-  return new Float32Array([
-    f / aspect, 0, 0, 0, //
-    0, f, 0, 0, //
-    0, 0, far * nf, -1, //
-    0, 0, far * near * nf, 0,
-  ]);
+  const m = out ?? new Float32Array(16);
+  m.fill(0);
+  m[0] = f / aspect;
+  m[5] = f;
+  m[10] = far * nf;
+  m[11] = -1;
+  m[14] = far * near * nf;
+  return m;
 }
 
-const UNIT_CUBE_CORNERS: Array<[number, number, number]> = [
-  [-1, -1, -1],
-  [1, -1, -1],
-  [-1, 1, -1],
-  [1, 1, -1],
-  [-1, -1, 1],
-  [1, -1, 1],
-  [-1, 1, 1],
-  [1, 1, 1],
-];
-
-function transformPoint(m: Float32Array, x: number, y: number, z: number) {
-  return {
-    x: m[0]! * x + m[4]! * y + m[8]! * z + m[12]!,
-    y: m[1]! * x + m[5]! * y + m[9]! * z + m[13]!,
-    z: m[2]! * x + m[6]! * y + m[10]! * z + m[14]!,
-    w: m[3]! * x + m[7]! * y + m[11]! * z + m[15]!,
-  };
-}
+// Flat [x, y, z, …] corner list — iterated without destructuring allocations.
+const UNIT_CUBE_CORNERS = new Float32Array([
+  -1, -1, -1,
+  1, -1, -1,
+  -1, 1, -1,
+  1, 1, -1,
+  -1, -1, 1,
+  1, -1, 1,
+  -1, 1, 1,
+  1, 1, 1,
+]);
 
 /** Conservative unit-cube frustum test. Works for both clip z ranges. */
 export function isMvpVisible(mvp: Float32Array) {
@@ -429,14 +436,20 @@ export function isMvpVisible(mvp: Float32Array) {
   let outsideNear = true;
   let outsideFar = true;
 
-  for (const [x, y, z] of UNIT_CUBE_CORNERS) {
-    const p = transformPoint(mvp, x, y, z);
-    outsideLeft = outsideLeft && p.x < -p.w;
-    outsideRight = outsideRight && p.x > p.w;
-    outsideBottom = outsideBottom && p.y < -p.w;
-    outsideTop = outsideTop && p.y > p.w;
-    outsideNear = outsideNear && p.z < 0;
-    outsideFar = outsideFar && p.z > p.w;
+  for (let i = 0; i < UNIT_CUBE_CORNERS.length; i += 3) {
+    const x = UNIT_CUBE_CORNERS[i]!;
+    const y = UNIT_CUBE_CORNERS[i + 1]!;
+    const z = UNIT_CUBE_CORNERS[i + 2]!;
+    const px = mvp[0]! * x + mvp[4]! * y + mvp[8]! * z + mvp[12]!;
+    const py = mvp[1]! * x + mvp[5]! * y + mvp[9]! * z + mvp[13]!;
+    const pz = mvp[2]! * x + mvp[6]! * y + mvp[10]! * z + mvp[14]!;
+    const pw = mvp[3]! * x + mvp[7]! * y + mvp[11]! * z + mvp[15]!;
+    outsideLeft = outsideLeft && px < -pw;
+    outsideRight = outsideRight && px > pw;
+    outsideBottom = outsideBottom && py < -pw;
+    outsideTop = outsideTop && py > pw;
+    outsideNear = outsideNear && pz < 0;
+    outsideFar = outsideFar && pz > pw;
   }
 
   return !(
@@ -447,6 +460,88 @@ export function isMvpVisible(mvp: Float32Array) {
     outsideNear ||
     outsideFar
   );
+}
+
+// ─── Shared per-frame matrix block ───────────────────────────────────────────
+
+export type ObjectTransformState = {
+  scale: number;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+};
+
+export type ObjectCameraOptions = {
+  enabled?: boolean;
+  fov?: number;
+  near?: number;
+  far?: number;
+  distance?: number;
+};
+
+/** Per-renderer scratch matrices so computeObjectMatrices allocates nothing. */
+export type ObjectMatrixScratch = {
+  model: Float32Array;
+  mvp: Float32Array;
+  a: Float32Array;
+  b: Float32Array;
+  c: Float32Array;
+};
+
+export function createObjectMatrixScratch(): ObjectMatrixScratch {
+  return {
+    model: new Float32Array(16),
+    mvp: new Float32Array(16),
+    a: new Float32Array(16),
+    b: new Float32Array(16),
+    c: new Float32Array(16),
+  };
+}
+
+/**
+ * Model + MVP for one object frame — shared by the WebGL2 and WebGPU
+ * renderers, which differ only in the projection's clip z range.
+ * Results live in `scratch` and are valid until the next call.
+ */
+export function computeObjectMatrices(options: {
+  placement: ObjectPlacement;
+  transform: ObjectTransformState;
+  camera: ObjectCameraOptions | undefined;
+  canvas: { width: number; height: number };
+  /** WebGPU clip z is [0, 1]; WebGL2 is [-1, 1]. */
+  zeroToOneDepth: boolean;
+  scratch: ObjectMatrixScratch;
+}): { model: Float32Array; mvp: Float32Array } {
+  const { placement, transform, camera, canvas, scratch } = options;
+
+  const objectScale = Math.max(0.001, placement.scale * transform.scale);
+  const s = mat4Scale(objectScale, objectScale, objectScale, scratch.a);
+  const rx = mat4RotationX(transform.rotationX, scratch.b);
+  const rxs = mat4Multiply(rx, s, scratch.c);
+  const ry = mat4RotationY(transform.rotationY, scratch.a);
+  const ryrxs = mat4Multiply(ry, rxs, scratch.b);
+  const rz = mat4RotationZ(transform.rotationZ, scratch.a);
+  const model = mat4Multiply(rz, ryrxs, scratch.model);
+
+  const cameraEnabled = camera?.enabled ?? true;
+  if (!cameraEnabled) {
+    return { model, mvp: model };
+  }
+
+  const aspect = Math.max(0.0001, canvas.width / canvas.height);
+  const fov = ((camera?.fov ?? 50) * Math.PI) / 180;
+  const near = camera?.near ?? 0.1;
+  const far = camera?.far ?? 10;
+  const distance = camera?.distance ?? 2.6;
+  const projection = options.zeroToOneDepth
+    ? mat4PerspectiveZeroToOne(fov, aspect, near, far, scratch.a)
+    : mat4Perspective(fov, aspect, near, far, scratch.a);
+  const view = mat4Translation(0, 0, -distance, scratch.b);
+  const vp = mat4Multiply(projection, view, scratch.c);
+  const objectClip = mat4Multiply(vp, model, scratch.a);
+  const clipOffset = mat4Translation(placement.centerX, placement.centerY, 0, scratch.b);
+  const mvp = mat4Multiply(clipOffset, objectClip, scratch.mvp);
+  return { model, mvp };
 }
 
 /** Placement for createObject(null, …) — centred in NDC, no DOM element. */

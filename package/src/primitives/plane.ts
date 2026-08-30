@@ -17,7 +17,7 @@ import {
 import { resolveTextureUvTransform, textureFitToUni, type TextureFitMode } from "../loaders/texture-loader";
 import { convertWgslFragmentToGlsl } from "../shaders/wgsl-compat";
 import { compileProgramAsync } from "../shaders/compile";
-import { createLazyGpuFactory } from "./pending-attach";
+import { createLazyGpuFactory, createPendingAttachQueue } from "./pending-attach";
 
 export type FullscreenPlaneGeometry = {
   vertices: Float32Array;
@@ -162,7 +162,8 @@ export function createFullscreenPlaneGeometry(
   } satisfies FullscreenPlaneGeometry;
 }
 
-function getDefaultVertexShader() {
+/** Shared quad vertex shader — also used by the createItem WebGL2 path. */
+export function getDefaultGlslVertexShader() {
   return `#version 300 es
 in vec2 aPosition;
 in vec2 aUv;
@@ -173,15 +174,20 @@ void main() {
 }`;
 }
 
-function getDefaultFragmentShader(debugUv: boolean) {
+/** Default fragment — the item debug variant mirrors defaultItemWgslFragment. */
+export function getDefaultGlslFragmentShader(
+  debugUv: boolean,
+  kind: "screen" | "item" = "screen",
+) {
   if (debugUv) {
+    const blue = kind === "item" ? "0.5 + 0.5 * uUni[0].x" : "max(0.0, uUni[0].x)";
     return `#version 300 es
 precision highp float;
 in vec2 vUv;
 uniform vec4 uUni[4];
 out vec4 outColor;
 void main() {
-  outColor = vec4(vUv, max(0.0, uUni[0].x), 1.0);
+  outColor = vec4(vUv, ${blue}, 1.0);
 }`;
   }
   return `#version 300 es
@@ -233,10 +239,15 @@ void main() {
 }`;
 }
 
-function getShaderSource(options: {
+/**
+ * Resolve the WebGL2 quad sources for a plane or item: raw GLSL passthrough,
+ * WGSL shim, or a default. Shared with the createItem WebGL2 path.
+ */
+export function resolveGlslShaderSource(options: {
   debugUv: boolean;
   shaders?: FullscreenPlaneShaders;
   hasTexture?: boolean;
+  kind?: "screen" | "item";
 }) {
   const wgslFragment =
     options.shaders?.fragment ??
@@ -246,13 +257,13 @@ function getShaderSource(options: {
     // raw GLSL passthrough — full #version 300 es sources skip the WGSL shim
     if (/^\s*#version\s+300\s+es/.test(wgslFragment)) {
       return {
-        vertex: getDefaultVertexShader(),
+        vertex: getDefaultGlslVertexShader(),
         fragment: wgslFragment,
       };
     }
     try {
       return {
-        vertex: getDefaultVertexShader(),
+        vertex: getDefaultGlslVertexShader(),
         fragment: convertWgslFragmentToGlsl(wgslFragment, { includeUv: true }),
       };
     } catch (error) {
@@ -266,11 +277,16 @@ function getShaderSource(options: {
     console.warn("Custom WGSL vertex shaders are not supported on the WebGL runtime.");
   }
   return {
-    vertex: getDefaultVertexShader(),
+    vertex: getDefaultGlslVertexShader(),
     fragment: options.hasTexture
       ? getDefaultTextureFragmentShader()
-      : getDefaultFragmentShader(options.debugUv),
+      : getDefaultGlslFragmentShader(options.debugUv, options.kind ?? "screen"),
   };
+}
+
+/** True when a GLSL fragment reads the auto-time slot (`value4` / uUni[0].w). */
+export function referencesGlslTimeSlot(fragment: string) {
+  return /uUni\s*\[\s*0\s*\]\s*\.\s*w/.test(fragment);
 }
 
 export function createFullscreenPlaneRenderer(
@@ -292,12 +308,15 @@ export function createFullscreenPlaneRenderer(
     texture?.view as { texture?: WebGLTexture } | undefined
   )?.texture;
 
-  const shaderSource = getShaderSource({
+  const shaderSource = resolveGlslShaderSource({
     debugUv: Boolean(options.debugUv),
     shaders: options.shaders,
     hasTexture: Boolean(glTexture),
   });
-  const usesTexture = Boolean(glTexture);
+  const usesTexture = Boolean(glTexture) && /\buTexture\b/.test(shaderSource.fragment);
+  // Auto-time keeps the settle loop hot, so only shaders that actually read
+  // the time slot (the default animated texture look included) get it.
+  const usesTime = referencesGlslTimeSlot(shaderSource.fragment);
   const asyncProgram = compileProgramAsync(
     gl,
     shaderSource.vertex,
@@ -327,6 +346,12 @@ export function createFullscreenPlaneRenderer(
 
   const indexType = geometry.indices instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
 
+  // Texture-fit cache — recompute only when the (textureAspect, targetAspect,
+  // fit) triple changes, so static frames stay clean for the settle loop.
+  let lastFitTextureAspect = Number.NaN;
+  let lastFitTargetAspect = Number.NaN;
+  let lastFitMode: TextureFitMode | null = null;
+
   return {
     geometry,
     render(nextFrame: { canvas: HTMLCanvasElement }) {
@@ -336,17 +361,25 @@ export function createFullscreenPlaneRenderer(
         uUniLoc = gl.getUniformLocation(program, "uUni");
         uTextureLoc = gl.getUniformLocation(program, "uTexture");
       }
-      uniWatch.set({
-        value4: performance.now() * 0.001,
-      });
+      if (usesTime) {
+        uniWatch.set({
+          value4: performance.now() * 0.001,
+        });
+      }
       if (texture) {
         const targetAspect = nextFrame.canvas.width / Math.max(1, nextFrame.canvas.height);
-        const uvTransform = resolveTextureUvTransform(
-          texture.aspect,
-          targetAspect,
-          options.textureFit ?? "cover",
-        );
-        uniWatch.set(textureFitToUni(uvTransform));
+        const fit = options.textureFit ?? "cover";
+        if (
+          texture.aspect !== lastFitTextureAspect ||
+          targetAspect !== lastFitTargetAspect ||
+          fit !== lastFitMode
+        ) {
+          lastFitTextureAspect = texture.aspect;
+          lastFitTargetAspect = targetAspect;
+          lastFitMode = fit;
+          const uvTransform = resolveTextureUvTransform(texture.aspect, targetAspect, fit);
+          uniWatch.set(textureFitToUni(uvTransform));
+        }
       }
 
       gl.disable(gl.DEPTH_TEST);
@@ -386,6 +419,21 @@ const ensureGpuPlaneFactory = createLazyGpuFactory({
   load: () => import("./gpu-plane").then((m) => m.createGpuFullscreenPlaneRenderer),
 });
 
+const pendingPlanes = createPendingAttachQueue<{ attach: () => void }>((plane) => {
+  plane.attach();
+});
+
+/** Configure fields that force a renderer rebuild (shader recompile / new buffers). */
+const RENDERER_FIELDS = [
+  "subdivisionsX",
+  "subdivisionsY",
+  "debugUv",
+  "shaders",
+  "uni",
+  "texture",
+  "textureFit",
+] as const;
+
 export function initFullscreenPlane(
   options: FullscreenPlaneInitOptions = {},
 ): FullscreenPlaneController {
@@ -401,10 +449,12 @@ export function initFullscreenPlane(
     onFrame: options.onFrame,
   };
   let renderer: FullscreenPlaneRenderer | null = null;
-  const uni = ensureWatchableUni(options.uni ?? { value1: 1 });
+  let uni = ensureWatchableUni(options.uni ?? { value1: 1 });
   let controller: FullscreenPlaneController | null = null;
+  let destroyed = false;
 
   const renderFromFrame = (frame: EngineFrame) => {
+    if (destroyed) return;
     if (!renderer) {
       if (frame.backend === "webgpu") {
         const createGpuRenderer = ensureGpuPlaneFactory();
@@ -428,37 +478,71 @@ export function initFullscreenPlane(
   };
 
   let unsubscribe: (() => void) | null = null;
-  const subscribeRender = () => {
-    unsubscribe?.();
-    unsubscribe = getDefaultEngine()!.onRender(renderFromFrame, {
-      layer: config.renderLayer ?? 0,
-    });
+  const pendingEntry = {
+    attach() {
+      if (destroyed || unsubscribe) return;
+      unsubscribe = getDefaultEngine()!.onRender(renderFromFrame, {
+        layer: config.renderLayer ?? 0,
+      });
+    },
   };
-  subscribeRender();
+  // Safe before the engine exists — queue on the shared raf list like items do.
+  const connectOrQueue = () => {
+    if (destroyed) return;
+    if (getDefaultEngine()) {
+      pendingEntry.attach();
+    } else {
+      pendingPlanes.enqueue(pendingEntry);
+    }
+  };
+  connectOrQueue();
 
   controller = {
     render() {
       getDefaultEngine()?.render();
     },
     configure(next) {
+      const previous = config;
       config = {
         ...config,
         ...next,
       };
-      subscribeRender();
 
-      if (renderer) {
+      // Re-wrap a newly passed uni so setUni/getUni target it.
+      if (next.uni !== undefined && next.uni !== previous.uni) {
+        uni = ensureWatchableUni(next.uni ?? { value1: 1 });
+      }
+
+      // Layer changes only need a re-subscribe, not a shader recompile.
+      if (
+        unsubscribe &&
+        next.renderLayer !== undefined &&
+        next.renderLayer !== previous.renderLayer
+      ) {
+        unsubscribe();
+        unsubscribe = null;
+        pendingEntry.attach();
+      }
+
+      // Destroy/rebuild the renderer only when a renderer-affecting field changed.
+      const rendererChanged = RENDERER_FIELDS.some(
+        (field) => next[field] !== undefined && next[field] !== previous[field],
+      );
+      if (rendererChanged && renderer) {
         renderer.destroy();
         renderer = null;
       }
+      getDefaultEngine()?.requestFrame();
     },
     destroy() {
+      destroyed = true;
       unsubscribe?.();
       unsubscribe = null;
       if (renderer) {
         renderer.destroy();
         renderer = null;
       }
+      pendingPlanes.dequeue(pendingEntry);
     },
     getGeometry() {
       return renderer?.geometry ?? createFullscreenPlaneGeometry(config);

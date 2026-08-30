@@ -18,7 +18,8 @@ import { getDefaultEngine, type EngineFrame } from "../engine/engine";
 import { getElementClipData } from "./item.utils";
 import { compileProgramAsync, type AsyncProgram } from "../shaders/compile";
 import type { TextureLoaderResult } from "../loaders/texture-loader";
-import { createLazyGpuFactory, createPendingAttachQueue } from "./pending-attach";
+import { createLazyGpuFactory } from "./pending-attach";
+import { createPrimitiveLifecycle } from "./primitive-lifecycle";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,6 +32,8 @@ export type MsdfGlyphsOptions = {
   color: [number, number, number];
   alpha: number;
   boxAspect: number;
+  /** Render layer (default 10). Lower layers render first. */
+  layer?: number;
   uni?: { value1?: number; value2?: number; value3?: number; value4?: number };
 };
 
@@ -232,6 +235,9 @@ function createMsdfGlyphsRenderer(
   gl.bindVertexArray(null);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
+  // Per-renderer scratch — getElementClipData fills this instead of allocating.
+  const clipVertices = new Float32Array(16);
+
   // Cached uniform locations (populated once program is ready)
   let program: WebGLProgram | null = null;
   let loc_uUni: WebGLUniformLocation | null = null;
@@ -262,9 +268,9 @@ function createMsdfGlyphsRenderer(
       if (glyphCount === 0) return;
 
       // Visibility check — also yields fresh element dimensions each frame.
-      const elemRect = element.getBoundingClientRect();
-      const clipData = getElementClipData(element, nextFrame.canvas);
+      const clipData = getElementClipData(element, nextFrame.canvas, clipVertices);
       if (!clipData.isVisible) return;
+      const elemRect = clipData.rect;
 
       // Parse NDC from clipData vertices
       // Layout: [ndcLeft, ndcTop, 0, 0, ndcLeft, ndcBottom, 0, 1, ndcRight, ndcTop, 1, 0, ndcRight, ndcBottom, 1, 1]
@@ -357,110 +363,69 @@ function createMsdfGlyphsRenderer(
 
 // ─── Public factory ───────────────────────────────────────────────────────────
 
-type MsdfGlyphsManager = {
-  element: HTMLElement;
-  options: MsdfGlyphsOptions;
-  renderer: MsdfGlyphsRenderer | null;
-  unsubscribeRender: (() => void) | null;
-  canvas: HTMLCanvasElement | null;
-  destroyed: boolean;
-  pendingUni: Partial<{ value1: number; value2: number; value3: number; value4: number }>;
-  pendingGlyphData: { data: Float32Array; count: number } | null;
-};
-
-const pendingManagers = createPendingAttachQueue<MsdfGlyphsManager>((mgr) => {
-  attachManager(mgr);
-});
-
-function attachManager(mgr: MsdfGlyphsManager) {
-  if (mgr.destroyed || mgr.unsubscribeRender) return;
-
-  mgr.unsubscribeRender = getDefaultEngine()!.onRender(
-    (frame) => {
-      if (mgr.destroyed) return;
-      if (!mgr.canvas) mgr.canvas = frame.canvas;
-      if (mgr.canvas !== frame.canvas) return;
-
-      if (!mgr.renderer) {
-        if (frame.backend === "webgpu") {
-          const createGpuRenderer = ensureGpuGlyphsFactory();
-          if (!createGpuRenderer) return;
-          mgr.renderer = createGpuRenderer(mgr.element, mgr.options);
-        } else if (frame.gl) {
-          mgr.renderer = createMsdfGlyphsRenderer(mgr.element, frame, mgr.options);
-        } else {
-          return;
-        }
-        // Apply any queued updates that arrived before the renderer existed
-        if (Object.keys(mgr.pendingUni).length > 0) {
-          mgr.renderer.setUni(mgr.pendingUni);
-          mgr.pendingUni = {};
-        }
-        if (mgr.pendingGlyphData) {
-          mgr.renderer.setGlyphData(mgr.pendingGlyphData.data, mgr.pendingGlyphData.count);
-          mgr.pendingGlyphData = null;
-        }
-      }
-
-      mgr.renderer.render(frame);
-    },
-    { layer: 10 },
-  );
-}
-
 export function createMsdfGlyphs(
   element: HTMLElement,
   options: MsdfGlyphsOptions,
 ): MsdfGlyphsHandle {
-  const mgr: MsdfGlyphsManager = {
-    element,
-    options,
-    renderer: null,
-    unsubscribeRender: null,
-    canvas: null,
-    destroyed: false,
-    pendingUni: {},
-    pendingGlyphData: null,
-  };
+  let currentOptions = options;
+  let pendingUni: Partial<UniStore> = {};
+  let pendingGlyphData: { data: Float32Array; count: number } | null = null;
 
-  // Connect immediately if engine is already available, else queue
-  const engine = getDefaultEngine();
-  if (engine) {
-    attachManager(mgr);
-  } else {
-    pendingManagers.enqueue(mgr);
-  }
+  const lifecycle = createPrimitiveLifecycle<MsdfGlyphsRenderer>({
+    layer: options.layer ?? 10,
+    createRenderer: (frame) => {
+      if (frame.backend === "webgpu") {
+        const createGpuRenderer = ensureGpuGlyphsFactory();
+        if (!createGpuRenderer) return null;
+        return createGpuRenderer(element, currentOptions);
+      }
+      if (frame.gl) {
+        return createMsdfGlyphsRenderer(element, frame, currentOptions);
+      }
+      return null;
+    },
+    onRendererCreated: (renderer) => {
+      // Apply any queued updates that arrived before the renderer existed
+      if (Object.keys(pendingUni).length > 0) {
+        renderer.setUni(pendingUni);
+        pendingUni = {};
+      }
+      if (pendingGlyphData) {
+        renderer.setGlyphData(pendingGlyphData.data, pendingGlyphData.count);
+        pendingGlyphData = null;
+      }
+    },
+    renderFrame: (renderer, frame) => {
+      renderer.render(frame);
+    },
+  });
 
   return {
     setGlyphData(data, count) {
-      if (mgr.renderer) {
-        mgr.renderer.setGlyphData(data, count);
+      const renderer = lifecycle.getRenderer();
+      if (renderer) {
+        renderer.setGlyphData(data, count);
       } else {
-        mgr.pendingGlyphData = { data, count };
+        pendingGlyphData = { data, count };
         // Also update options so renderer created later gets the latest data
-        mgr.options = { ...mgr.options, glyphData: data, glyphCount: count };
+        currentOptions = { ...currentOptions, glyphData: data, glyphCount: count };
       }
     },
     setUni(next) {
-      if (mgr.renderer) {
-        mgr.renderer.setUni(next);
+      const renderer = lifecycle.getRenderer();
+      if (renderer) {
+        renderer.setUni(next);
       } else {
-        Object.assign(mgr.pendingUni, next);
+        Object.assign(pendingUni, next);
         // Merge into options.uni so renderer created later picks them up
-        mgr.options = {
-          ...mgr.options,
-          uni: { ...mgr.options.uni, ...next },
+        currentOptions = {
+          ...currentOptions,
+          uni: { ...currentOptions.uni, ...next },
         };
       }
     },
     destroy() {
-      mgr.destroyed = true;
-      mgr.unsubscribeRender?.();
-      mgr.unsubscribeRender = null;
-      mgr.renderer?.destroy();
-      mgr.renderer = null;
-      mgr.canvas = null;
-      pendingManagers.dequeue(mgr);
+      lifecycle.destroy();
     },
   };
 }

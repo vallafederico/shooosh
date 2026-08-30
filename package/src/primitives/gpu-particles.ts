@@ -23,6 +23,7 @@ import {
   writeBufferFromArray,
   type GpuProgram,
 } from "../shaders/gpu-compile";
+import { getCachedCanvasRect } from "./item.utils";
 import type { ParticlesOptions } from "./particles";
 
 export type GpuParticlesRenderer = {
@@ -118,6 +119,16 @@ export function createGpuParticlesRenderer(
   let instanceDirty = true;
   let bindGroup: GpuBindGroup | null = null;
 
+  // Last-written uniform state — skip the per-frame writeBuffer when static.
+  let uniformWritten = false;
+  let lastColor0 = Number.NaN;
+  let lastColor1 = Number.NaN;
+  let lastColor2 = Number.NaN;
+  let lastColor3 = Number.NaN;
+  let lastPointSize = Number.NaN;
+  let lastWidth = Number.NaN;
+  let lastHeight = Number.NaN;
+
   const ensureInstanceBuffer = () => {
     const byteLength = Math.max(8, positions.byteLength);
     if (instanceBuffer && instanceCapacity >= byteLength) return instanceBuffer;
@@ -154,17 +165,40 @@ export function createGpuParticlesRenderer(
       }
 
       const canvas = nextFrame.canvas;
-      const cssWidth = canvas.getBoundingClientRect().width;
+      const cssWidth = getCachedCanvasRect(canvas).width;
       const dpr = cssWidth > 0 ? canvas.width / cssWidth : window.devicePixelRatio || 1;
       const color = options.color ?? [1, 1, 1, 1];
-      uniformValues[0] = color[0];
-      uniformValues[1] = color[1];
-      uniformValues[2] = color[2];
-      uniformValues[3] = color[3];
-      uniformValues[4] = (options.size ?? 2) * dpr;
-      uniformValues[5] = Math.max(1, canvas.width);
-      uniformValues[6] = Math.max(1, canvas.height);
-      writeBufferFromArray(device, uniformBuffer, uniformValues);
+      const pointSize = (options.size ?? 2) * dpr;
+      const width = Math.max(1, canvas.width);
+      const height = Math.max(1, canvas.height);
+      // Skip the writeBuffer when dpr/size/color are unchanged.
+      if (
+        !uniformWritten ||
+        lastColor0 !== color[0] ||
+        lastColor1 !== color[1] ||
+        lastColor2 !== color[2] ||
+        lastColor3 !== color[3] ||
+        lastPointSize !== pointSize ||
+        lastWidth !== width ||
+        lastHeight !== height
+      ) {
+        lastColor0 = color[0];
+        lastColor1 = color[1];
+        lastColor2 = color[2];
+        lastColor3 = color[3];
+        lastPointSize = pointSize;
+        lastWidth = width;
+        lastHeight = height;
+        uniformValues[0] = color[0];
+        uniformValues[1] = color[1];
+        uniformValues[2] = color[2];
+        uniformValues[3] = color[3];
+        uniformValues[4] = pointSize;
+        uniformValues[5] = width;
+        uniformValues[6] = height;
+        writeBufferFromArray(device, uniformBuffer, uniformValues);
+        uniformWritten = true;
+      }
 
       const pass = frame.pass;
       pass.setPipeline(pipeline);

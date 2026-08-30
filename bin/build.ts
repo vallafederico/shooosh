@@ -16,6 +16,7 @@ import type { BuildConfig } from "bun"
 import { build } from "bun"
 import dts from "bun-plugin-dts"
 import { spawn } from "bun"
+import { rm } from "node:fs/promises"
 
 const option: BuildConfig = {
   entrypoints: ["./package/index.ts"],
@@ -27,6 +28,8 @@ const option: BuildConfig = {
 
 async function run() {
   try {
+    // Hashed chunk names change between builds — stale ones would ship in the tarball.
+    await rm("./dist", { recursive: true, force: true })
     await Promise.all([
       build({
         ...option,

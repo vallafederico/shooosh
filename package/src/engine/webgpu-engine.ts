@@ -20,11 +20,16 @@
  */
 
 import { GpuUnavailableError } from "./errors";
+import { takeProbedGpuAdapter } from "./capabilities";
 import { resetCanvasRectCache } from "../primitives/item.utils";
 import {
   applyCanvasBackdrop,
-  clampColorChannel,
+  computeCanvasSize,
+  createCanvasSizeTracker,
+  createSubscriberRegistry,
+  ensureSizedTarget,
   getEffectiveDevicePixelRatio,
+  mergeClearColor,
   resolveClearColor,
 } from "./engine-utils";
 import { createSettleLoop } from "./settle-loop";
@@ -65,7 +70,9 @@ export async function createWebGpuEngine(
     throw new GpuUnavailableError("WebGPU is not available in this browser.");
   }
 
-  const adapter = await gpu.requestAdapter();
+  // Reuse the adapter probeRenderer already requested; only ask again when the
+  // probe did not run (or its adapter was already consumed).
+  const adapter = takeProbedGpuAdapter() ?? (await gpu.requestAdapter());
   if (!adapter) {
     throw new GpuUnavailableError("No WebGPU adapter is available.");
   }
@@ -92,8 +99,6 @@ export async function createWebGpuEngine(
   let clearColor = baseClearColor;
   let configuredWidth = 0;
   let configuredHeight = 0;
-  let renderSubscriberId = 1;
-  let renderSubscriberOrder = 0;
   let preRenderSubscriberId = 1;
   let sceneTarget: WebGpuRenderTarget | null = null;
   let depthTexture: GpuTexture | null = null;
@@ -101,20 +106,14 @@ export async function createWebGpuEngine(
   let depthWidth = 0;
   let depthHeight = 0;
 
-  type RenderSubscriberEntry = {
-    id: number;
-    layer: number;
-    order: number;
-    callback: (frame: EngineFrame) => void;
-  };
-
-  const renderSubscribers = new Map<number, RenderSubscriberEntry>();
-  let sortedRenderSubscribersCache: RenderSubscriberEntry[] | null = null;
+  const subscribers = createSubscriberRegistry<
+    (frame: EngineFrame) => void,
+    PostRenderCallback
+  >(() => loop.requestFrame());
   const preRenderSubscribers = new Map<
     number,
     (ctx: GpuPreRenderContext) => void
   >();
-  const postRenderSubscribers = new Set<PostRenderCallback>();
 
   const configureContext = (gpuContext: GpuCanvasContext, width: number, height: number) => {
     gpuContext.configure({
@@ -190,23 +189,12 @@ export async function createWebGpuEngine(
   };
 
   const ensureSceneTarget = () => {
-    const width = Math.max(1, canvas.width);
-    const height = Math.max(1, canvas.height);
-    if (sceneTarget && sceneTarget.width === width && sceneTarget.height === height) {
-      return sceneTarget;
-    }
-    sceneTarget?.destroy();
-    sceneTarget = createSceneTarget(width, height);
+    sceneTarget = ensureSizedTarget(canvas, sceneTarget, createSceneTarget);
     return sceneTarget;
   };
 
   const resize = () => {
-    const ratio = getEffectiveDevicePixelRatio(options.dpr?.max);
-    const rect = canvas.getBoundingClientRect();
-    const cssWidth = rect.width > 0 ? rect.width : canvas.clientWidth;
-    const cssHeight = rect.height > 0 ? rect.height : canvas.clientHeight;
-    const width = Math.max(1, Math.round(cssWidth * ratio));
-    const height = Math.max(1, Math.round(cssHeight * ratio));
+    const { ratio, width, height } = computeCanvasSize(canvas, options.dpr?.max);
 
     const didResize = canvas.width !== width || canvas.height !== height;
     if (didResize) {
@@ -219,16 +207,13 @@ export async function createWebGpuEngine(
     if (didResize || configuredWidth !== width || configuredHeight !== height) {
       configureContext(context, width, height);
     }
+    sizeTracker.markClean(ratio);
   };
 
-  const getSortedRenderSubscribers = () => {
-    if (!sortedRenderSubscribersCache) {
-      sortedRenderSubscribersCache = Array.from(renderSubscribers.values()).sort((a, b) => {
-        if (a.layer !== b.layer) return a.layer - b.layer;
-        return a.order - b.order;
-      });
-    }
-    return sortedRenderSubscribersCache;
+  // Per-frame resize is a cheap flag check; getBoundingClientRect (a forced
+  // layout) only runs when the tracker saw the canvas or DPR change.
+  const resizeIfNeeded = () => {
+    if (sizeTracker.needsResize()) resize();
   };
 
   const renderAt = (now: number, delta: number) => {
@@ -249,7 +234,7 @@ export async function createWebGpuEngine(
       }
     });
 
-    const hasPost = postRenderSubscribers.size > 0;
+    const hasPost = subscribers.hasPostSubscribers();
     const scene = hasPost ? ensureSceneTarget() : null;
 
     // Acquired on demand: when post is not ready to draw, nothing touches the
@@ -283,7 +268,8 @@ export async function createWebGpuEngine(
         view: ensureDepthView(),
         depthClearValue: 1,
         depthLoadOp: "clear",
-        depthStoreOp: "store",
+        // Nothing reads depth after the pass — discard skips the writeback.
+        depthStoreOp: "discard",
       },
     });
 
@@ -297,7 +283,7 @@ export async function createWebGpuEngine(
     };
 
     runWithGpuFrame({ device, context, format, encoder, pass }, () => {
-      getSortedRenderSubscribers().forEach(({ callback }) => {
+      subscribers.getSortedRenderSubscribers().forEach(({ callback }) => {
         try {
           callback(frame);
         } catch (error) {
@@ -326,7 +312,7 @@ export async function createWebGpuEngine(
           getTargetTexture: getCanvasTexture,
         },
         () => {
-          postRenderSubscribers.forEach((callback) => {
+          subscribers.forEachPost((callback) => {
             try {
               callback(postFrame);
             } catch (error) {
@@ -341,31 +327,15 @@ export async function createWebGpuEngine(
   };
 
   const loop = createSettleLoop({
-    resize,
+    resize: resizeIfNeeded,
     render: ({ now, delta }) => renderAt(now, delta),
   });
 
-  const subscribeRender = (
-    callback: (frame: EngineFrame) => void,
-    subscriptionOptions: { layer?: number } = {},
-  ) => {
-    const id = renderSubscriberId++;
-    const layer = Number.isFinite(subscriptionOptions.layer)
-      ? (subscriptionOptions.layer as number)
-      : 0;
-    renderSubscribers.set(id, {
-      id,
-      layer,
-      order: renderSubscriberOrder++,
-      callback,
-    });
-    sortedRenderSubscribersCache = null;
-    loop.requestFrame();
-    return () => {
-      renderSubscribers.delete(id);
-      sortedRenderSubscribersCache = null;
-    };
-  };
+  const sizeTracker = createCanvasSizeTracker(
+    canvas,
+    () => getEffectiveDevicePixelRatio(options.dpr?.max),
+    () => loop.requestFrame(),
+  );
 
   const subscribePreRender = (callback: (ctx: GpuPreRenderContext) => void) => {
     const id = preRenderSubscriberId++;
@@ -377,12 +347,7 @@ export async function createWebGpuEngine(
   };
 
   const setClearColor = (nextColor: Partial<ClearColor>) => {
-    clearColor = {
-      r: clampColorChannel(nextColor.r ?? clearColor.r),
-      g: clampColorChannel(nextColor.g ?? clearColor.g),
-      b: clampColorChannel(nextColor.b ?? clearColor.b),
-      a: clampColorChannel(nextColor.a ?? clearColor.a),
-    };
+    clearColor = mergeClearColor(clearColor, nextColor);
     applyCanvasBackdrop(canvas, clearColor);
     loop.requestFrame();
   };
@@ -400,23 +365,17 @@ export async function createWebGpuEngine(
     requestFrame: loop.requestFrame,
     setClearColor,
     getClearColor: () => clearColor,
-    onRender: subscribeRender,
-    onPostRender: (callback) => {
-      postRenderSubscribers.add(callback);
-      loop.requestFrame();
-      return () => {
-        postRenderSubscribers.delete(callback);
-      };
-    },
+    onRender: subscribers.subscribeRender,
+    onPostRender: subscribers.subscribePostRender,
     destroy() {
       clearGpuInternals(controller);
       loop.destroy();
+      sizeTracker.destroy();
       sceneTarget?.destroy();
       sceneTarget = null;
       releaseDepth();
-      renderSubscribers.clear();
+      subscribers.clear();
       preRenderSubscribers.clear();
-      postRenderSubscribers.clear();
       try {
         device.destroy();
       } catch {

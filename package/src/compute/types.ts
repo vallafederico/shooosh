@@ -5,6 +5,7 @@
  */
 
 import type {
+  GpuBindGroup,
   GpuBindGroupEntryResource,
   GpuCommandEncoder,
   GpuComputePipeline,
@@ -87,13 +88,17 @@ export type ComputeSession = {
 
   /**
    * One compute pass: set pipeline, bind group 0 from entries, dispatch ceil(w/8)×ceil(h/8).
+   * Bind groups built from entries are cached per pipeline + resources (a
+   * ping-pong yields exactly two). A prebuilt GpuBindGroup is used as-is.
    */
   dispatch: (
     encoder: GpuCommandEncoder,
     pipeline: GpuComputePipeline,
     width: number,
     height: number,
-    entries: Array<{ binding: number; resource: GpuBindGroupEntryResource }>,
+    entries:
+      | Array<{ binding: number; resource: GpuBindGroupEntryResource }>
+      | GpuBindGroup,
     label?: string,
   ) => void;
 
