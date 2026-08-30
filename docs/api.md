@@ -118,7 +118,7 @@ The whole public API runs on both backends. Where they differ:
 - `createObject` depth-tests against the engine depth buffer on WebGPU and does not back-face cull; `shaders.fragmentGlsl` falls back to the default material there.
 - `loadTexture` picks the backend from the running engine, so load textures **after** `createScene()` / `acquireLayer()` resolves. A WebGL2 handle passed to a WebGPU draw is ignored with a warning.
 - Texture fit: `loadTexture(src, { fit: "cover" })` + `createItem` / `createScreen` `{ texture, textureFit }`. Sample with `fitUv(vUv)`. Helpers: `resolveTextureUvTransform`, `applyTextureUv`, `textureFitToUni` (packs value5–8).
-- Env/matcap maps (`dir.xy * 0.5 + 0.5`): `loadTexture(src, { flipY: false })` so WebGL2 matches WebGPU sample space (default GL upload still flips for top-origin `vUv`).
+- `loadTexture` does not flip by default — `vUv` is top-origin on both backends. Env/matcap maps (`dir.xy * 0.5 + 0.5`) use the same default upload.
 - `createMouseTrail().getTextureHandle()` is shaped like a `loadTexture()` result on both backends — pass it straight to `createItem({ texture })`. The trail reallocates with the canvas, so re-read the handle after a resize.
 
 ## Node / Bun — `shooosh/msdf`

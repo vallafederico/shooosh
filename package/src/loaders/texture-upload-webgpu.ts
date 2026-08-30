@@ -5,8 +5,7 @@
  * `view` is a GPUTextureView and `sampler` a GPUSampler, ready to drop into the
  * plane / item bind group (bindings 1 and 2).
  *
- * `vUv` is top-origin on both backends, so the copy does not flip Y here (the
- * WebGL2 path flips because GL textures are bottom-origin).
+ * `vUv` is top-origin on both backends, so the copy does not flip Y by default.
  *
  * Docs: docs/api.md · docs/shader-contract.md
  */
@@ -79,8 +78,7 @@ export function uploadWebGpuTexture(
   });
 
   device.queue.copyExternalImageToTexture(
-    // Default false — WebGPU UVs are top-origin. `{ flipY: true }` mirrors GL's
-    // decode-time flip; env/matcap loads should keep false on both backends.
+    // Default false — top-origin vUv. Pass `{ flipY: true }` only for legacy sampling.
     { source: bitmap, flipY: options.flipY === true },
     // The loader decodes with premultiplyAlpha: "premultiply", and this copy
     // keeps the destination premultiplied (a no-op conversion for loader

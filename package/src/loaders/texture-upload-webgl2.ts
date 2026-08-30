@@ -26,10 +26,8 @@ export function uploadWebGl2Texture(
   }
 
   gl.bindTexture(gl.TEXTURE_2D, glTexture);
-  // No UNPACK_FLIP_Y_WEBGL here: the WebGL spec ignores it for ImageBitmap
-  // sources, so the loader bakes the default flip (and the premultiply) into
-  // the bitmap at decode time instead. Opt out with `{ flipY: false }` for
-  // env/matcap maps so sampling matches WebGPU.
+  // ImageBitmap uploads ignore UNPACK_FLIP_Y_WEBGL; optional Y flip is baked
+  // into the bitmap at decode time when loadTexture is called with flipY: true.
   // Use RGB8 when the caller explicitly requests it (e.g. MSDF atlas — only .rgb is read).
   if (options.format === "rgb") {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB8, gl.RGB, gl.UNSIGNED_BYTE, bitmap);

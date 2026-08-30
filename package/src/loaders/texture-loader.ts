@@ -5,7 +5,8 @@
  *   const tex = await loadTexture(url, { fit: "cover" })
  *   createItem(el, { texture: tex, shaders: { fragment: wgsl } })
  *   // In fsMain: textureSample(uTexture, uSampler, fitUv(vUv))
- *   // Env/matcap: loadTexture(canvas, { flipY: false }) so GL matches WebGPU
+ *   // vUv is top-origin on both backends — default upload does not flip.
+ *   // Env/matcap: loadTexture(canvas) (same; no flip needed for dir.xy sampling)
  *   // Or manually: applyTextureUv / textureFitToUni + setUni({ value5…8 })
  *
  * Runs on both backends. The upload itself lives in a backend chunk
@@ -55,14 +56,13 @@ export type TextureUploadOptions = {
   usage?: number;
   createSampler?: boolean;
   /**
-   * Vertical flip on upload. Defaults: WebGL2 `true` (so top-origin `vUv`
-   * matches image top), WebGPU `false`. For env/matcap maps used with
-   * `dir.xy * 0.5 + 0.5`, pass `{ flipY: false }` on both backends.
+   * Vertical flip on upload. Default `false` on both backends — `vUv` is
+   * top-origin, so canvas/image row 0 maps to texture t=0 without a flip.
+   * Pass `{ flipY: true }` only for legacy bottom-origin sampling.
    *
-   * On WebGL2 the flip happens at decode time (`createImageBitmap` ignores
-   * `UNPACK_FLIP_Y_WEBGL`). Passing an already-created ImageBitmap re-wraps it
-   * through `createImageBitmap` to flip; if the platform cannot, the image
-   * uploads unflipped with a one-time warning.
+   * The flip happens at decode time (`imageOrientation: "flipY"`) or on the
+   * WebGPU copy (`copyExternalImageToTexture`). Caller-supplied ImageBitmaps
+   * are re-wrapped through `createImageBitmap` when a flip is requested.
    */
   flipY?: boolean;
   sampler?: {
@@ -166,12 +166,11 @@ async function decodeImageFromElement(
 let warnedBitmapFlip = false;
 
 /**
- * Decode to an ImageBitmap, applying the vertical flip (WebGL2 flips at decode
- * time — the WebGL spec ignores UNPACK_FLIP_Y_WEBGL for ImageBitmap sources)
- * and premultiplying alpha so both backends match the library's
- * premultiplied-alpha blending. `owned` is true when the loader created the
- * bitmap (and may close it after upload); a caller-supplied ImageBitmap that
- * needs no flip is used as-is and never closed.
+ * Decode to an ImageBitmap, optionally flipping Y and always premultiplying
+ * alpha so both backends match the library's premultiplied-alpha blending.
+ * `owned` is true when the loader created the bitmap (and may close it after
+ * upload); a caller-supplied ImageBitmap that needs no flip is used as-is and
+ * never closed.
  */
 async function toImageBitmap(
   source: TextureSource,
@@ -298,11 +297,10 @@ export class TextureLoader {
       );
     }
 
-    // WebGL2 flips at decode time (default on; env/matcap opt out with
-    // flipY: false). WebGPU flips during copyExternalImageToTexture instead,
-    // which also covers caller-supplied ImageBitmaps.
-    const wantsDecodeFlip =
-      webglController.backend !== "webgpu" && options.flipY !== false;
+    // Top-origin vUv on both backends — no flip unless the caller opts in.
+    // (Older WebGL2 upload used UNPACK_FLIP_Y, but that is ignored for
+    // ImageBitmap sources, so the effective default was always unflipped.)
+    const wantsDecodeFlip = options.flipY === true;
     const { bitmap, owned } = await toImageBitmap(source, wantsDecodeFlip);
     const width = Math.max(1, bitmap.width);
     const height = Math.max(1, bitmap.height);
