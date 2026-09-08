@@ -1,0 +1,74 @@
+{
+  "capturedAt": "2026-09-08T15:28:46.565Z",
+  "bun": "1.4.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "distJavaScriptSha256": "cabe641ce2322fa3a77280a4622e83807f1e5115190d752e349c732710ff238b",
+  "consumers": [
+    {
+      "name": "probeRenderer",
+      "initial": {
+        "files": 1,
+        "rawBytes": 749,
+        "gzipBytes": 452
+      },
+      "emitted": {
+        "files": 1,
+        "rawBytes": 749,
+        "gzipBytes": 452
+      }
+    },
+    {
+      "name": "createItem",
+      "initial": {
+        "files": 2,
+        "rawBytes": 18843,
+        "gzipBytes": 7749
+      },
+      "emitted": {
+        "files": 3,
+        "rawBytes": 24062,
+        "gzipBytes": 10141
+      }
+    },
+    {
+      "name": "createScene",
+      "initial": {
+        "files": 12,
+        "rawBytes": 46858,
+        "gzipBytes": 18729
+      },
+      "emitted": {
+        "files": 23,
+        "rawBytes": 92012,
+        "gzipBytes": 37960
+      }
+    },
+    {
+      "name": "createDomLayer",
+      "initial": {
+        "files": 4,
+        "rawBytes": 34192,
+        "gzipBytes": 13780
+      },
+      "emitted": {
+        "files": 12,
+        "rawBytes": 56023,
+        "gzipBytes": 23799
+      }
+    },
+    {
+      "name": "scene+dom",
+      "initial": {
+        "files": 12,
+        "rawBytes": 59072,
+        "gzipBytes": 23341
+      },
+      "emitted": {
+        "files": 23,
+        "rawBytes": 104157,
+        "gzipBytes": 42602
+      }
+    }
+  ]
+}

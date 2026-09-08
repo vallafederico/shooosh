@@ -10,6 +10,11 @@
       "import": "./index.ts",
       "default": "./index.ts"
     },
+    "./utility": {
+      "types": "./utility/index.ts",
+      "import": "./utility/index.ts",
+      "default": "./utility/index.ts"
+    },
     "./msdf": {
       "types": "./msdf/index.ts",
       "import": "./msdf/index.ts",

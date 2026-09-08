@@ -56,11 +56,34 @@ async function runTests() {
         "shooosh.min.js",
         "index.d.ts",
         "msdf/index.js",
+        "dom/esm.js",
+        "dom/cjs.js",
+        "dom/index.d.ts",
+        "utility/esm.js",
+        "utility/cjs.js",
+        "utility/index.d.ts",
       ]) {
         if (!existsSync(join(distDir, file))) {
           throw new Error(`Missing build file: ${file}`)
         }
       }
+    }),
+
+    test("Utility subpath imports without DOM or GPU globals", async () => {
+      for (const module of [await import(join(distDir, "utility/esm.js")), require(join(distDir, "utility/cjs.js"))]) {
+        if (typeof module.createSpinner !== "function") throw new Error("Missing createSpinner")
+      }
+    }),
+
+    test("DOM subpath is SSR-safe in ESM and CJS", async () => {
+      const esm = await import(join(distDir, "dom/esm.js"))
+      const cjs = require(join(distDir, "dom/cjs.js"))
+      for (const module of [esm, cjs]) {
+        if (typeof module.createDomLayer !== "function") throw new Error("Missing createDomLayer")
+        if (await module.createDomLayer({ canvas: null }) !== null) throw new Error("SSR should return null")
+      }
+      const root = await import(join(distDir, "esm.js"))
+      if ("createDomLayer" in root) throw new Error("DOM adapter leaked into root API")
     }),
 
     test("IIFE build attaches to window.Shooosh", () => {

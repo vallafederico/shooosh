@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:shake": "vite build --mode shake",
+    "build:perf": "vite build --mode perf"
   },
   "dependencies": {
     "shooosh": "workspace:*"

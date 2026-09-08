@@ -18,7 +18,7 @@
  * Docs: docs/msdf.md · docs/api.md
  */
 
-import { getDefaultEngine } from "../engine/engine";
+import { getDefaultEngine, type WebGLEngine } from "../engine/engine";
 import type { RendererKind } from "../engine/capabilities";
 
 export type TextureSource =
@@ -105,6 +105,8 @@ export type TextureLoaderResult = {
 export type TextureFitMode = "cover" | "contain" | "stretch";
 
 export type TextureLoaderOptions = TextureUploadOptions & {
+  /** Upload to this engine without changing the page's default engine. */
+  engine?: WebGLEngine;
   waitForEngine?: boolean;
   waitTimeoutMs?: number;
   fit?: TextureFitMode;
@@ -289,7 +291,7 @@ export class TextureLoader {
     const waitForEngine = options.waitForEngine ?? true;
     const timeoutMs = options.waitTimeoutMs ?? 10000;
     const webglController =
-      getDefaultEngine() ??
+      options.engine ?? getDefaultEngine() ??
       (waitForEngine ? await waitForEngineController(timeoutMs) : null);
     if (!webglController) {
       throw new Error(
@@ -306,6 +308,7 @@ export class TextureLoader {
     const height = Math.max(1, bitmap.height);
 
     let upload: TextureUpload;
+    try {
     if (webglController.backend === "webgpu") {
       const { uploadWebGpuTexture } = await import("./texture-upload-webgpu");
       upload = uploadWebGpuTexture(webglController, bitmap, options);
@@ -320,10 +323,9 @@ export class TextureLoader {
       upload = uploadWebGl2Texture(gl, bitmap, options);
     }
 
-    // Both upload paths copy the pixels synchronously, so the decoded bitmap
-    // can be released right away — but never close a caller-owned ImageBitmap.
-    if (owned) {
-      bitmap.close();
+    } finally {
+      // Uploads copy synchronously; release even when import/upload fails.
+      if (owned) bitmap.close();
     }
 
     const { texture, view, sampler } = upload;

@@ -26,8 +26,8 @@ const scene = createScene(canvas, {
     shaders: {
       fragment: `
 fn fsMain() -> vec4f {
-  let t = uUni.values0.x
-  return vec4f(vUv, 0.5 + 0.5 * sin(t), 1.0)
+  let t = uUni.values0.x;
+  return vec4f(vUv, 0.5 + 0.5 * sin(t), 1.0);
 }
 `,
     },
@@ -48,21 +48,26 @@ Shared refcounted canvas. DOM nodes become GPU quads.
 ```js
 import { acquireLayer, createItem, releaseLayer } from "shooosh"
 
-const engine = await acquireLayer()
-if (!engine) return // no GPU — leave the page readable
+export async function mountCard(element, wgsl) {
+  const engine = await acquireLayer()
+  if (!engine) return // no GPU — leave the page readable
 
-const item = createItem(element, {
-  shaders: { fragment: wgsl },
-  onFrame(self, frame) {
-    self.setUni({ value1: frame.now * 0.001 })
-  },
-})
+  const item = createItem(element, {
+    shaders: { fragment: wgsl },
+    onFrame(self, frame) {
+      self.setUni({ value1: frame.now * 0.001 })
+    },
+  })
 
-return () => {
-  item.destroy()
-  releaseLayer()
+  return () => {
+    item.destroy()
+    releaseLayer()
+  }
 }
 ```
+
+Call `await mountCard(element, wgsl)` inside a client mount callback and register
+the returned cleanup with the owner’s teardown.
 
 `createItem` queues until an engine exists. The element must be transparent where the shader should show. An opaque `body` background hides the layer.
 

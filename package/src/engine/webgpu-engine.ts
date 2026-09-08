@@ -274,7 +274,9 @@ export async function createWebGpuEngine(
     });
 
     resetCanvasRectCache();
+    const submitted: Array<() => void> = [];
     const frame: EngineFrame = {
+      onSubmitted: (callback) => submitted.push(callback),
       canvas,
       clearColor,
       now,
@@ -324,6 +326,7 @@ export async function createWebGpuEngine(
     }
 
     device.queue.submit([encoder.finish()]);
+    for (const callback of submitted) callback();
   };
 
   const loop = createSettleLoop({
@@ -368,12 +371,14 @@ export async function createWebGpuEngine(
     onRender: subscribers.subscribeRender,
     onPostRender: subscribers.subscribePostRender,
     destroy() {
+      canvas.dispatchEvent(new Event("shooosh:unavailable"));
       clearGpuInternals(controller);
       loop.destroy();
       sizeTracker.destroy();
       sceneTarget?.destroy();
       sceneTarget = null;
       releaseDepth();
+      (context as typeof context & { unconfigure?: () => void }).unconfigure?.();
       subscribers.clear();
       preRenderSubscribers.clear();
       try {
@@ -392,6 +397,17 @@ export async function createWebGpuEngine(
     format,
     onPreRender: subscribePreRender,
   });
+
+  const observableDevice = device as typeof device & {
+    lost?: Promise<unknown>;
+    addEventListener?: (name: string, callback: () => void) => void;
+  };
+  const unavailable = () => {
+    loop.stop();
+    canvas.dispatchEvent(new Event("shooosh:unavailable"));
+  };
+  void observableDevice.lost?.then(unavailable);
+  observableDevice.addEventListener?.("uncapturederror", unavailable);
 
   return controller;
 }

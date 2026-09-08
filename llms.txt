@@ -8,7 +8,7 @@
 
 | Goal | Read |
 | --- | --- |
-| **Ship a look** | This file → [examples/README.md](./examples/README.md) → copy one `examples/*.ts` |
+| **Ship a look** | This file → [examples/README.md](./examples/README.md) → [agent copy guide](./examples/agent-guide.md) → copy the selected demo and helpers |
 | **Change the engine** | This file → [agents.md](./agents.md) → next [docs/agent-tasks/](./docs/agent-tasks/) with `status: todo` |
 | **Mount on a site** | Skill [shooosh-site](./.cursor/skills/shooosh-site/SKILL.md) → [docs/site-patterns.md](./docs/site-patterns.md) if needed |
 
@@ -22,12 +22,17 @@ Humans on GitHub: [readme.md](./readme.md) → [docs/README.md](./docs/README.md
 
 ## Public API (composition)
 
-Source: [`package/index.ts`](./package/index.ts) (file-level “How to use” headers).
+Source in a checkout: [`package/index.ts`](./package/index.ts),
+[`package/dom/index.ts`](./package/dom/index.ts), and
+[`package/utility/index.ts`](./package/utility/index.ts). An npm installation ships
+declarations and runtime builds; examples and skills require the source checkout.
+Use source matching your installed version; unreleased recipes can require new APIs.
 
 - `probeRenderer()` → `"webgpu" | "webgl2" | null`
 - `createEngine` / `initEngine` / `getDefaultEngine` — `{ backend?: "auto"|"webgpu"|"webgl2" }`
 - `createScene` / `parseSceneDataset`
 - `acquireLayer` / `releaseLayer`
+- `shooosh/dom`: `createDomLayer({ canvas, root })` → cached `bind` / `media`, native fallback, explicit cleanup. See [docs/dom.md](./docs/dom.md) for the supported subset.
 - `createItem` / `createScreen` / `createObject` / `createParticles` / `createMsdfGlyphs`
 - `createPostProcessor().addFragmentEffect({ fragmentShader, fragmentShaderWgsl })` — no named bloom/bw/noise; copy [`examples/post-shaders.ts`](./examples/post-shaders.ts)
 - `effects.custom` — thin sugar for `createScene({ post })` (author shaders only)
@@ -35,6 +40,7 @@ Source: [`package/index.ts`](./package/index.ts) (file-level “How to use” he
 - `loadTexture` (+ `fitUv` / `textureFit` / `{ flipY: false }` for env) / `loadGlb`
 - `convertWgslFragmentToGlsl` / `convertGlslFragmentToWgsl`
 - `createMouseMonad` / `createMouseTrail`
+- `shooosh/utility`: `createSpinner({ element })` → drag rotation + release inertia; see [docs/utility.md](./docs/utility.md).
 
 Node/Bun only (`shooosh/msdf`): `generateMsdf` / `generateFontAtlas` / `generateIconSdf` / `alphaToSdf` · CLI `pnpm msdf`
 
@@ -51,6 +57,8 @@ See [docs/shader-contract.md](./docs/shader-contract.md).
 ## Work queue
 
 - [01](./docs/agent-tasks/01-webgpu-renderer.md) … [08](./docs/agent-tasks/08-webgpu-remaining-ports.md) (`08` done). Next unfinished: lowest `status: todo`.
+- User-selected DOM roadmap: [gap specification and agent plan](./docs/proposals/dom-mirroring-delivery-plan.md); next bounded stage [11](./docs/agent-tasks/11-dom-mirroring-hardening.md). Tasks 02–07 remain unchanged.
+- Lightweightness audit: [measured bundle/runtime findings](./docs/audits/2026-09-08-lightweight-performance.md); bounded bundle task [12](./docs/agent-tasks/12-bundle-tree-shaking.md). Audit tools: `bun run bin/audit-bundle.ts` and harness `/perf.html`.
 
 ## Skills
 

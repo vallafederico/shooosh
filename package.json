@@ -1,9 +1,14 @@
 {
   "name": "shooosh",
   "author": "vallafederico",
-  "version": "0.0.4",
-  "description": "WGSL-first site engine: WebGPU when available, WebGL2 fallback — scenes, DOM-tracked items, and post-processing.",
+  "version": "0.0.5",
+  "description": "WGSL-first site engine: WebGPU when available, WebGL2 fallback \u2014 scenes, DOM-tracked items, and post-processing.",
   "type": "module",
+  "sideEffects": [
+    "./package/global.ts",
+    "./dist/shooosh.min.js",
+    "./bin/msdf.mjs"
+  ],
   "main": "./dist/cjs.js",
   "module": "./dist/esm.js",
   "types": "./dist/index.d.ts",
@@ -19,6 +24,16 @@
       "types": "./package/msdf/index.ts",
       "import": "./dist/msdf/index.js",
       "default": "./dist/msdf/index.js"
+    },
+    "./utility": {
+      "types": "./dist/utility/index.d.ts",
+      "import": "./dist/utility/esm.js",
+      "require": "./dist/utility/cjs.js"
+    },
+    "./dom": {
+      "types": "./dist/dom/index.d.ts",
+      "import": "./dist/dom/esm.js",
+      "require": "./dist/dom/cjs.js"
     }
   },
   "bin": {
@@ -52,6 +67,7 @@
     "build:web": "pnpm --filter web build",
     "test": "bun test package",
     "test:build": "bun run bin/test-build.ts",
+    "test:tree-shaking": "bun run bin/test-tree-shaking.ts",
     "msdf": "bun run bin/msdf.ts",
     "dev": "pnpm run -w --parallel /^dev:.*/",
     "dev:harness": "pnpm --filter harness dev",
@@ -60,7 +76,8 @@
     "pub": "npm version patch && pnpm run build:package && npm publish",
     "release:patch": "npm version patch && pnpm run build:package && npm publish",
     "release:minor": "npm version minor && pnpm run build:package && npm publish",
-    "release:major": "npm version major && pnpm run build:package && npm publish"
+    "release:major": "npm version major && pnpm run build:package && npm publish",
+    "test:examples": "bun test examples/materials.test.ts"
   },
   "files": [
     "dist/",
@@ -69,7 +86,8 @@
     "docs/",
     "package.json",
     "readme.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "license": "MIT",
   "devDependencies": {

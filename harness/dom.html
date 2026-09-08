@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>shooosh · DOM integration</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#111218; color:#e9eee9; font:16px/1.5 system-ui; }
+  header { padding:24px 5vw; position:relative; z-index:3; background:#111218; }
+  h1 { margin:0 0 8px; font-size:32px; } p { margin:8px 0; }
+  button,a { color:inherit; } button { padding:8px 12px; background:#292c39; border:1px solid #52596c; cursor:pointer; }
+  button:focus-visible,a:focus-visible { outline:3px solid #c7ff75; outline-offset:3px; }
+  nav { display:flex; flex-wrap:wrap; gap:8px; }
+  #stage { position:fixed; inset:0; width:100%; height:100%; z-index:2; }
+  main { margin:30px 5vw; } .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; }
+  figure { margin:0; } img { display:block; width:100%; height:210px; object-fit:cover; }
+  figcaption { padding:12px 0; } .native { border-radius:24px; }
+  .scroller { height:240px; overflow:auto; border:3px solid #646c84; margin:28px 0; }
+  .scroller img { width:100%; height:400px; object-fit:contain; }
+  #shader { height:180px; border:0; margin:24px 0; } .space { height:75vh; }
+  #status,#checks { white-space:pre-wrap; font:13px/1.5 ui-monospace,monospace; }
+  @media(max-width:700px) { .grid { grid-template-columns:1fr; } }
+</style></head>
+<body>
+<canvas id="stage"></canvas>
+<header><h1>DOM → shooosh</h1><p>Native layout, cached rectangles, one GPU canvas. Rounded media stays native.</p>
+<nav><button id="toggle">Show DOM</button><button id="change">Change image</button><button id="round">Toggle unsupported radius</button><button id="refresh">Refresh status</button><button id="checks-button">Run lifecycle checks</button><button id="loss">Lose renderer</button><button id="destroy">Destroy adapter</button></nav>
+<p><a href="?backend=webgpu">WebGPU</a> · <a href="?backend=webgl2">WebGL2</a> · <a href="?backend=none">Native fallback</a></p>
+<div id="status" role="status"></div><div id="checks" role="status"></div></header>
+<main id="root"><div class="grid">
+<figure><a href="#bottom" id="image-link"><img id="photo" alt="Coral and mint circles on a dark background"></a><figcaption>Shader-enhanced image; link remains native.</figcaption></figure>
+<figure><img id="contain" alt="Mint geometric poster"><figcaption>Contain, positioned at 25% 75%.</figcaption></figure>
+<figure><img id="rounded" class="native" alt="Native rounded image"><figcaption>Unsupported radii → native fallback.</figcaption></figure>
+</div><div id="shader"></div><div class="scroller" id="scroller"><img id="nested" alt="Image inside a native scrolling container"></div>
+<div class="space"></div><p id="bottom">Scroll target. Native text remains readable.</p></main>
+<script type="module" src="/src/dom.ts"></script></body></html>

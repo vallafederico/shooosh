@@ -16,6 +16,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "paths": {
+      "shooosh/utility": ["./package/utility/index.ts"],
       "shooosh": ["./package/index.ts"]
     }
   }

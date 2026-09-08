@@ -45,7 +45,7 @@ void main() {
   outColor = vec4(uColor.rgb * alpha, alpha);
 }`;
 
-const ensureGpuParticlesFactory = createLazyGpuFactory({
+const ensureGpuParticlesFactory = /* @__PURE__ */ createLazyGpuFactory({
   label: "particle",
   load: () => import("./gpu-particles").then((m) => m.createGpuParticlesRenderer),
 });

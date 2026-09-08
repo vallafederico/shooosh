@@ -21,8 +21,8 @@ createScene(canvas, {
     shaders: {
       fragment: `
 fn fsMain() -> vec4f {
-  let t = uUni.values0.x
-  return vec4f(vUv, 0.5 + 0.5 * sin(t), 1.0)
+  let t = uUni.values0.x;
+  return vec4f(vUv, 0.5 + 0.5 * sin(t), 1.0);
 }
 `,
     },

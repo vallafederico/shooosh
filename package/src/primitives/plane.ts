@@ -414,12 +414,12 @@ export function createFullscreenPlaneRenderer(
   } satisfies FullscreenPlaneRenderer;
 }
 
-const ensureGpuPlaneFactory = createLazyGpuFactory({
+const ensureGpuPlaneFactory = /* @__PURE__ */ createLazyGpuFactory({
   label: "plane",
   load: () => import("./gpu-plane").then((m) => m.createGpuFullscreenPlaneRenderer),
 });
 
-const pendingPlanes = createPendingAttachQueue<{ attach: () => void }>((plane) => {
+const pendingPlanes = /* @__PURE__ */ createPendingAttachQueue<{ attach: () => void }>((plane) => {
   plane.attach();
 });
 

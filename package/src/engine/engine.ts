@@ -67,6 +67,8 @@ export type EngineFrame = {
   now: number;
   delta: number;
   backend: RendererKind;
+  /** Run after this frame is submitted. Used for progressive visual activation. */
+  onSubmitted?: (callback: () => void) => void;
   /** Present on the WebGL2 backend only. Do not require this from site code. */
   gl?: WebGL2RenderingContext;
 };
@@ -123,7 +125,8 @@ export type WebGLEngine = {
     options?: RenderSubscriptionOptions,
   ) => () => void;
   onPostRender: (callback: PostRenderCallback) => () => void;
-  destroy: () => void;
+  /** Retain a caller-owned WebGL canvas context for later remounting. */
+  destroy: (options?: { retainContext?: boolean }) => void;
 };
 
 let defaultEngine: WebGLEngine | null = null;

@@ -28,7 +28,7 @@ import { compileProgramAsync } from "../shaders/compile";
 import { createLazyGpuFactory } from "./pending-attach";
 import { createPrimitiveLifecycle, type PrimitiveLifecycle } from "./primitive-lifecycle";
 
-const ensureGpuObjectFactory = createLazyGpuFactory({
+const ensureGpuObjectFactory = /* @__PURE__ */ createLazyGpuFactory({
   label: "object",
   load: () => import("./gpu-object").then((m) => m.createGpuObjectRenderer),
 });

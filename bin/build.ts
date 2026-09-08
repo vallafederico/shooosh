@@ -19,9 +19,12 @@ import { spawn } from "bun"
 import { rm } from "node:fs/promises"
 
 const option: BuildConfig = {
-  entrypoints: ["./package/index.ts"],
+  entrypoints: ["./package/index.ts", "./package/dom/index.ts", "./package/utility/index.ts"],
   outdir: "./dist",
   minify: true,
+  // This is a library build: preserve purity for the consumer's second bundle.
+  // Whitespace minification otherwise strips these annotations.
+  emitDCEAnnotations: true,
   sourcemap: "external",
   plugins: [dts()],
 }
@@ -67,16 +70,12 @@ async function run() {
       }),
     ])
 
-    const testProcess = spawn({
-      cmd: ["bun", "run", "bin/test-build.ts"],
-      stdout: "inherit",
-      stderr: "inherit",
-    })
-
-    const exitCode = await testProcess.exited
-    if (exitCode !== 0) {
-      console.error("\nBuild verification tests failed!")
-      process.exit(1)
+    for (const cmd of [["bun", "run", "bin/test-build.ts"], ["bun", "run", "bin/test-tree-shaking.ts"], ["bun", "run", "test:examples"]]) {
+      const testProcess = spawn({ cmd, stdout: "inherit", stderr: "inherit" })
+      if (await testProcess.exited !== 0) {
+        console.error(`\nBuild verification failed: ${cmd.join(" ")}`)
+        process.exit(1)
+      }
     }
   } catch (error) {
     console.error(error)

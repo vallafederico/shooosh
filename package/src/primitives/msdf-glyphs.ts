@@ -43,7 +43,7 @@ export type MsdfGlyphsHandle = {
   destroy(): void;
 };
 
-const ensureGpuGlyphsFactory = createLazyGpuFactory({
+const ensureGpuGlyphsFactory = /* @__PURE__ */ createLazyGpuFactory({
   label: "glyph",
   load: () => import("./gpu-msdf-glyphs").then((m) => m.createGpuMsdfGlyphsRenderer),
 });

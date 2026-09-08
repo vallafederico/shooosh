@@ -27,11 +27,11 @@ Common use cases:
 - [docs/shader-contract.md](./docs/shader-contract.md) · [docs/api.md](./docs/api.md) · [docs/site-patterns.md](./docs/site-patterns.md)
 - [docs/msdf.md](./docs/msdf.md) · [ROADMAP.md](./ROADMAP.md) · [docs/agent-tasks/](./docs/agent-tasks/)
 - [docs/README.md](./docs/README.md) — human docs hub
-- Public API source of truth: [package/index.ts](./package/index.ts)
+- Public API source of truth: [package/index.ts](./package/index.ts), [DOM entry](./package/dom/index.ts), [utility entry](./package/utility/index.ts)
 
 ### Agent interface (short)
 
-This repo *is* the agent interface until hosted docs (task 06). Index = `llms.txt`. Working rules = this file. Looks = `examples/`. Engine work = next `docs/agent-tasks/` with `status: todo`. Do not invent named post presets — copy `examples/post-shaders.ts`.
+This repo *is* the agent interface until hosted docs (task 06). Index = `llms.txt`. Working rules = this file. Looks = `examples/`; [agent copy guide](./examples/agent-guide.md) lists the complete copy sets, mount targets and limits. Engine work = next `docs/agent-tasks/` with `status: todo`. Do not invent named post presets — copy `examples/post-shaders.ts`.
 
 Cursor skills (read when converting shaders):
 

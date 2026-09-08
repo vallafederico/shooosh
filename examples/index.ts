@@ -13,7 +13,9 @@ export { run as runDomainWarp, fragment as domainWarpFragment } from "./domain-w
 export { run as runGrid, fragment as gridFragment } from "./grid"
 export { run as runMouseLight, fragment as mouseLightFragment } from "./mouse-light"
 export { run as runMouseMagnify, fragment as mouseMagnifyFragment } from "./mouse-magnify"
+export { run as runRefractiveGlass, fragment as refractiveGlassFragment } from "./refractive-glass"
 export { run as runGrainBloom, fragment as grainBloomFragment } from "./grain-bloom"
+export { run as runFxaa, fragment as fxaaFragment } from "./fxaa"
 export { run as runItemFill, fragment as itemFillFragment } from "./item-fill"
 export { run as runMsdfText, fragment as msdfTextFragment } from "./msdf-text"
 export { run as runSdfIcons, fragment as sdfIconsFragment } from "./sdf-icons"
@@ -24,6 +26,7 @@ export { run as runScrollCards, fragment as scrollCardsFragment } from "./scroll
 export { run as runScrollSections, fragment as scrollSectionsFragment } from "./scroll-sections"
 export { run as runTexturedPlane, fragment as texturedPlaneFragment } from "./textured-plane"
 export { run as runTexturedItem, fragment as texturedItemFragment } from "./textured-item"
+export { run as runDomIntegration, fragment as domIntegrationFragment } from "./dom-integration"
 export { run as runObjectSpin, fragment as objectSpinFragment } from "./object-spin"
 export { run as runObjectEnv, fragment as objectEnvFragment } from "./object-env"
 export { run as runObjectPbr, fragment as objectPbrFragment } from "./object-pbr"
@@ -36,6 +39,13 @@ export { makePaperCanvas, makeEnvCanvas } from "./make-texture"
 export {
   bloomEffect,
   bloomEffectWgsl,
+  fxaaEffect,
+  fxaaEffectWgsl,
   grainEffect,
   grainEffectWgsl,
 } from "./post-shaders"
+
+export { run as runFabricSheen, fragment as fabricSheenFragment } from "./fabric-sheen"
+
+export { run as runSss } from "./sss"
+export { run as runSsao } from "./ssao"

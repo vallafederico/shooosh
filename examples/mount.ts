@@ -17,7 +17,7 @@ export type MountExampleOptions = {
 function caption(stage: HTMLElement, spec: ExampleSpec) {
   const overlay = document.createElement("div")
   overlay.className = "overlay"
-  overlay.innerHTML = `<h1>${spec.label}</h1><p>${spec.copy}</p>`
+  overlay.innerHTML = `<h1>${spec.label}${spec.status === "wip" ? " · WIP" : ""}</h1><p>${spec.copy}</p>`
   stage.append(overlay)
 }
 
@@ -26,6 +26,12 @@ export function mountExample(
   stage: HTMLElement,
   options: MountExampleOptions = {},
 ) {
+  if (spec.kind === "dom-integration") {
+    let live = true
+    const handle = spec.run(stage, { backend: options.backend, onInitError: options.onError })
+    void handle.ready?.then((backend) => { if (live) options.onBackend?.(backend ?? null) })
+    return () => { live = false; handle.destroy() }
+  }
   caption(stage, spec)
 
   const runOptions = {

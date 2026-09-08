@@ -195,7 +195,9 @@ export function createWebGl2Engine(
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     resetCanvasRectCache();
+    const submitted: Array<() => void> = [];
     const frame: EngineFrame = {
+      onSubmitted: (callback) => submitted.push(callback),
       canvas,
       gl,
       clearColor,
@@ -232,6 +234,7 @@ export function createWebGl2Engine(
         }
       });
     }
+    if (!gl.isContextLost()) for (const callback of submitted) callback();
   };
 
   const loop = createSettleLoop({
@@ -267,7 +270,8 @@ export function createWebGl2Engine(
     getClearColor: () => clearColor,
     onRender: subscribers.subscribeRender,
     onPostRender: subscribers.subscribePostRender,
-    destroy() {
+    destroy(destroyOptions) {
+      canvas.dispatchEvent(new Event("shooosh:unavailable"));
       loop.destroy();
       sizeTracker.destroy();
       sceneTarget?.destroy();
@@ -275,7 +279,13 @@ export function createWebGl2Engine(
       subscribers.clear();
       // Release the context instead of waiting for GC — browsers cap live
       // WebGL contexts per page.
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      if (destroyOptions?.retainContext) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.disable(gl.SCISSOR_TEST);
+        gl.colorMask(true, true, true, true);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      } else gl.getExtension("WEBGL_lose_context")?.loseContext();
       if (getDefaultEngine() === controller) {
         setDefaultEngine(null);
       }

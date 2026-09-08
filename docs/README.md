@@ -11,6 +11,7 @@ This folder is what [the GitHub repo](https://github.com/vallafederico/shooosh) 
 | | |
 | --- | --- |
 | [Getting started](./getting-started.md) | Install, two mounts, first `fsMain` |
+| [Agent copy guide](../examples/agent-guide.md) | Per-demo dependencies, mount targets, backend limits and verification |
 | [Examples](../examples/README.md) | Using the library: plasma, noise, SDF, mouse, bloom, fluid, scroll, cards |
 | [API](./api.md) | What to call (`createScene`, `createCompute`, `acquireLayer`, `createItem`, …) |
 | [Shader contract](./shader-contract.md) | `fn fsMain`, `vUv`, `uUni`, backends, failure policy |
@@ -20,6 +21,8 @@ This folder is what [the GitHub repo](https://github.com/vallafederico/shooosh) 
 | | |
 | --- | --- |
 | [Site patterns](./site-patterns.md) | App-shell canvas, items, post, Webflow — from aiuis |
+| [Interaction utilities](./utility.md) | Optional `shooosh/utility`: drag rotation and inertia |
+| [DOM integration](./dom.md) | Optional `shooosh/dom`: cached shader bindings and safe image enhancement |
 | [WGSL ↔ GLSL](./shader-translation.md) | Fallback converter + mapping |
 | [MSDF](./msdf.md) | Node/Bun font atlas + icon SDF (`shooosh/msdf`) |
 
@@ -38,4 +41,21 @@ Cursor skills: [wgsl-to-glsl](../.cursor/skills/wgsl-to-glsl/SKILL.md), [glsl-to
 
 ## Source of truth
 
+Design proposal: [Optional DOM integration](./proposals/dom-integration.md) — DOMGL research, `shooosh/dom` module boundary, implemented foundation and proposed later stages.
+
+Execution specification: [DOM mirroring gaps and agent plan](./proposals/dom-mirroring-delivery-plan.md)
+— current audit findings, supported-scope targets, staged ownership and final
+verification matrix. First queued stage: [task 11](./agent-tasks/11-dom-mirroring-hardening.md).
+
+Measured audit: [Bundle size and browser performance](./audits/2026-09-08-lightweight-performance.md)
+— consumer byte costs, WebGPU/WebGL2 operation counts, prioritized optimizations
+and reproducible audit tools. Completed bundle task: [12](./agent-tasks/12-bundle-tree-shaking.md);
+[results and regression gates](./audits/2026-09-08-tree-shaking-results.md).
+
 Public API: [`package/index.ts`](../package/index.ts). Node/Bun generators: [`package/msdf/`](../package/msdf/).
+
+Example follow-up: [bundle isolation and runtime checks](./audits/2026-09-08-examples-performance.md)
+— direct/index imports, isolated spinner, idle glass and reduced caret scheduling.
+
+Completed follow-up: [DOM idle optimization](./audits/2026-09-08-dom-idle-optimization.md)
+— cached input geometry, change-aware maintenance and production browser evidence.

@@ -9,6 +9,9 @@
  *   const pending = createPendingAttachQueue<ItemManager>((item) => item.attach())
  *
  * WebGL2-only pages never download the gpu-* chunk until a webgpu frame asks.
+ * Both factory constructors below only allocate local state/closures. Their
+ * module-level call sites are annotated pure so unused primitives tree-shake.
+ * Keep imports, listeners and scheduling inside the returned methods.
  */
 
 import { getDefaultEngine } from "../engine/engine";

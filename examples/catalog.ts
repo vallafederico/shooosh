@@ -1,12 +1,17 @@
+import { sss } from "./sss"
+import { ssao } from "./ssao"
 /**
  * Shader example catalog — each entry's `run` calls createScene / createItem.
  * Fragments stay on the spec so converter tests can read them.
  */
 
+import { fabricSheen } from "./fabric-sheen"
 import { domainWarp } from "./domain-warp"
+import { domIntegration } from "./dom-integration"
 import { fluidAmbient } from "./fluid-ambient"
 import { fluidPointer } from "./fluid-pointer"
 import { gradient } from "./gradient"
+import { fxaa } from "./fxaa"
 import { grainBloom } from "./grain-bloom"
 import { grid } from "./grid"
 import { itemFill } from "./item-fill"
@@ -19,6 +24,7 @@ import { objectPbr } from "./object-pbr"
 import { objectSpin } from "./object-spin"
 import { particlesField } from "./particles-field"
 import { plasma } from "./plasma"
+import { refractiveGlass } from "./refractive-glass"
 import { scrollCards } from "./scroll-cards"
 import { scrollSections } from "./scroll-sections"
 import { sdfIcons } from "./sdf-icons"
@@ -37,21 +43,27 @@ export const examples: ExampleSpec[] = [
   grid,
   mouseLight,
   mouseMagnify,
+  refractiveGlass,
   grainBloom,
+  fxaa,
   texturedPlane,
   texturedItem,
+  domIntegration,
   itemFill,
   msdfText,
   sdfIcons,
   objectSpin,
   objectEnv,
   objectPbr,
+  fabricSheen,
   objectMesh,
   particlesField,
   fluidPointer,
   fluidAmbient,
   scrollCards,
   scrollSections,
+  sss,
+  ssao,
 ]
 
 export function getExample(id: string) {

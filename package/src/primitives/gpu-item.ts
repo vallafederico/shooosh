@@ -16,6 +16,7 @@ import {
   GPU_BUFFER_USAGE,
   type GpuBindGroup,
   type GpuBuffer,
+  type GpuDevice,
 } from "../engine/gpu-api";
 import type { UniWatchController } from "../engine/uni";
 import {
@@ -33,17 +34,36 @@ import {
 } from "../shaders/gpu-compile";
 import { resolveWgslModule } from "../shaders/wgsl-wrap";
 import { getElementClipData } from "./item.utils";
+import type { ItemIntegration } from "./item-integration";
 import type { ItemOptions } from "./item";
 
 export type GpuItemRenderer = {
-  render: (frame: EngineFrame) => void;
+  render: (frame: EngineFrame) => "pending" | "drawn" | "culled" | "failed";
   destroy: () => void;
 };
+
+// Explicit layouts keep the standard uniform binding valid even when a custom
+// fragment does not read it. Auto layouts strip unused bindings.
+const layouts = new WeakMap<GpuDevice, Map<boolean, unknown>>();
+function itemLayout(device: GpuDevice, textured: boolean) {
+  let cached = layouts.get(device);
+  if (!cached) { cached = new Map(); layouts.set(device, cached); }
+  if (cached.has(textured)) return cached.get(textured);
+  const entries: Parameters<GpuDevice["createBindGroupLayout"]>[0]["entries"] = [
+    { binding: 0, visibility: 2, buffer: { type: "uniform" } },
+  ];
+  if (textured) entries.push({ binding: 1, visibility: 2, sampler: { type: "filtering" } },
+    { binding: 2, visibility: 2, texture: { sampleType: "float" } });
+  const layout = device.createPipelineLayout({ bindGroupLayouts: [device.createBindGroupLayout({ entries })] });
+  cached.set(textured, layout);
+  return layout;
+}
 
 export function createGpuItemRenderer(
   element: HTMLElement,
   options: ItemOptions,
   uni: UniWatchController,
+  integration?: ItemIntegration,
 ): GpuItemRenderer {
   const gpu = getGpuFrame();
   if (!gpu) {
@@ -65,6 +85,7 @@ export function createGpuItemRenderer(
     hasTexture: Boolean(textureBinding),
   });
   const program: GpuProgram = compileGpuPipeline(device, wgsl.code, format, "item", {
+    layout: itemLayout(device, wgsl.usesTexture),
     depthStencil: sceneDepthStencil(),
   });
   const uniformBuffer = createUniformBuffer(device, "item-uni");
@@ -95,12 +116,12 @@ export function createGpuItemRenderer(
   return {
     render(nextFrame) {
       const frame = getGpuFrame();
-      if (!frame) return;
+      if (!frame) return "pending";
       const pipeline = program.poll();
-      if (!pipeline) return;
+      if (!pipeline) return program.status() === "failed" ? "failed" : "pending";
 
-      const clipData = getElementClipData(element, nextFrame.canvas, clipVertices);
-      if (!clipData.isVisible) return;
+      const clipData = integration?.geometry(clipVertices) ?? getElementClipData(element, nextFrame.canvas, clipVertices);
+      if (!clipData.isVisible) return "culled";
 
       if (!bindGroup) {
         bindGroup = createBindGroup(
@@ -112,7 +133,8 @@ export function createGpuItemRenderer(
         );
       }
 
-      if (options.texture && wgsl.usesTexture) {
+      if (integration?.uv) uni.set(textureFitToUni(integration.uv()));
+      if (options.texture && wgsl.usesTexture && !integration?.uv) {
         const rect = clipData.rect;
         const targetAspect =
           Math.max(1, rect.width) / Math.max(1, rect.height);
@@ -143,6 +165,7 @@ export function createGpuItemRenderer(
       pass.setVertexBuffer(0, vertexBuffer);
       pass.setIndexBuffer(indexBuffer, "uint16");
       pass.drawIndexed(6);
+      return "drawn";
     },
     destroy() {
       unsubscribeUni();

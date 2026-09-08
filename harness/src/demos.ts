@@ -23,7 +23,7 @@ function fail(stage: HTMLElement, error: unknown) {
 
 export const demos: Demo[] = examples.map((spec) => ({
   id: spec.id,
-  label: spec.label,
+  label: `${spec.label}${spec.status === "wip" ? " · WIP" : ""}`,
   mount(stage) {
     // Read on each mount so the rail toggle can remount without a full reload.
     const backend = readBackendParam()

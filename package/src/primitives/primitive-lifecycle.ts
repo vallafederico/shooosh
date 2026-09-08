@@ -15,7 +15,7 @@
  * canvas seen, mirroring the managers this replaced.
  */
 
-import { getDefaultEngine, type EngineFrame } from "../engine/engine";
+import { getDefaultEngine, type EngineFrame, type WebGLEngine } from "../engine/engine";
 import { createPendingAttachQueue } from "./pending-attach";
 
 export type PrimitiveLifecycle<TRenderer> = {
@@ -26,13 +26,15 @@ export type PrimitiveLifecycle<TRenderer> = {
 
 type PendingEntry = { attach: () => void };
 
-const pendingPrimitives = createPendingAttachQueue<PendingEntry>((entry) => {
+const pendingPrimitives = /* @__PURE__ */ createPendingAttachQueue<PendingEntry>((entry) => {
   entry.attach();
 });
 
 export function createPrimitiveLifecycle<
   TRenderer extends { destroy: () => void },
 >(options: {
+  engine?: WebGLEngine;
+  onError?: (error: unknown) => void;
   /** Render layer for engine.onRender. */
   layer: number;
   /** Build the backend renderer. Return null while the gpu-* chunk loads. */
@@ -51,7 +53,7 @@ export function createPrimitiveLifecycle<
     attach() {
       if (destroyed || unsubscribeRender) return;
 
-      unsubscribeRender = getDefaultEngine()!.onRender(
+      unsubscribeRender = (options.engine ?? getDefaultEngine())!.onRender(
         (frame) => {
           if (destroyed) return;
 
@@ -63,7 +65,13 @@ export function createPrimitiveLifecycle<
           }
 
           if (!renderer) {
-            renderer = options.createRenderer(frame);
+            try {
+              renderer = options.createRenderer(frame);
+            } catch (error) {
+              if (!options.onError) throw error;
+              options.onError(error);
+              return;
+            }
             if (!renderer) return;
             options.onRendererCreated?.(renderer);
           }
@@ -75,7 +83,7 @@ export function createPrimitiveLifecycle<
     },
   };
 
-  if (getDefaultEngine()) {
+  if (options.engine ?? getDefaultEngine()) {
     entry.attach();
   } else {
     pendingPrimitives.enqueue(entry);

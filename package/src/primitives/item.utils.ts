@@ -9,7 +9,7 @@ export type ItemClipData = {
   vertices: Float32Array;
   isVisible: boolean;
   /** The element's getBoundingClientRect for this frame — reuse instead of re-querying. */
-  rect: DOMRect;
+  rect: Pick<DOMRect, "left" | "top" | "right" | "bottom" | "width" | "height">;
 };
 
 // Module-level canvas rect cache — one getBoundingClientRect per canvas per frame.

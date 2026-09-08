@@ -7,6 +7,7 @@
  * Docs: docs/site-patterns.md
  */
 
+import type { ItemIntegration } from "./item-integration";
 import type { EngineFrame } from "../engine/engine";
 import {
   resolveGlslShaderSource,
@@ -25,11 +26,11 @@ import { createLazyGpuFactory } from "./pending-attach";
 import { createPrimitiveLifecycle, type PrimitiveLifecycle } from "./primitive-lifecycle";
 
 type ItemRenderer = {
-  render: (frame: EngineFrame) => void;
+  render: (frame: EngineFrame) => "pending" | "drawn" | "culled" | "failed";
   destroy: () => void;
 };
 
-const ensureGpuItemFactory = createLazyGpuFactory({
+const ensureGpuItemFactory = /* @__PURE__ */ createLazyGpuFactory({
   label: "item",
   load: () => import("./gpu-item").then((m) => m.createGpuItemRenderer),
 });
@@ -52,32 +53,43 @@ export class ItemManager {
   private uni: UniWatchController;
   private lifecycle: PrimitiveLifecycle<ItemRenderer>;
 
-  constructor(element: HTMLElement, options: ItemOptions = {}) {
+  constructor(element: HTMLElement, options: ItemOptions = {}, private integration?: ItemIntegration) {
     this.element = element;
     this.options = options;
     this.uni = ensureWatchableUni(options.uni ?? { value1: 1 });
     this.lifecycle = createPrimitiveLifecycle<ItemRenderer>({
+      engine: integration?.engine,
+      onError: integration?.onError,
       layer: options.layer ?? 10,
       createRenderer: (frame) => {
         if (frame.backend === "webgpu") {
           const createGpuRenderer = ensureGpuItemFactory();
-          if (!createGpuRenderer) return null;
-          return createGpuRenderer(this.element, this.options, this.uni);
+          if (!createGpuRenderer) { integration?.engine.requestFrame(); return null; }
+          return createGpuRenderer(this.element, this.options, this.uni, integration);
         }
         if (frame.gl) {
-          return createItemRenderer(this.element, frame, this.options, this.uni);
+          return createItemRenderer(this.element, frame, this.options, this.uni, integration);
         }
         return null;
       },
       renderFrame: (renderer, frame) => {
         this.options.onFrame?.(this, frame);
-        renderer.render(frame);
+        try {
+          const status = renderer.render(frame);
+          if (status === "pending") integration?.engine.requestFrame();
+          if (status === "failed") integration?.onError(new Error("Item shader compilation failed; see shader log."));
+          if (status === "drawn" && integration) frame.onSubmitted?.(integration.onDraw);
+        } catch (error) {
+          if (integration) integration.onError(error);
+          else throw error;
+        }
       },
     });
   }
 
   setUni(next: Partial<UniValues>) {
     this.uni.set(next);
+    this.integration?.engine.requestFrame();
   }
 
   getUni() {
@@ -94,10 +106,11 @@ function createItemRenderer(
   frame: EngineFrame,
   options: ItemOptions,
   uni: UniWatchController,
+  integration?: ItemIntegration,
 ): ItemRenderer {
   const gl = frame.gl;
   if (!gl) {
-    return { render() {}, destroy() {} };
+    return { render() { return "failed"; }, destroy() {} };
   }
 
   let uniValues = uni.toFloat32(16);
@@ -156,15 +169,16 @@ function createItemRenderer(
     render(nextFrame) {
       if (!program) {
         program = asyncProgram.poll();
-        if (!program) return;
+        if (!program) return asyncProgram.status() === "failed" ? "failed" : "pending";
         uUniLoc = gl.getUniformLocation(program, "uUni");
         uTextureLoc = gl.getUniformLocation(program, "uTexture");
       }
 
-      const clipData = getElementClipData(element, nextFrame.canvas, clipVertices);
-      if (!clipData.isVisible) return;
+      const clipData = integration?.geometry(clipVertices) ?? getElementClipData(element, nextFrame.canvas, clipVertices);
+      if (!clipData.isVisible) return "culled";
 
-      if (texture && usesTexture) {
+      if (integration?.uv) uni.set(textureFitToUni(integration.uv()));
+      if (texture && usesTexture && !integration?.uv) {
         const rect = clipData.rect;
         const targetAspect =
           Math.max(1, rect.width) / Math.max(1, rect.height);
@@ -204,6 +218,7 @@ function createItemRenderer(
       if (glTexture) {
         gl.bindTexture(gl.TEXTURE_2D, null);
       }
+      return "drawn";
     },
     destroy() {
       unsubscribeUni();
