@@ -53,3 +53,6 @@ export { run as runSsao } from "./ssao"
 export { run as runPhysicsPile } from "./physics-pile"
 export { run as runPhysicsPendulum } from "./physics-pendulum"
 export { run as runPhysics3D } from "./physics-3d"
+
+export { run as runRaymarchClouds, fragment as raymarchCloudsFragment } from "./raymarch-clouds"
+export { run as runRaymarchLights, fragment as raymarchLightsFragment } from "./raymarch-lights"

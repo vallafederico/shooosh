@@ -19,6 +19,8 @@ bundle and runtime checks but are not marked production-ready.
 | [sss.ts](./sss.ts) **WIP** | `createEngine` + `createCompute` | Separable diffuse scattering, sharp specular, debug views; WebGPU ([guide](./screen-space-effects.md)) |
 | [ssao.ts](./ssao.ts) **WIP** | `createEngine` + `createCompute` | Half-resolution depth-based AO, bilateral denoise and upsampling; WebGPU ([guide](./screen-space-effects.md)) |
 | [gradient.ts](./gradient.ts) | `createScene` | UV gradient + timed brand stripe |
+| [raymarch-clouds.ts](./raymarch-clouds.ts) | `createCanvasScene` | Fly through volumetric clouds with sun shadowing ([guide](./raymarching.md)) |
+| [raymarch-lights.ts](./raymarch-lights.ts) | `createCanvasScene` | Sphere-traced sphere/torus, moving colored lights, soft shadows and AO ([guide](./raymarching.md)) |
 | [plasma.ts](./plasma.ts) | `createScene` | Polar sines — classic hero |
 | [value-noise.ts](./value-noise.ts) | `createScene` | Hash → value noise → fbm |
 | [sdf-rings.ts](./sdf-rings.ts) | `createScene` | Signed circle, concentric pulses |

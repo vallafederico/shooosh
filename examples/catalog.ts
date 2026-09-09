@@ -1,3 +1,5 @@
+import { raymarchClouds } from "./raymarch-clouds"
+import { raymarchLights } from "./raymarch-lights"
 import { physics3D } from "./physics-3d"
 import { physicsPile } from "./physics-pile"
 import { physicsPendulum } from "./physics-pendulum"
@@ -40,6 +42,8 @@ import { valueNoise } from "./value-noise"
 export const examples: ExampleSpec[] = [
   gradient,
   plasma,
+  raymarchClouds,
+  raymarchLights,
   valueNoise,
   sdfRings,
   domainWarp,

@@ -68,6 +68,8 @@ the intended backend path, not a claim of exhaustive visual parity or accessibil
 | [object-spin](./object-spin.ts) | Canvas | [types.ts](./types.ts) | Both; retain the shader and frame updates together. |
 | [particles-field](./particles-field.ts) | Canvas | [types.ts](./types.ts) | Both; copy `run`, not the stub fragment. Points vs instanced quads. |
 | [plasma](./plasma.ts) | Canvas | [handle.ts](./handle.ts), [types.ts](./types.ts) | Both; retain the shader and frame updates together. |
+| [raymarch-clouds](./raymarch-clouds.ts) | Canvas | [handle.ts](./handle.ts), [types.ts](./types.ts) | Both; copy `raymarch-clouds.wgsl`; bounded volume integration, DPR 1; [guide](./raymarching.md). |
+| [raymarch-lights](./raymarch-lights.ts) | Canvas | [handle.ts](./handle.ts), [types.ts](./types.ts) | Both; copy `raymarch-lights.wgsl`; sphere tracing, soft shadows and AO; [guide](./raymarching.md). |
 | [refractive-glass](./refractive-glass.ts) | Canvas | [handle.ts](./handle.ts), [types.ts](./types.ts) | Both; also imports `shooosh/utility`. Procedural backdrop, no HTML capture. |
 | [scroll-cards](./scroll-cards.ts) | Scrollable page with `[data-card]` children | [types.ts](./types.ts) | Both; retain the shader and frame updates together. |
 | [scroll-sections](./scroll-sections.ts) | Scrollable page with `[data-plane]` sections | [types.ts](./types.ts) | Both; retain the shader and frame updates together. |
