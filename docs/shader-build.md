@@ -1,6 +1,6 @@
 # Build-time shaders
 
-Unreleased: WGSL translation now belongs to the build. The browser still compiles
+Since 0.0.6: WGSL translation now belongs to the build. The browser still compiles
 and links native shader programs; this removes the JavaScript translator, not GPU
 compilation. The supported WGSL subset is unchanged; see [translation](./shader-translation.md).
 

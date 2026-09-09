@@ -23,7 +23,7 @@ createCanvasScene(canvas, { screen: { shaders: shader } })
 ```
 
 WGSL translation runs at build time. Dynamic strings can explicitly opt into
-`compileShader` from `shooosh/compiler`. This is an unreleased migration from 0.0.5.
+`compileShader` from `shooosh/compiler`. Version 0.0.6 requires this migration from 0.0.5.
 
 ```html
 <script src="https://unpkg.com/shooosh"></script>
@@ -46,8 +46,7 @@ ESM imports can be tree-shaken to the features you use; the browser entry has
 | `createItem` + `acquireLayer` — initial ESM download | 13.3 kB | 5.7 kB |
 | `createDomLayer` — initial ESM download | 28.3 kB | 11.1 kB |
 
-Measured from the **unreleased checkout on 2026-09-09**, not the npm 0.0.5
-artifact. kB = 1,000 bytes; gzip level 9. ESM rows are Vite production consumers
+Measured from the **0.0.6 source checkout on 2026-09-09**. kB = 1,000 bytes; gzip level 9. ESM rows are Vite production consumers
 and include their initial static imports. Backend code loads separately: all
 emitted chunks together total 33.3 / 14.3 kB for canvas scene, 85.5 / 33.8 kB for full scene, 31.5 / 14.0 kB for
 item + layer, and 51.6 / 21.8 kB for DOM (minified / gzip). A selected backend
@@ -99,7 +98,7 @@ Optional entry points stay separate from the root sizes above:
 
 Same Vite production settings, published ESM imports, one complete JavaScript file,
 gzip level 9. Each cell is **minified / gzip kB** (1 kB = 1,000 bytes).
-Measured 2026-09-09: unreleased shooosh, OGL **1.0.11**, Three.js **0.186.0**.
+Measured 2026-09-09: shooosh **0.0.6**, OGL **1.0.11**, Three.js **0.186.0**.
 
 | Consumer | shooosh Both (default) | shooosh WebGL2 | shooosh WebGPU | OGL | Three.js |
 | --- | ---: | ---: | ---: | ---: | ---: |

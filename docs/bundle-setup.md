@@ -1,6 +1,6 @@
 # Small production bundles
 
-Unreleased. Use ESM imports and build-time shader artifacts. The default package
+Since 0.0.6. Use ESM imports and build-time shader artifacts. The default package
 still includes both backends; `backend` on `createEngine` only chooses one at
 runtime. It cannot remove the other implementation from emitted files.
 

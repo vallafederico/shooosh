@@ -5,7 +5,7 @@ All notable changes to [shooosh](https://www.npmjs.com/package/shooosh) are docu
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [SemVer](https://semver.org/).
 
-## Unreleased
+## [0.0.6] — 2026-09-09
 
 ### Added
 
