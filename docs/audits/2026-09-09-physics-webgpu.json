@@ -1,0 +1,129 @@
+{
+  "capturedAt": "2026-09-09T10:03:19.081Z",
+  "backend": "webgpu",
+  "browser": "Chrome 152",
+  "dpr": 2,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "results": [
+    {
+      "scenario": "pile active",
+      "initializationMs": 23.1,
+      "durationMs": 2001,
+      "frames": 120,
+      "requests": 1608,
+      "callbackCpuP50Ms": 0.2,
+      "callbackCpuP95Ms": 0.3,
+      "rectReads": 0,
+      "styleReads": 0,
+      "wakeEvents": {},
+      "visibilityInterrupted": false
+    },
+    {
+      "scenario": "pile paused",
+      "initializationMs": 1.4,
+      "durationMs": 2001,
+      "frames": 0,
+      "requests": 0,
+      "callbackCpuP50Ms": null,
+      "callbackCpuP95Ms": null,
+      "rectReads": 0,
+      "styleReads": 0,
+      "wakeEvents": {},
+      "visibilityInterrupted": false
+    },
+    {
+      "scenario": "pile sleeping",
+      "initializationMs": 4.8,
+      "durationMs": 2001,
+      "frames": 0,
+      "requests": 0,
+      "callbackCpuP50Ms": null,
+      "callbackCpuP95Ms": null,
+      "rectReads": 0,
+      "styleReads": 0,
+      "wakeEvents": {},
+      "visibilityInterrupted": false
+    },
+    {
+      "scenario": "pendulum active",
+      "initializationMs": 6.1,
+      "durationMs": 2001,
+      "frames": 120,
+      "requests": 515,
+      "callbackCpuP50Ms": 0.2,
+      "callbackCpuP95Ms": 0.3,
+      "rectReads": 0,
+      "styleReads": 0,
+      "wakeEvents": {},
+      "visibilityInterrupted": false
+    },
+    {
+      "scenario": "pendulum paused",
+      "initializationMs": 3.2,
+      "durationMs": 2001,
+      "frames": 0,
+      "requests": 0,
+      "callbackCpuP50Ms": null,
+      "callbackCpuP95Ms": null,
+      "rectReads": 0,
+      "styleReads": 0,
+      "wakeEvents": {},
+      "visibilityInterrupted": false
+    },
+    {
+      "scenario": "pendulum sleeping",
+      "initializationMs": 3.1,
+      "durationMs": 2001,
+      "frames": 0,
+      "requests": 0,
+      "callbackCpuP50Ms": null,
+      "callbackCpuP95Ms": null,
+      "rectReads": 0,
+      "styleReads": 0,
+      "wakeEvents": {},
+      "visibilityInterrupted": false
+    },
+    {
+      "scenario": "physics3d active",
+      "initializationMs": 27.9,
+      "durationMs": 2000,
+      "frames": 120,
+      "requests": 2031,
+      "callbackCpuP50Ms": 0.5,
+      "callbackCpuP95Ms": 0.8,
+      "rectReads": 0,
+      "styleReads": 0,
+      "wakeEvents": {},
+      "visibilityInterrupted": false
+    },
+    {
+      "scenario": "physics3d paused",
+      "initializationMs": 4.5,
+      "durationMs": 2002,
+      "frames": 0,
+      "requests": 0,
+      "callbackCpuP50Ms": null,
+      "callbackCpuP95Ms": null,
+      "rectReads": 0,
+      "styleReads": 0,
+      "wakeEvents": {},
+      "visibilityInterrupted": false
+    },
+    {
+      "scenario": "physics3d sleeping",
+      "initializationMs": 10.4,
+      "durationMs": 2001,
+      "frames": 0,
+      "requests": 0,
+      "callbackCpuP50Ms": null,
+      "callbackCpuP95Ms": null,
+      "rectReads": 0,
+      "styleReads": 0,
+      "wakeEvents": {},
+      "visibilityInterrupted": false
+    }
+  ]
+}

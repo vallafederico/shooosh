@@ -1,0 +1,254 @@
+[
+  {
+    "backend": "webgl2",
+    "name": "canvas",
+    "bundler": "bun",
+    "raw": 20766,
+    "gzip": 8319
+  },
+  {
+    "backend": "webgl2",
+    "name": "canvas",
+    "bundler": "vite",
+    "raw": 20833,
+    "gzip": 8391
+  },
+  {
+    "backend": "webgl2",
+    "name": "dom",
+    "bundler": "bun",
+    "raw": 34344,
+    "gzip": 13785
+  },
+  {
+    "backend": "webgl2",
+    "name": "dom",
+    "bundler": "vite",
+    "raw": 34408,
+    "gzip": 13773
+  },
+  {
+    "backend": "webgl2",
+    "name": "scene",
+    "bundler": "bun",
+    "raw": 54099,
+    "gzip": 19223
+  },
+  {
+    "backend": "webgl2",
+    "name": "scene",
+    "bundler": "vite",
+    "raw": 53438,
+    "gzip": 18769
+  },
+  {
+    "backend": "webgl2",
+    "name": "item",
+    "bundler": "bun",
+    "raw": 18506,
+    "gzip": 7838
+  },
+  {
+    "backend": "webgl2",
+    "name": "item",
+    "bundler": "vite",
+    "raw": 18641,
+    "gzip": 7893
+  },
+  {
+    "backend": "webgl2",
+    "name": "object",
+    "bundler": "bun",
+    "raw": 23145,
+    "gzip": 9191
+  },
+  {
+    "backend": "webgl2",
+    "name": "object",
+    "bundler": "vite",
+    "raw": 23093,
+    "gzip": 9279
+  },
+  {
+    "backend": "webgl2",
+    "name": "post",
+    "bundler": "bun",
+    "raw": 25580,
+    "gzip": 9781
+  },
+  {
+    "backend": "webgl2",
+    "name": "post",
+    "bundler": "vite",
+    "raw": 25284,
+    "gzip": 9341
+  },
+  {
+    "backend": "webgl2",
+    "name": "particles",
+    "bundler": "bun",
+    "raw": 13665,
+    "gzip": 5681
+  },
+  {
+    "backend": "webgl2",
+    "name": "particles",
+    "bundler": "vite",
+    "raw": 13854,
+    "gzip": 5778
+  },
+  {
+    "backend": "webgl2",
+    "name": "msdf",
+    "bundler": "bun",
+    "raw": 16711,
+    "gzip": 6921
+  },
+  {
+    "backend": "webgl2",
+    "name": "msdf",
+    "bundler": "vite",
+    "raw": 16988,
+    "gzip": 7052
+  },
+  {
+    "backend": "webgl2",
+    "name": "all",
+    "bundler": "bun",
+    "raw": 88475,
+    "gzip": 30029
+  },
+  {
+    "backend": "webgl2",
+    "name": "all",
+    "bundler": "vite",
+    "raw": 87480,
+    "gzip": 29408
+  },
+  {
+    "backend": "webgpu",
+    "name": "canvas",
+    "bundler": "bun",
+    "raw": 23653,
+    "gzip": 10364
+  },
+  {
+    "backend": "webgpu",
+    "name": "canvas",
+    "bundler": "vite",
+    "raw": 23562,
+    "gzip": 10213
+  },
+  {
+    "backend": "webgpu",
+    "name": "dom",
+    "bundler": "bun",
+    "raw": 40118,
+    "gzip": 17376
+  },
+  {
+    "backend": "webgpu",
+    "name": "dom",
+    "bundler": "vite",
+    "raw": 40257,
+    "gzip": 17320
+  },
+  {
+    "backend": "webgpu",
+    "name": "scene",
+    "bundler": "bun",
+    "raw": 57715,
+    "gzip": 24801
+  },
+  {
+    "backend": "webgpu",
+    "name": "scene",
+    "bundler": "vite",
+    "raw": 57646,
+    "gzip": 24278
+  },
+  {
+    "backend": "webgpu",
+    "name": "item",
+    "bundler": "bun",
+    "raw": 21661,
+    "gzip": 9772
+  },
+  {
+    "backend": "webgpu",
+    "name": "item",
+    "bundler": "vite",
+    "raw": 21713,
+    "gzip": 9805
+  },
+  {
+    "backend": "webgpu",
+    "name": "object",
+    "bundler": "bun",
+    "raw": 26234,
+    "gzip": 11285
+  },
+  {
+    "backend": "webgpu",
+    "name": "object",
+    "bundler": "vite",
+    "raw": 26054,
+    "gzip": 11105
+  },
+  {
+    "backend": "webgpu",
+    "name": "post",
+    "bundler": "bun",
+    "raw": 23348,
+    "gzip": 9885
+  },
+  {
+    "backend": "webgpu",
+    "name": "post",
+    "bundler": "vite",
+    "raw": 23508,
+    "gzip": 9980
+  },
+  {
+    "backend": "webgpu",
+    "name": "particles",
+    "bundler": "bun",
+    "raw": 16691,
+    "gzip": 7593
+  },
+  {
+    "backend": "webgpu",
+    "name": "particles",
+    "bundler": "vite",
+    "raw": 17029,
+    "gzip": 7723
+  },
+  {
+    "backend": "webgpu",
+    "name": "msdf",
+    "bundler": "bun",
+    "raw": 18790,
+    "gzip": 8391
+  },
+  {
+    "backend": "webgpu",
+    "name": "msdf",
+    "bundler": "vite",
+    "raw": 19225,
+    "gzip": 8630
+  },
+  {
+    "backend": "webgpu",
+    "name": "all",
+    "bundler": "bun",
+    "raw": 94369,
+    "gzip": 39201
+  },
+  {
+    "backend": "webgpu",
+    "name": "all",
+    "bundler": "vite",
+    "raw": 93939,
+    "gzip": 38398
+  }
+]

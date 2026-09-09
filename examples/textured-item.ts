@@ -1,10 +1,12 @@
+import shader, { fragment } from "./textured-item.wgsl"
 /**
+ * Copy the sibling .wgsl shader; use shooosh/build in your bundler.
  * Textured cards — acquireLayer + createItem with a shared loadTexture atlas.
  *
  * How to use:
  *   const engine = await acquireLayer()
  *   const tex = await loadTexture(makePaperCanvas())
- *   createItem(card, { texture: tex, shaders: { fragment }, … })
+ *   createItem(card, { texture: tex, shaders: shader, … })
  *   // fragment: textureSample(uTexture, uSampler, fitUv(vUv))
  */
 
@@ -18,15 +20,8 @@ import {
 import { makePaperCanvas } from "./make-texture"
 import type { ExampleHandle, ExampleRunOptions, ExampleSpec } from "./types"
 
-export const fragment = `fn fsMain() -> vec4f {
-  let t = uUni.values0.x;
-  let uv = fitUv(vUv);
-  let sample = textureSample(uTexture, uSampler, uv);
-  let vignette = smoothstep(0.95, 0.35, length(vUv - 0.5));
-  let pulse = 0.92 + 0.08 * sin(t * 2.0 + vUv.x * 4.0);
-  return vec4f(sample.rgb * vignette * pulse, 1.0);
-}
-`
+export { fragment }
+
 
 export function run(root: HTMLElement, options: ExampleRunOptions = {}): ExampleHandle {
   const items: ReturnType<typeof createItem>[] = []
@@ -50,7 +45,7 @@ export function run(root: HTMLElement, options: ExampleRunOptions = {}): Example
       items.push(
         createItem(card, {
           texture: tex,
-          shaders: { fragment },
+          shaders: shader,
           onFrame(self, frame) {
             self.setUni({ value1: frame.now * 0.001 + index })
           },

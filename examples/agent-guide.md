@@ -1,5 +1,10 @@
 # Agent copy guide
 
+
+**Unreleased shader setup:** copy the recipe's `.wgsl` imports and enable
+`shoooshShaders` from `shooosh/build`. Live examples use prepared shader data and
+`createCanvasScene` where appropriate. See [bundle setups](../docs/bundle-setup.md).
+
 Use [README](./README.md) to choose a look, then use this guide to assemble it.
 The exported `run` function is the complete recipe. A `fragment` alone can be a
 converter-test stub (particles, fluids, MSDF) and does not reproduce every demo.
@@ -24,6 +29,8 @@ If you only installed npm, obtain these files from the repository at the tag
 matching your installed version. Unreleased examples may require the unreleased
 package: use this workspace to test them. Do not import the catalog/index into a
 production page just to get one look; import the selected module directly.
+
+Copy `shaders.d.ts` with `types.ts` for TypeScript. Copy every imported `.wgsl` file alongside each demo/helper. Most match the recipe filename; physics uses `physics-lab.wgsl`, PBR uses `pbr.wgsl`, and fabric uses `fabric-{diffuse,sheen,coat}.wgsl`. These shader files are part of the complete copy sets below. To change composed fabric source, also copy `materials/fabric-variants.ts` and regenerate the variants with `bin/example-shaders.ts`.
 
 ## Complete copy sets
 
@@ -55,6 +62,9 @@ the intended backend path, not a claim of exhaustive visual parity or accessibil
 | [object-env](./object-env.ts) | Canvas | [make-texture.ts](./make-texture.ts), [types.ts](./types.ts) | Both; keep environment texture `flipY: false`. |
 | [object-mesh](./object-mesh.ts) | Canvas | [types.ts](./types.ts) | Both; procedural mesh, no GLB fetch. Replace geometry to load a model. |
 | [object-pbr](./object-pbr.ts) | Canvas | [make-texture.ts](./make-texture.ts), [pbr-shaders.ts](./pbr-shaders.ts), [types.ts](./types.ts) | Both; material slots and shared environment are set in `run`. |
+| [physics-3d](./physics-3d.ts) | Canvas in positioned parent | [physics-3d-world.ts](./physics-3d-world.ts), [physics-clock.ts](./physics-clock.ts), [types.ts](./types.ts) | Both; install `@dimforge/rapier3d-compat`; requires unreleased world-position API; see [physics guide](./physics.md). |
+| [physics-pile](./physics-pile.ts) | Canvas in positioned parent | [physics-lab.ts](./physics-lab.ts), [physics-world.ts](./physics-world.ts), [physics-clock.ts](./physics-clock.ts), [types.ts](./types.ts) | Both; install `@dimforge/rapier2d-compat`; see [physics guide](./physics.md). |
+| [physics-pendulum](./physics-pendulum.ts) | Canvas in positioned parent | [physics-lab.ts](./physics-lab.ts), [physics-world.ts](./physics-world.ts), [physics-clock.ts](./physics-clock.ts), [types.ts](./types.ts) | Both; same optional Rapier dependency; 2D joints. |
 | [object-spin](./object-spin.ts) | Canvas | [types.ts](./types.ts) | Both; retain the shader and frame updates together. |
 | [particles-field](./particles-field.ts) | Canvas | [types.ts](./types.ts) | Both; copy `run`, not the stub fragment. Points vs instanced quads. |
 | [plasma](./plasma.ts) | Canvas | [handle.ts](./handle.ts), [types.ts](./types.ts) | Both; retain the shader and frame updates together. |

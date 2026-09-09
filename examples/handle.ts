@@ -3,10 +3,10 @@
  * Example files still own the createScene / createItem call.
  */
 
-import type { Scene } from "shooosh"
+import type { CanvasScene } from "shooosh"
 import type { ExampleHandle } from "./types"
 
-export function fromScene(scene: Scene, extraDestroy?: () => void): ExampleHandle {
+export function fromScene(scene: CanvasScene, extraDestroy?: () => void): ExampleHandle {
   return {
     destroy() {
       extraDestroy?.()

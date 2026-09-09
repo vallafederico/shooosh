@@ -5,16 +5,12 @@
  * them and GPU resources. Static until controls change; no textures or frame loop.
  * See fabric-sheen.md for slots, composition, limits and verification.
  */
-import { createObject, createScene } from "shooosh"
-import { fabricPrefix, fabricSuffix } from "./materials/fabric"
-import { sheenWgsl } from "./materials/sheen"
-import { clearcoatWgsl } from "./materials/clearcoat"
+import { createObject, createCanvasScene as createScene } from "shooosh"
+import diffuseShader, { fragment as diffuseFragment } from "./fabric-diffuse.wgsl"
+import sheenShader, { fragment as sheenFragment } from "./fabric-sheen.wgsl"
+import coatShader, { fragment } from "./fabric-coat.wgsl"
 import type { ExampleHandle, ExampleRunOptions, ExampleSpec } from "./types"
-
-export const diffuseFragment = fabricPrefix + "base" + fabricSuffix
-export const sheenFragment = sheenWgsl + fabricPrefix + "base + fabricSheen(n, l, v, rough) * uUni.values0.y" + fabricSuffix
-export const fragment = sheenWgsl + clearcoatWgsl + fabricPrefix +
-  "(base + fabricSheen(n, l, v, rough) * uUni.values0.y) * (1.0 - 0.04 * uUni.values0.z) + fabricCoat(n, l, v, uUni.values0.w) * uUni.values0.z * 3.0" + fabricSuffix
+export { diffuseFragment, sheenFragment, fragment }
 
 export function run(canvas: HTMLCanvasElement, options: ExampleRunOptions = {}): ExampleHandle {
   const objects: ReturnType<typeof createObject>[] = []
@@ -51,12 +47,12 @@ export function run(canvas: HTMLCanvasElement, options: ExampleRunOptions = {}):
     if (destroyed) return null
     const engine = scene.getEngine()
     if (!engine) return null
-    for (const [index, material] of [diffuseFragment, sheenFragment, fragment].entries()) {
+    for (const [index, material] of [diffuseShader, sheenShader, coatShader].entries()) {
       objects.push(createObject(null, {
         shape: { type: "roundedBox", width: 0.85, height: 0.85, depth: 0.85, rounding: 0.25 },
         placement: { centerX: (index - 1) * 0.72, centerY: 0.16, scale: 1.7 },
         rotationX: 0.3, rotationY: -0.35,
-        shaders: { fragment: material }, uni: { ...uni },
+        shaders: material, uni: { ...uni },
       }))
     }
     inputs.forEach(input => { input.disabled = false })

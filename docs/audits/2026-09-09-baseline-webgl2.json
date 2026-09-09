@@ -1,0 +1,150 @@
+{
+  "capturedAt": "2026-09-09T10:07:26.670Z",
+  "backend": "webgl2",
+  "fixturePosition": "absolute",
+  "sampleSeconds": 1,
+  "notes": "No wake events or visibility interruptions.",
+  "scriptResourceNames": [
+    "perf-DC0hL1My.js",
+    "webgl2-engine-B9La5FCR.js",
+    "settle-loop-D-pxh8MC.js",
+    "texture-upload-webgl2-m0mpVW-D.js"
+  ],
+  "results": [
+    {
+      "scenario": "engine idle",
+      "frames": 0,
+      "rectReads": 0,
+      "styleReads": 0,
+      "requests": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "scenario": "glass idle",
+      "frames": 0,
+      "rectReads": 0,
+      "styleReads": 0,
+      "requests": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "scenario": "fabric idle",
+      "frames": 0,
+      "rectReads": 0,
+      "styleReads": 0,
+      "requests": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "scenario": "sss fallback idle",
+      "frames": 0,
+      "rectReads": 0,
+      "styleReads": 0,
+      "requests": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "scenario": "ssao fallback idle",
+      "frames": 0,
+      "rectReads": 0,
+      "styleReads": 0,
+      "requests": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "scenario": "20 images idle repair=0",
+      "frames": 0,
+      "rectReads": 0,
+      "styleReads": 0,
+      "requests": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "scenario": "20 images idle repair=500",
+      "frames": 0,
+      "rectReads": 42,
+      "styleReads": 48,
+      "requests": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "scenario": "CSSOM repair",
+      "frames": 16,
+      "rectReads": 21,
+      "styleReads": 15,
+      "requests": 1,
+      "p50Ms": 0.1,
+      "p95Ms": 0.2
+    },
+    {
+      "scenario": "1 image active",
+      "frames": 60,
+      "rectReads": 60,
+      "styleReads": 0,
+      "requests": 60,
+      "p50Ms": 0.1,
+      "p95Ms": 0.2
+    },
+    {
+      "scenario": "20 images active",
+      "frames": 60,
+      "rectReads": 60,
+      "styleReads": 0,
+      "requests": 60,
+      "p50Ms": 0.2,
+      "p95Ms": 0.3
+    },
+    {
+      "scenario": "100 images active",
+      "frames": 60,
+      "rectReads": 60,
+      "styleReads": 0,
+      "requests": 60,
+      "p50Ms": 0.4,
+      "p95Ms": 0.8
+    },
+    {
+      "scenario": "images + input idle",
+      "frames": 0,
+      "rectReads": 8,
+      "styleReads": 17,
+      "requests": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "scenario": "input CSSOM repair",
+      "frames": 16,
+      "rectReads": 8,
+      "styleReads": 14,
+      "requests": 1,
+      "p50Ms": 0.1,
+      "p95Ms": 0.3
+    },
+    {
+      "scenario": "input idle",
+      "frames": 0,
+      "rectReads": 4,
+      "styleReads": 7,
+      "requests": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "scenario": "input focused",
+      "frames": 32,
+      "rectReads": 4,
+      "styleReads": 7,
+      "requests": 2,
+      "p50Ms": 0.1,
+      "p95Ms": 0.2
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+declare const __SHOOOSH_GPU__: boolean;
+declare const __SHOOOSH_GL__: boolean;
 /**
  * createMsdfGlyphs — sample a baked font atlas. Runs on both backends.
  *
@@ -374,12 +376,12 @@ export function createMsdfGlyphs(
   const lifecycle = createPrimitiveLifecycle<MsdfGlyphsRenderer>({
     layer: options.layer ?? 10,
     createRenderer: (frame) => {
-      if (frame.backend === "webgpu") {
+      if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && frame.backend === "webgpu") {
         const createGpuRenderer = ensureGpuGlyphsFactory();
         if (!createGpuRenderer) return null;
         return createGpuRenderer(element, currentOptions);
       }
-      if (frame.gl) {
+      if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) && frame.gl) {
         return createMsdfGlyphsRenderer(element, frame, currentOptions);
       }
       return null;

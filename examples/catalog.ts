@@ -1,3 +1,6 @@
+import { physics3D } from "./physics-3d"
+import { physicsPile } from "./physics-pile"
+import { physicsPendulum } from "./physics-pendulum"
 import { sss } from "./sss"
 import { ssao } from "./ssao"
 /**
@@ -53,6 +56,9 @@ export const examples: ExampleSpec[] = [
   msdfText,
   sdfIcons,
   objectSpin,
+  physicsPile,
+  physics3D,
+  physicsPendulum,
   objectEnv,
   objectPbr,
   fabricSheen,

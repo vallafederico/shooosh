@@ -59,3 +59,6 @@ Example follow-up: [bundle isolation and runtime checks](./audits/2026-09-08-exa
 
 Completed follow-up: [DOM idle optimization](./audits/2026-09-08-dom-idle-optimization.md)
 — cached input geometry, change-aware maintenance and production browser evidence.
+
+- [Build-time shaders and migration](./shader-build.md) — `.wgsl` plugin, CLI and optional runtime compiler.
+- [Small bundle setups](./bundle-setup.md) — backend-only entries, lightweight scenes and production shaders.

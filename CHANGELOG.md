@@ -7,6 +7,29 @@ Versions follow [SemVer](https://semver.org/).
 
 ## Unreleased
 
+### Added
+
+- Rapier physics examples for piles, pendulums and 3D rigid bodies, with copy guides.
+- Optional `shooosh/utils` transform and camera helpers, plus object position updates.
+- Reproducible bundle audits and README size comparisons against OGL and Three.js,
+  covering WebGL2, WebGPU and all published shooosh build formats.
+- Backend-only `shooosh/webgl2` and `shooosh/webgpu` entries with matching DOM entries
+  and shader targets; default remains dual-backend.
+- Lightweight `createCanvasScene` with explicit resource cleanup via `retain`.
+  Existing full scene conveniences remain available through `createScene`.
+- Production shader comment/whitespace minification and a Bun `.wgsl` transform.
+  Example shaders now use build imports, including generated fabric variants.
+- Build-time WGSL fragment artifacts through `shooosh/build`, a Vite/Rollup plugin
+  and the `shooosh-shader` CLI. Built-in DOM image and gradient shaders are precompiled.
+- Explicit optional `shooosh/compiler` for dynamic shader strings and conversion tools.
+
+### Changed
+
+- **Migration required:** runtime renderers no longer translate WGSL into GLSL.
+  Supply prepared shader pairs for WebGL2 or explicitly call `compileShader`.
+  Converters moved out of the root export. See [shader migration](./docs/shader-build.md).
+
+
 ## [0.0.5] — 2026-09-08
 
 ### Added

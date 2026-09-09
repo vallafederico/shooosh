@@ -1,8 +1,9 @@
 /**
+ * Shader data comes from .wgsl build imports; see docs/shader-build.md.
  * Bloom + grain + FXAA as applyEffect snippets — examples own the look.
  *
  * How to use:
- *   const scene = createScene(canvas, { screen: { shaders: { fragment } } })
+ *   const scene = createScene(canvas, { screen: { shaders: shader } })
  *   await scene.getInitPromise()
  *   const post = createPostProcessor()
  *   post.addFragmentEffect({

@@ -1,3 +1,5 @@
+declare const __SHOOOSH_GPU__: boolean;
+declare const __SHOOOSH_GL__: boolean;
 /**
  * createPostProcessor — backend-agnostic post chain. Looks live in examples/.
  *
@@ -175,9 +177,10 @@ export class PostProcessor {
     }
     this.loadingBackend = kind;
     const load =
-      kind === "webgpu"
+      (typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && kind === "webgpu"
         ? import("./processor-webgpu").then((module) => module.createWebGpuPostBackend())
-        : import("./processor-webgl2").then((module) => module.createWebGl2PostBackend());
+        : (typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) ? import("./processor-webgl2").then((module) => module.createWebGl2PostBackend())
+        : Promise.reject(new Error("Post backend is excluded from this build."));
 
     void load
       .then((backend) => {

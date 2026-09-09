@@ -1,3 +1,5 @@
+declare const __SHOOOSH_GL__: boolean;
+declare const __SHOOOSH_GPU__: boolean;
 /**
  * createMouseTrail — GPU trail texture. Runs on both backends.
  *
@@ -188,9 +190,9 @@ export class MouseTrail {
         "MouseTrail needs a default engine. Await createScene() / acquireLayer() first.",
       );
     }
-    if (engine.backend === "webgpu") {
+    if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && engine.backend === "webgpu") {
       this.attachWebGpu(engine);
-    } else {
+    } else if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__)) {
       this.unsubscribe = engine.onPostRender((frame) => this.onPostRender(frame));
     }
   }
@@ -257,6 +259,7 @@ export class MouseTrail {
    * engine into its offscreen post path with nobody to present the result.
    */
   private attachWebGpu(engine: WebGLEngine) {
+    if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__)) {
     const internals = getGpuInternals(engine);
     if (!internals) {
       console.warn("shooosh: createMouseTrail could not reach the WebGPU device.");
@@ -305,6 +308,7 @@ export class MouseTrail {
         engine.requestFrame();
       }
     });
+    }
   }
 
   /** Exponential ease toward the speed-driven brush size. Shared by both backends. */
@@ -325,6 +329,7 @@ export class MouseTrail {
   }
 
   private onPostRender(frame: EnginePostFrame) {
+    if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__)) {
     const gl = frame.gl;
     if (!gl) return;
 
@@ -400,6 +405,7 @@ export class MouseTrail {
     if (this.inkFrames > 0 || this.speed > 0 || this.smoothedSize > 0) {
       getDefaultEngine()?.requestFrame();
     }
+    }
   }
 
   private ensureResources(
@@ -407,6 +413,8 @@ export class MouseTrail {
     canvasWidth: number,
     canvasHeight: number,
   ) {
+
+    if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__)) {
     const width = Math.max(1, Math.round(canvasWidth * this.resolutionScale));
     const height = Math.max(1, Math.round(canvasHeight * this.resolutionScale));
 
@@ -442,9 +450,11 @@ export class MouseTrail {
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
   }
 
   private disposeGpuResources() {
+    if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__)) {
     if (this.gl && this.bundle) {
       this.gl.deleteProgram(this.bundle.paintProgram);
       this.gl.deleteProgram(this.bundle.growProgram);
@@ -455,6 +465,7 @@ export class MouseTrail {
     this.targets = [];
     this.bundle = null;
     this.gl = null;
+    }
   }
 
   private resolveUv(event: PointerEvent) {

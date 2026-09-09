@@ -1,15 +1,17 @@
+import shader, { fragment } from "./grain-bloom.wgsl"
 /**
+ * Copy the sibling .wgsl shader; use shooosh/build in your bundler.
  * Bloom + grain (+ optional FXAA) — emissive fsMain + createPostProcessor.
  *
  * How to use:
- *   import { createScene, createPostProcessor } from "shooosh"
+ *   import { createCanvasScene as createScene, createPostProcessor } from "shooosh"
  *   import {
  *     bloomEffect, bloomEffectWgsl,
  *     fxaaEffect, fxaaEffectWgsl,
  *     grainEffect, grainEffectWgsl,
  *   } from "./post-shaders"
  *   const scene = createScene(canvas, {
- *     screen: { shaders: { fragment }, onFrame(...) },
+ *     screen: { shaders: shader, onFrame(...) },
  *   })
  *   await scene.getInitPromise()
  *   const post = createPostProcessor()
@@ -29,7 +31,7 @@
  * variants runs the same chain on WebGPU and WebGL2.
  */
 
-import { createPostProcessor, createScene } from "shooosh"
+import { createPostProcessor, createCanvasScene as createScene } from "shooosh"
 import type { PostProcessor } from "shooosh"
 import { fromScene } from "./handle"
 import {
@@ -42,16 +44,8 @@ import {
 } from "./post-shaders"
 import type { ExampleRunOptions, ExampleSpec } from "./types"
 
-export const fragment = `fn fsMain() -> vec4f {
-  let t = uUni.values0.x;
-  let p = vUv * 2.0 - 1.0;
-  let glow = exp(-dot(p, p) * 2.4);
-  let ring = exp(-abs(length(p) - 0.45 + 0.04 * sin(t * 2.0)) * 18.0);
-  let ink = vec3f(0.02, 0.02, 0.018);
-  let acid = vec3f(0.847, 1.0, 0.243);
-  return vec4f(mix(ink, acid, glow * 0.95 + ring * 0.65), 1.0);
-}
-`
+export { fragment }
+
 
 export function run(canvas: HTMLCanvasElement, options: ExampleRunOptions = {}) {
   let post: PostProcessor | null = null
@@ -60,7 +54,7 @@ export function run(canvas: HTMLCanvasElement, options: ExampleRunOptions = {}) 
     dpr: { max: 1.5 },
     onInitError: options.onInitError,
     screen: {
-      shaders: { fragment },
+      shaders: shader,
       onFrame(self, frame) {
         self.setUni({ value1: frame.now * 0.001 })
       },

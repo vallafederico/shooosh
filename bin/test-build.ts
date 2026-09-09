@@ -59,6 +59,15 @@ async function runTests() {
         "dom/esm.js",
         "dom/cjs.js",
         "dom/index.d.ts",
+        "compiler/esm.js",
+        "compiler/cjs.js",
+        "compiler/index.d.ts",
+        "build/esm.js",
+        "build/cjs.js",
+        "build/index.d.ts",
+        "utils/esm.js",
+        "utils/cjs.js",
+        "utils/index.d.ts",
         "utility/esm.js",
         "utility/cjs.js",
         "utility/index.d.ts",
@@ -69,6 +78,12 @@ async function runTests() {
       }
     }),
 
+    test("Utils imports without browser globals and stays out of root", async () => {
+      for (const module of [await import(join(distDir, "utils/esm.js")), require(join(distDir, "utils/cjs.js"))]) {
+        if (module.poseToTransform({ x: 1, y: 2, z: 3 }, { x: 0, y: 0, z: 0, w: 1 }).positionZ !== 3) throw new Error("Missing pose helper")
+      }
+      if ("poseToTransform" in await import(join(distDir, "esm.js"))) throw new Error("Utils leaked into root")
+    }),
     test("Utility subpath imports without DOM or GPU globals", async () => {
       for (const module of [await import(join(distDir, "utility/esm.js")), require(join(distDir, "utility/cjs.js"))]) {
         if (typeof module.createSpinner !== "function") throw new Error("Missing createSpinner")
@@ -107,8 +122,6 @@ async function runTests() {
         "createCompute",
         "acquireLayer",
         "effects",
-        "convertWgslFragmentToGlsl",
-        "convertGlslFragmentToWgsl",
         "probeRenderer",
       ]) {
         if (module[name] == null) {
@@ -135,8 +148,6 @@ async function runTests() {
         "createItem",
         "createCompute",
         "acquireLayer",
-        "convertWgslFragmentToGlsl",
-        "convertGlslFragmentToWgsl",
         "probeRenderer",
       ]) {
         if (!content.includes(token)) {

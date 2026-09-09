@@ -1,3 +1,5 @@
+declare const __SHOOOSH_GPU__: boolean;
+declare const __SHOOOSH_GL__: boolean;
 /**
  * ItemManager — tracks getBoundingClientRect and draws a quad. Not public.
  *
@@ -62,12 +64,12 @@ export class ItemManager {
       onError: integration?.onError,
       layer: options.layer ?? 10,
       createRenderer: (frame) => {
-        if (frame.backend === "webgpu") {
+        if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && frame.backend === "webgpu") {
           const createGpuRenderer = ensureGpuItemFactory();
           if (!createGpuRenderer) { integration?.engine.requestFrame(); return null; }
           return createGpuRenderer(this.element, this.options, this.uni, integration);
         }
-        if (frame.gl) {
+        if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) && frame.gl) {
           return createItemRenderer(this.element, frame, this.options, this.uni, integration);
         }
         return null;

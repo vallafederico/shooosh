@@ -1,0 +1,908 @@
+{
+  "rootIife": {
+    "raw": 134889,
+    "gzip": 41145
+  },
+  "rootCjs": {
+    "raw": 136274,
+    "gzip": 41491
+  },
+  "consumers": [
+    {
+      "bundler": "bun",
+      "fixture": "unused",
+      "initial": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "unused",
+      "initial": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "utility-unused",
+      "initial": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "utility-unused",
+      "initial": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "compiler",
+      "initial": {
+        "files": 1,
+        "raw": 5500,
+        "gzip": 2129
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 5500,
+        "gzip": 2129
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "compiler",
+      "initial": {
+        "files": 1,
+        "raw": 5237,
+        "gzip": 2129
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 5237,
+        "gzip": 2129
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "utils",
+      "initial": {
+        "files": 1,
+        "raw": 529,
+        "gzip": 272
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 529,
+        "gzip": 272
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "utils",
+      "initial": {
+        "files": 1,
+        "raw": 524,
+        "gzip": 268
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 524,
+        "gzip": 268
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "utils-vector",
+      "initial": {
+        "files": 1,
+        "raw": 227,
+        "gzip": 176
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 227,
+        "gzip": 176
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "utils-vector",
+      "initial": {
+        "files": 1,
+        "raw": 227,
+        "gzip": 175
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 227,
+        "gzip": 175
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "utils-unused",
+      "initial": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "utils-unused",
+      "initial": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 24,
+        "gzip": 44
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "utility",
+      "initial": {
+        "files": 1,
+        "raw": 1495,
+        "gzip": 736
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 1495,
+        "gzip": 736
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "utility",
+      "initial": {
+        "files": 1,
+        "raw": 1466,
+        "gzip": 734
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 1466,
+        "gzip": 734
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "probe",
+      "initial": {
+        "files": 1,
+        "raw": 744,
+        "gzip": 447
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 744,
+        "gzip": 447
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "probe",
+      "initial": {
+        "files": 1,
+        "raw": 502,
+        "gzip": 308
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 502,
+        "gzip": 308
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "screen",
+      "initial": {
+        "files": 2,
+        "raw": 11744,
+        "gzip": 5072
+      },
+      "emitted": {
+        "files": 3,
+        "raw": 19000,
+        "gzip": 8278
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "screen",
+      "initial": {
+        "files": 1,
+        "raw": 11756,
+        "gzip": 4994
+      },
+      "emitted": {
+        "files": 2,
+        "raw": 11934,
+        "gzip": 5158
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "screen+engine",
+      "initial": {
+        "files": 6,
+        "raw": 14075,
+        "gzip": 6347
+      },
+      "emitted": {
+        "files": 10,
+        "raw": 31994,
+        "gzip": 14237
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "screen+engine",
+      "initial": {
+        "files": 1,
+        "raw": 13622,
+        "gzip": 5660
+      },
+      "emitted": {
+        "files": 6,
+        "raw": 31404,
+        "gzip": 13781
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "item+layer",
+      "initial": {
+        "files": 5,
+        "raw": 13657,
+        "gzip": 6187
+      },
+      "emitted": {
+        "files": 9,
+        "raw": 31838,
+        "gzip": 14183
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "item+layer",
+      "initial": {
+        "files": 1,
+        "raw": 13335,
+        "gzip": 5674
+      },
+      "emitted": {
+        "files": 6,
+        "raw": 31539,
+        "gzip": 13954
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "canvas-scene",
+      "initial": {
+        "files": 6,
+        "raw": 15963,
+        "gzip": 6931
+      },
+      "emitted": {
+        "files": 10,
+        "raw": 33871,
+        "gzip": 14813
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "canvas-scene",
+      "initial": {
+        "files": 1,
+        "raw": 15492,
+        "gzip": 6204
+      },
+      "emitted": {
+        "files": 6,
+        "raw": 33274,
+        "gzip": 14325
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "scene",
+      "initial": {
+        "files": 11,
+        "raw": 39579,
+        "gzip": 15910
+      },
+      "emitted": {
+        "files": 23,
+        "raw": 86962,
+        "gzip": 36203
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "scene",
+      "initial": {
+        "files": 1,
+        "raw": 37136,
+        "gzip": 12828
+      },
+      "emitted": {
+        "files": 15,
+        "raw": 85464,
+        "gzip": 33786
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "item",
+      "initial": {
+        "files": 2,
+        "raw": 11125,
+        "gzip": 4879
+      },
+      "emitted": {
+        "files": 3,
+        "raw": 18745,
+        "gzip": 8215
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "item",
+      "initial": {
+        "files": 1,
+        "raw": 11206,
+        "gzip": 4861
+      },
+      "emitted": {
+        "files": 2,
+        "raw": 11336,
+        "gzip": 4992
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "dom",
+      "initial": {
+        "files": 4,
+        "raw": 27918,
+        "gzip": 11345
+      },
+      "emitted": {
+        "files": 12,
+        "raw": 51985,
+        "gzip": 22285
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "dom",
+      "initial": {
+        "files": 1,
+        "raw": 28259,
+        "gzip": 11101
+      },
+      "emitted": {
+        "files": 9,
+        "raw": 51538,
+        "gzip": 21825
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "combined",
+      "initial": {
+        "files": 11,
+        "raw": 53394,
+        "gzip": 20961
+      },
+      "emitted": {
+        "files": 23,
+        "raw": 100888,
+        "gzip": 41271
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "combined",
+      "initial": {
+        "files": 1,
+        "raw": 50727,
+        "gzip": 17760
+      },
+      "emitted": {
+        "files": 15,
+        "raw": 99055,
+        "gzip": 38718
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "gradient-run",
+      "initial": {
+        "files": 6,
+        "raw": 17147,
+        "gzip": 7389
+      },
+      "emitted": {
+        "files": 10,
+        "raw": 35055,
+        "gzip": 15281
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "gradient-run",
+      "initial": {
+        "files": 1,
+        "raw": 16685,
+        "gzip": 6567
+      },
+      "emitted": {
+        "files": 6,
+        "raw": 34467,
+        "gzip": 14688
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "physics-3d",
+      "initial": {
+        "files": 8,
+        "raw": 33990,
+        "gzip": 14156
+      },
+      "emitted": {
+        "files": 15,
+        "raw": 2911514,
+        "gzip": 1113315
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "physics-3d",
+      "initial": {
+        "files": 1,
+        "raw": 33156,
+        "gzip": 12442
+      },
+      "emitted": {
+        "files": 9,
+        "raw": 2910842,
+        "gzip": 1111804
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "physics-pile",
+      "initial": {
+        "files": 8,
+        "raw": 32876,
+        "gzip": 13786
+      },
+      "emitted": {
+        "files": 15,
+        "raw": 2172935,
+        "gzip": 823536
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "physics-pile",
+      "initial": {
+        "files": 1,
+        "raw": 31786,
+        "gzip": 11973
+      },
+      "emitted": {
+        "files": 9,
+        "raw": 2171858,
+        "gzip": 821910
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "physics-pendulum",
+      "initial": {
+        "files": 8,
+        "raw": 32920,
+        "gzip": 13798
+      },
+      "emitted": {
+        "files": 15,
+        "raw": 2173059,
+        "gzip": 823568
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "physics-pendulum",
+      "initial": {
+        "files": 1,
+        "raw": 31912,
+        "gzip": 12028
+      },
+      "emitted": {
+        "files": 9,
+        "raw": 2171984,
+        "gzip": 821965
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "physics-barrel",
+      "initial": {
+        "files": 8,
+        "raw": 32896,
+        "gzip": 13789
+      },
+      "emitted": {
+        "files": 15,
+        "raw": 2172995,
+        "gzip": 823549
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "physics-barrel",
+      "initial": {
+        "files": 1,
+        "raw": 31792,
+        "gzip": 11959
+      },
+      "emitted": {
+        "files": 9,
+        "raw": 2171864,
+        "gzip": 821896
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "plasma-fragment",
+      "initial": {
+        "files": 1,
+        "raw": 672,
+        "gzip": 424
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 672,
+        "gzip": 424
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "plasma-fragment",
+      "initial": {
+        "files": 1,
+        "raw": 484,
+        "gzip": 308
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 484,
+        "gzip": 308
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "plasma-barrel",
+      "initial": {
+        "files": 1,
+        "raw": 672,
+        "gzip": 424
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 672,
+        "gzip": 424
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "plasma-barrel",
+      "initial": {
+        "files": 1,
+        "raw": 484,
+        "gzip": 308
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 484,
+        "gzip": 308
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "glass-run",
+      "initial": {
+        "files": 6,
+        "raw": 33452,
+        "gzip": 11331
+      },
+      "emitted": {
+        "files": 10,
+        "raw": 51327,
+        "gzip": 19217
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "glass-run",
+      "initial": {
+        "files": 1,
+        "raw": 32957,
+        "gzip": 10465
+      },
+      "emitted": {
+        "files": 6,
+        "raw": 50739,
+        "gzip": 18586
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "glass-barrel",
+      "initial": {
+        "files": 6,
+        "raw": 33470,
+        "gzip": 11334
+      },
+      "emitted": {
+        "files": 10,
+        "raw": 51378,
+        "gzip": 19226
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "glass-barrel",
+      "initial": {
+        "files": 1,
+        "raw": 32963,
+        "gzip": 10542
+      },
+      "emitted": {
+        "files": 6,
+        "raw": 50745,
+        "gzip": 18663
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "sss-run",
+      "initial": {
+        "files": 3,
+        "raw": 18363,
+        "gzip": 7275
+      },
+      "emitted": {
+        "files": 6,
+        "raw": 28789,
+        "gzip": 11888
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "sss-run",
+      "initial": {
+        "files": 1,
+        "raw": 17008,
+        "gzip": 7118
+      },
+      "emitted": {
+        "files": 4,
+        "raw": 27069,
+        "gzip": 11617
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "sss-barrel",
+      "initial": {
+        "files": 3,
+        "raw": 18370,
+        "gzip": 7283
+      },
+      "emitted": {
+        "files": 6,
+        "raw": 28811,
+        "gzip": 11900
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "sss-barrel",
+      "initial": {
+        "files": 1,
+        "raw": 17008,
+        "gzip": 7118
+      },
+      "emitted": {
+        "files": 4,
+        "raw": 27069,
+        "gzip": 11617
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "ssao-run",
+      "initial": {
+        "files": 3,
+        "raw": 19745,
+        "gzip": 7631
+      },
+      "emitted": {
+        "files": 6,
+        "raw": 30176,
+        "gzip": 12246
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "ssao-run",
+      "initial": {
+        "files": 1,
+        "raw": 18484,
+        "gzip": 7493
+      },
+      "emitted": {
+        "files": 4,
+        "raw": 28545,
+        "gzip": 11992
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "ssao-barrel",
+      "initial": {
+        "files": 3,
+        "raw": 19752,
+        "gzip": 7635
+      },
+      "emitted": {
+        "files": 6,
+        "raw": 30198,
+        "gzip": 12254
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "ssao-barrel",
+      "initial": {
+        "files": 1,
+        "raw": 18484,
+        "gzip": 7493
+      },
+      "emitted": {
+        "files": 4,
+        "raw": 28545,
+        "gzip": 11992
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "fabric-run",
+      "initial": {
+        "files": 8,
+        "raw": 39208,
+        "gzip": 13656
+      },
+      "emitted": {
+        "files": 14,
+        "raw": 62060,
+        "gzip": 24064
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "fabric-run",
+      "initial": {
+        "files": 1,
+        "raw": 38440,
+        "gzip": 12042
+      },
+      "emitted": {
+        "files": 8,
+        "raw": 61010,
+        "gzip": 22650
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "fabric-barrel",
+      "initial": {
+        "files": 8,
+        "raw": 39238,
+        "gzip": 13665
+      },
+      "emitted": {
+        "files": 14,
+        "raw": 62147,
+        "gzip": 24082
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "fabric-barrel",
+      "initial": {
+        "files": 1,
+        "raw": 38440,
+        "gzip": 12042
+      },
+      "emitted": {
+        "files": 8,
+        "raw": 61010,
+        "gzip": 22650
+      }
+    },
+    {
+      "bundler": "bun",
+      "fixture": "global",
+      "initial": {
+        "files": 1,
+        "raw": 134690,
+        "gzip": 41257
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 134690,
+        "gzip": 41257
+      }
+    },
+    {
+      "bundler": "vite",
+      "fixture": "global",
+      "initial": {
+        "files": 1,
+        "raw": 132631,
+        "gzip": 40999
+      },
+      "emitted": {
+        "files": 1,
+        "raw": 132631,
+        "gzip": 40999
+      }
+    }
+  ]
+}

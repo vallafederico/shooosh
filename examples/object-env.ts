@@ -1,4 +1,6 @@
+import shader, { fragment } from "./object-env.wgsl"
 /**
+ * Copy the sibling .wgsl shader; use shooosh/build in your bundler.
  * Object + env map — createObject cube sampling uEnvMap from loadTexture.
  *
  * How to use:
@@ -6,23 +8,16 @@
  *   createObject(null, {
  *     shape: "cube",
  *     envMap: env.texture, // TextureHandle — or pass the whole loader result
- *     shaders: { fragment }, // sample uEnvMap / uSampler
+ *     shaders: shader, // sample uEnvMap / uSampler
  *   })
  */
 
-import { createObject, createScene, loadTexture } from "shooosh"
+import { createObject, createCanvasScene as createScene, loadTexture } from "shooosh"
 import { makeEnvCanvas } from "./make-texture"
 import type { ExampleHandle, ExampleRunOptions, ExampleSpec } from "./types"
 
-export const fragment = `fn fsMain() -> vec4f {
-  let n = normalize(vNormal);
-  let uv = n.xy * 0.5 + vec2f(0.5);
-  let env = textureSample(uEnvMap, uSampler, uv).rgb;
-  let rim = pow(1.0 - clamp(n.z * 0.5 + 0.5, 0.0, 1.0), 1.6);
-  let ink = vec3f(0.047, 0.047, 0.043);
-  return vec4f(mix(ink, env, 0.85 + rim * 0.15), 1.0);
-}
-`
+export { fragment }
+
 
 export function run(canvas: HTMLCanvasElement, options: ExampleRunOptions = {}): ExampleHandle {
   let object: ReturnType<typeof createObject> | null = null
@@ -42,7 +37,7 @@ export function run(canvas: HTMLCanvasElement, options: ExampleRunOptions = {}):
       shape: "cube",
       placement: { centerX: 0, centerY: 0, scale: 1.4 },
       envMap: env.texture,
-      shaders: { fragment },
+      shaders: shader,
       onFrame(self, frame) {
         const t = frame.now * 0.001
         self.setTransform({

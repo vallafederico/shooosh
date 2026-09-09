@@ -7,7 +7,7 @@ Use this when a site shader must move between the authored language (WGSL) and t
 Prefer the library functions when the source is in the **supported subset**. Use the agent skills for anything the converters reject — then keep the result inside the [shader contract](./shader-contract.md).
 
 ```ts
-import { convertWgslFragmentToGlsl, convertGlslFragmentToWgsl } from "shooosh"
+import { convertWgslFragmentToGlsl, convertGlslFragmentToWgsl } from "shooosh/compiler"
 
 const glsl = convertWgslFragmentToGlsl(wgsl, { includeUv: true })
 const wgslAgain = convertGlslFragmentToWgsl(glsl)

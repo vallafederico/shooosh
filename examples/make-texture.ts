@@ -1,10 +1,11 @@
 /**
+ * Shader data comes from .wgsl build imports; see docs/shader-build.md.
  * Procedural paper canvas for loadTexture demos — no binary assets required.
  *
  * How to use:
  *   await scene.getInitPromise()
  *   const tex = await loadTexture(makePaperCanvas())
- *   scene.configureScreen({ texture: tex, shaders: { fragment } })
+ *   scene.configureScreen({ texture: tex, shaders: shader })
  */
 
 export function makePaperCanvas(size = 512): HTMLCanvasElement {

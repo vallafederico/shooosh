@@ -1,3 +1,5 @@
+declare const __SHOOOSH_GPU__: boolean;
+declare const __SHOOOSH_GL__: boolean;
 /**
  * ObjectManager — mesh draw on both backends. Not a public import.
  *
@@ -23,7 +25,6 @@ import {
   isMvpVisible,
   type ObjectShape,
 } from "./object.utils";
-import { convertWgslFragmentToGlsl } from "../shaders/wgsl-compat";
 import { compileProgramAsync } from "../shaders/compile";
 import { createLazyGpuFactory } from "./pending-attach";
 import { createPrimitiveLifecycle, type PrimitiveLifecycle } from "./primitive-lifecycle";
@@ -93,6 +94,10 @@ export type ObjectOptions = {
   rotationX?: number;
   rotationY?: number;
   rotationZ?: number;
+  /** World-space translation, applied after scale and rotation. */
+  positionX?: number;
+  positionY?: number;
+  positionZ?: number;
   /** When set, object is placed by this instead of a DOM element. Use with createObject(null, options). */
   placement?: ScreenPlacement;
   onFrame?: (
@@ -122,6 +127,9 @@ export class ObjectManager {
     rotationX: 0,
     rotationY: 0,
     rotationZ: 0,
+    positionX: 0,
+    positionY: 0,
+    positionZ: 0,
   };
   private lifecycle: PrimitiveLifecycle<ObjectRenderer>;
 
@@ -133,10 +141,13 @@ export class ObjectManager {
     this.transform.rotationX = options.rotationX ?? 0;
     this.transform.rotationY = options.rotationY ?? 0;
     this.transform.rotationZ = options.rotationZ ?? 0;
+    this.transform.positionX = options.positionX ?? 0;
+    this.transform.positionY = options.positionY ?? 0;
+    this.transform.positionZ = options.positionZ ?? 0;
     this.lifecycle = createPrimitiveLifecycle<ObjectRenderer>({
       layer: options.layer ?? 20,
       createRenderer: (frame) => {
-        if (frame.backend === "webgpu") {
+        if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && frame.backend === "webgpu") {
           const createGpuRenderer = ensureGpuObjectFactory();
           if (!createGpuRenderer) return null;
           return createGpuRenderer(
@@ -146,7 +157,7 @@ export class ObjectManager {
             this.transform,
           );
         }
-        if (frame.gl) {
+        if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) && frame.gl) {
           return createObjectRenderer(
             this.element,
             frame,
@@ -200,6 +211,13 @@ export class ObjectManager {
     ) {
       this.transform.rotationZ = next.rotationZ;
       changed = true;
+    }
+    for (const key of ["positionX", "positionY", "positionZ"] as const) {
+      const value = next[key];
+      if (typeof value === "number" && Number.isFinite(value) && value !== this.transform[key]) {
+        this.transform[key] = value;
+        changed = true;
+      }
     }
     if (changed) getDefaultEngine()?.requestFrame();
   }
@@ -280,20 +298,7 @@ function getShaderSource(options: ObjectOptions) {
   const wgslFragment =
     options.shaders?.fragment ?? options.shaders?.wgsl ?? null;
   if (wgslFragment) {
-    try {
-      return {
-        vertex: getDefaultVertexShader(),
-        fragment: convertWgslFragmentToGlsl(wgslFragment, {
-          includeUv: true,
-          includeNormal: true,
-        }),
-      };
-    } catch (error) {
-      console.warn(
-        "Failed to compile custom WGSL fragment for WebGL, using default shader:",
-        error,
-      );
-    }
+    throw new Error("WebGL2 requires a precompiled fragmentGlsl. Use shooosh/build or explicitly compileShader from shooosh/compiler.");
   }
   if (options.shaders?.vertex) {
     console.warn(
@@ -316,6 +321,9 @@ function createObjectRenderer(
     rotationX: number;
     rotationY: number;
     rotationZ: number;
+    positionX?: number;
+    positionY?: number;
+    positionZ?: number;
   },
 ): ObjectRenderer {
   const gl = frame.gl;

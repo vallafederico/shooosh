@@ -1,3 +1,4 @@
+import type { FullscreenPlaneShaders } from "shooosh"
 /**
  * Experimental, authored single-line canvas input. The browser owns editing;
  * the texture owns visible paint. This deliberately uses internal item/texture
@@ -11,7 +12,7 @@ import { getGpuInternals } from "../package/src/engine/gpu-internals"
 import type { GpuTexture } from "../package/src/engine/gpu-api"
 
 export function mountCanvasInput(input: HTMLInputElement, root: HTMLElement, engine: WebGLEngine,
-  fragment: string, initialMix: number) {
+  shaders: FullscreenPlaneShaders, initialMix: number) {
   const field = input.parentElement!
   const bitmap = document.createElement("canvas")
   const ctx = bitmap.getContext("2d")!
@@ -143,7 +144,7 @@ export function mountCanvasInput(input: HTMLInputElement, root: HTMLElement, eng
         }
       }
       if (texture && !item && !composing && texture.width === width && texture.height === height) {
-        item = new ItemManager(field, { shaders: { fragment }, texture, layer: 100, uni: { value1: mix } }, {
+        item = new ItemManager(field, { shaders, texture, layer: 100, uni: { value1: mix } }, {
           engine,
           geometry: out => clipGeometry(visible ? snapshot : { rect: snapshot.rect, clip: { left: 0, top: 0, width: 0, height: 0 } }, canvasRect, out),
           uv: () => ({ scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 }),

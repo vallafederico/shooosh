@@ -1,3 +1,5 @@
+declare const __SHOOOSH_GPU__: boolean;
+declare const __SHOOOSH_GL__: boolean;
 /**
  * ParticlesManager — dot cloud on both backends. Not a public import.
  *
@@ -76,7 +78,7 @@ export class ParticlesManager {
     this.lifecycle = createPrimitiveLifecycle<ParticlesRenderer>({
       layer: this.options.layer ?? 10,
       createRenderer: (frame) => {
-        if (frame.backend === "webgpu") {
+        if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && frame.backend === "webgpu") {
           const createGpuRenderer = ensureGpuParticlesFactory();
           if (!createGpuRenderer) return null;
           this.gpuRenderer = createGpuRenderer(this.options);
@@ -88,7 +90,7 @@ export class ParticlesManager {
             },
           };
         }
-        if (!frame.gl) return null;
+        if (!(typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) || !frame.gl) return null;
         this._setupGl(frame.gl);
         return {
           render: (nextFrame) => this._renderGl(nextFrame),
@@ -121,6 +123,7 @@ export class ParticlesManager {
   }
 
   private _setupGl(gl: WebGL2RenderingContext) {
+    if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__)) {
     const vao = gl.createVertexArray();
     const vbo = gl.createBuffer();
     if (!vao || !vbo) throw new Error("Failed to create WebGL buffers for particles.");
@@ -135,9 +138,11 @@ export class ParticlesManager {
     gl.bindVertexArray(null);
 
     this.asyncProgram = compileProgramAsync(gl, VERTEX_SRC, FRAGMENT_SRC, "particles");
+    }
   }
 
   private _destroyGl() {
+    if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__)) {
     const gl = this.gl;
     if (gl) {
       if (this.vao) gl.deleteVertexArray(this.vao);
@@ -149,9 +154,11 @@ export class ParticlesManager {
     this.vao = null;
     this.vbo = null;
     this.gl = null;
+    }
   }
 
   private _renderGl(frame: EngineFrame) {
+    if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__)) {
     const gl = frame.gl;
     if (!gl || this.gl !== gl) return;
 
@@ -192,5 +199,6 @@ export class ParticlesManager {
 
     gl.disable(gl.BLEND);
     gl.enable(gl.DEPTH_TEST);
+    }
   }
 }

@@ -1,3 +1,4 @@
+import shader, { fragment } from "./dom-integration.wgsl"
 /**
  * DOM integration lab. Copy run(root), or just createDomLayer + media below.
  * Uses the optional shooosh/dom entry; no global engine or page style changes.
@@ -16,16 +17,8 @@ const heartIcon = icon('<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5
 const arrowIcon = icon('<path d="M4 12h16m-6-6 6 6-6 6"/>')
 const resetIcon = icon('<path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/>')
 
-export const fragment = `fn fsMain() -> vec4f {
-  let uv = fitUv(vUv);
-  let color = textureSample(uTexture, uSampler, uv);
-  let luminance: f32 = dot(color.rgb, vec3f(0.2126, 0.7152, 0.0722));
-  let ink = vec3f(0.24, 0.29, 0.19);
-  let paper = vec3f(0.95, 0.93, 0.75);
-  let tone = mix(ink, paper, luminance);
-  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return vec4f(0.0); }
-  return vec4f(mix(color.rgb, tone * color.a, uUni.values0.x), color.a);
-}`
+export { fragment }
+
 
 export function run(host: HTMLElement, options: ExampleRunOptions = {}): ExampleHandle {
   const shell = document.createElement("section")
@@ -113,8 +106,8 @@ export function run(host: HTMLElement, options: ExampleRunOptions = {}): Example
       onError: ({ error }) => { if (!disposed && token === generation) checks.textContent = `Native fallback: ${error instanceof Error ? error.message : String(error)}` } })
     if (disposed || token !== generation) { next?.destroy(); nextCanvas.remove(); return null }
     dom = next
-    if (dom) bindings = images.map(img => dom!.media(img, { shaders: { fragment }, uni: { value1: Number(mix.value) } }))
-    if (dom) canvasInput = mountCanvasInput(query<HTMLInputElement>("[data-title-input]"), content, dom.engine, fragment, Number(mix.value))
+    if (dom) bindings = images.map(img => dom!.media(img, { shaders: shader, uni: { value1: Number(mix.value) } }))
+    if (dom) canvasInput = mountCanvasInput(query<HTMLInputElement>("[data-title-input]"), content, dom.engine, shader, Number(mix.value))
     refresh()
     return dom?.engine.backend ?? null
   }

@@ -1,5 +1,8 @@
 # Site patterns
 
+
+**Unreleased shader migration:** WebGL2 now requires prepared `fragmentGlsl`. Use the [build-time shader pipeline](./shader-build.md) for compiler-free output, or import `compileShader` from `shooosh/compiler` and pass `shaders: compileShader(wgsl)` for inline strings. Older raw-WGSL snippets below require this adjustment for dual-backend use.
+
 [Documentation](./README.md)
 
 How we actually use this engine on marketing and product sites. Source of the recipes: **aiuis** (`@ssscript/webgl` — `Canvas`, `GlItem`, `SdfImage`, `MsdfText`, `MouseDistortion`, `ParticleGrid`), plus Webflow IIFE embeds and slider sync (smooothy).

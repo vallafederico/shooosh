@@ -1,4 +1,6 @@
+import shader from "./pbr.wgsl"
 /**
+ * Shader data comes from .wgsl build imports; see docs/shader-build.md.
  * PBR pipeline — three createObject rounded boxes sharing pbr-shaders.ts.
  *
  * How to use:
@@ -7,7 +9,7 @@
  *   createObject(null, {
  *     shape: { type: "roundedBox", … },
  *     envMap: env.texture,
- *     shaders: { fragment: pbrFragment },
+ *     shaders: shader,
  *     onFrame(self, frame) {
  *       self.setUni({ value1: t, value2: metal, value3: rough, value5, value6, value7 })
  *       self.setTransform({ rotationY: … })
@@ -17,7 +19,7 @@
  * Slots left → right: painted dielectric, brushed metal, chrome / acid metal.
  */
 
-import { createObject, createScene, loadTexture } from "shooosh"
+import { createObject, createCanvasScene as createScene, loadTexture } from "shooosh"
 import { makeEnvCanvas } from "./make-texture"
 import { pbrFragment } from "./pbr-shaders"
 import type { ExampleHandle, ExampleRunOptions, ExampleSpec } from "./types"
@@ -68,7 +70,7 @@ export function run(canvas: HTMLCanvasElement, options: ExampleRunOptions = {}):
           shape: SHAPE,
           placement: { centerX: mat.centerX, centerY: 0.02, scale: 1.15 },
           envMap: env.texture,
-          shaders: { fragment: pbrFragment },
+          shaders: shader,
           onFrame(self, frame) {
             const t = frame.now * 0.001
             self.setTransform({

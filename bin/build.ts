@@ -12,21 +12,32 @@
  * CJS and IIFE stay single-file — they inline every dynamic import.
  */
 
-import type { BuildConfig } from "bun"
+import type { BuildConfig, BunPlugin } from "bun"
 import { build } from "bun"
 import dts from "bun-plugin-dts"
 import { spawn } from "bun"
 import { rm } from "node:fs/promises"
+import { shaderModule } from "../package/build/index"
+
+function builtinShaders(backend: "both" | "webgl2" | "webgpu"): BunPlugin {
+  return { name: "builtin-shader-target", setup(builder) {
+    builder.onLoad({ filter: /dom\/image-shader\.ts$/ }, async () => ({
+      contents: shaderModule(await Bun.file("package/dom/image.wgsl").text(), { backend, minify: true }), loader: "ts",
+    }))
+  } }
+}
 
 const option: BuildConfig = {
-  entrypoints: ["./package/index.ts", "./package/dom/index.ts", "./package/utility/index.ts"],
+  entrypoints: ["./package/index.ts", "./package/dom/index.ts", "./package/utility/index.ts", "./package/utils/index.ts", "./package/compiler/index.ts"],
   outdir: "./dist",
+  target: "browser",
+  define: { __SHOOOSH_GPU__: "true", __SHOOOSH_GL__: "true" },
   minify: true,
   // This is a library build: preserve purity for the consumer's second bundle.
   // Whitespace minification otherwise strips these annotations.
   emitDCEAnnotations: true,
   sourcemap: "external",
-  plugins: [dts()],
+  plugins: [builtinShaders("both"), dts()],
 }
 
 async function run() {
@@ -44,6 +55,15 @@ async function run() {
           asset: "chunks/[name]-[hash].[ext]",
         },
       }),
+      ...(["webgl2", "webgpu"] as const).flatMap(backend => (["esm", "cjs"] as const).map(format => build({
+        ...option,
+        entrypoints: ["./package/index.ts", "./package/dom/index.ts"],
+        outdir: `./dist/${backend}`,
+        plugins: [builtinShaders(backend)],
+        define: { __SHOOOSH_GPU__: String(backend === "webgpu"), __SHOOOSH_GL__: String(backend === "webgl2") },
+        format, splitting: format === "esm",
+        naming: { entry: `[dir]/${format}.js`, chunk: "chunks/[name]-[hash].[ext]" },
+      }))),
       build({
         ...option,
         format: "cjs",
@@ -55,9 +75,14 @@ async function run() {
         format: "iife",
         naming: "shooosh.min.js",
         target: "browser",
+        define: { __SHOOOSH_GPU__: "true", __SHOOOSH_GL__: "true" },
         minify: true,
         sourcemap: "none",
       }),
+      ...(["esm", "cjs"] as const).map(format => build({
+        entrypoints: ["./package/build/index.ts"], outdir: "./dist/build", target: "node",
+        format, naming: format === "esm" ? "esm.js" : "cjs.js", minify: true, plugins: [dts()],
+      })),
       build({
         entrypoints: ["./package/msdf/index.ts"],
         outdir: "./dist/msdf",
@@ -70,7 +95,7 @@ async function run() {
       }),
     ])
 
-    for (const cmd of [["bun", "run", "bin/test-build.ts"], ["bun", "run", "bin/test-tree-shaking.ts"], ["bun", "run", "test:examples"]]) {
+    for (const cmd of [["bun", "run", "bin/example-shaders.ts", "--check"], ["bun", "run", "bin/test-build.ts"], ["bun", "run", "bin/test-backends.ts"], ["bun", "run", "bin/test-tree-shaking.ts"], ["bun", "run", "test:examples"]]) {
       const testProcess = spawn({ cmd, stdout: "inherit", stderr: "inherit" })
       if (await testProcess.exited !== 0) {
         console.error(`\nBuild verification failed: ${cmd.join(" ")}`)

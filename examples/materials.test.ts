@@ -1,9 +1,10 @@
+import { shoooshShaders, shoooshBunShaders } from "../package/build/index"
 import { gzipSync } from "node:zlib"
 import { test, expect } from "bun:test"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { resolve } from "node:path"
-import { convertWgslFragmentToGlsl } from "../package/index"
+import { convertWgslFragmentToGlsl } from "../package/compiler/index"
 import { diffuseFragment, sheenFragment, fragment } from "./fabric-sheen"
 
 for (const [name, shader] of Object.entries({ diffuseFragment, sheenFragment, fragment })) {
@@ -25,9 +26,9 @@ test("Bun and Vite eliminate unselected material lobes and renderers", async () 
         ${symbol === "sheenFragment" ? `import {sheenWgsl} from ${sheenPath};` : ""}
         globalThis.material = ${symbol === "sheenFragment" ? 'composeFabric(sheenWgsl, "base + fabricSheen(n,l,v,rough) * uUni.values0.y")' : 'composeFabric()'};`)
 
-      const bun = await Bun.build({ entrypoints: [entry], target: "browser", minify: true, splitting: true })
+      const bun = await Bun.build({ entrypoints: [entry], target: "browser", plugins: [shoooshBunShaders()], minify: true, splitting: true })
       expect(bun.success).toBe(true)
-      const vite = await build({ configFile: false, root: folder, logLevel: "silent", build: {
+      const vite = await build({ configFile: false, plugins: [shoooshShaders()], root: folder, logLevel: "silent", build: {
         write: false, target: "esnext", rollupOptions: { input: entry },
       } })
       if (Array.isArray(vite) || !("output" in vite)) throw new Error("Unexpected Vite output")

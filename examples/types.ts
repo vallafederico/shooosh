@@ -1,3 +1,4 @@
+/// <reference path="./shaders.d.ts" />
 /**
  * One runnable example: a WGSL fragment plus a `run` that uses shooosh.
  *
@@ -34,7 +35,7 @@ export type ExampleSpec = {
     | "msdf-text"
     | "dom-integration"
   /** Post chain the example builds. Runs on both backends. */
-  post?: "grain-bloom"
+  post?: "grain-bloom" | "fxaa"
   /** Pointer drives value2 / value3 (0..1, top-origin — same as vUv). */
   pointer?: boolean
   run: (target: HTMLElement, options?: ExampleRunOptions) => ExampleHandle

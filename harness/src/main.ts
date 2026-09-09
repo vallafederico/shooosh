@@ -1,13 +1,16 @@
 import { demos } from "./demos"
 import { mountBackendToggle, setBackendLabel } from "./backend"
 
-const nav = document.querySelector<HTMLElement>("#nav")
-const stage = document.querySelector<HTMLElement>("#stage")
+const navElement = document.querySelector<HTMLElement>("#nav")
+const stageElement = document.querySelector<HTMLElement>("#stage")
 const toggleHost = document.querySelector<HTMLElement>("#backend-toggle")
 
-if (!nav || !stage || !toggleHost) {
+if (!navElement || !stageElement || !toggleHost) {
   throw new Error("Harness markup is missing #nav, #stage, or #backend-toggle")
 }
+
+const nav = navElement
+const stage = stageElement
 
 const params = new URLSearchParams(location.search)
 const initial = params.get("demo") ?? demos[0]?.id ?? "gradient"

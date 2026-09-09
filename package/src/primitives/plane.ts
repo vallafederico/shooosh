@@ -1,3 +1,5 @@
+declare const __SHOOOSH_GPU__: boolean;
+declare const __SHOOOSH_GL__: boolean;
 /**
  * Fullscreen / item plane (WebGL2 compile + GPU dispatch).
  *
@@ -15,7 +17,6 @@ import {
   type UniWatchController,
 } from "../engine/uni";
 import { resolveTextureUvTransform, textureFitToUni, type TextureFitMode } from "../loaders/texture-loader";
-import { convertWgslFragmentToGlsl } from "../shaders/wgsl-compat";
 import { compileProgramAsync } from "../shaders/compile";
 import { createLazyGpuFactory, createPendingAttachQueue } from "./pending-attach";
 
@@ -70,6 +71,8 @@ export type FullscreenPlaneInitOptions = {
 };
 
 export type FullscreenPlaneShaders = {
+  /** Precompiled GLSL variant for WebGL2. Use shooosh/build or shooosh/compiler. */
+  fragmentGlsl?: string;
   wgsl?: string;
   vertex?: string;
   fragment?: string;
@@ -249,6 +252,7 @@ export function resolveGlslShaderSource(options: {
   hasTexture?: boolean;
   kind?: "screen" | "item";
 }) {
+  if (options.shaders?.fragmentGlsl) return { vertex: getDefaultGlslVertexShader(), fragment: options.shaders.fragmentGlsl };
   const wgslFragment =
     options.shaders?.fragment ??
     options.shaders?.wgsl ??
@@ -261,17 +265,7 @@ export function resolveGlslShaderSource(options: {
         fragment: wgslFragment,
       };
     }
-    try {
-      return {
-        vertex: getDefaultGlslVertexShader(),
-        fragment: convertWgslFragmentToGlsl(wgslFragment, { includeUv: true }),
-      };
-    } catch (error) {
-      console.warn(
-        "Failed to compile custom WGSL fragment for WebGL, using default shader:",
-        error,
-      );
-    }
+    throw new Error("WebGL2 requires a precompiled fragmentGlsl. Use shooosh/build or explicitly compileShader from shooosh/compiler.");
   }
   if (options.shaders?.vertex) {
     console.warn("Custom WGSL vertex shaders are not supported on the WebGL runtime.");
@@ -456,11 +450,11 @@ export function initFullscreenPlane(
   const renderFromFrame = (frame: EngineFrame) => {
     if (destroyed) return;
     if (!renderer) {
-      if (frame.backend === "webgpu") {
+      if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && frame.backend === "webgpu") {
         const createGpuRenderer = ensureGpuPlaneFactory();
         if (!createGpuRenderer) return;
         renderer = createGpuRenderer(config, uni);
-      } else if (frame.gl) {
+      } else if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) && frame.gl) {
         renderer = createFullscreenPlaneRenderer(
           { canvas: frame.canvas, gl: frame.gl },
           config,
@@ -502,6 +496,10 @@ export function initFullscreenPlane(
       getDefaultEngine()?.render();
     },
     configure(next) {
+      // Reject missing artifacts before touching the last working renderer.
+      if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) && next.shaders && getDefaultEngine()?.backend === "webgl2") {
+        resolveGlslShaderSource({ debugUv: false, shaders: next.shaders });
+      }
       const previous = config;
       config = {
         ...config,

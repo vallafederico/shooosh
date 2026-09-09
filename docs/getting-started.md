@@ -1,5 +1,8 @@
 # Getting started
 
+
+**Unreleased shader migration:** WebGL2 now requires prepared `fragmentGlsl`. Use the [build-time shader pipeline](./shader-build.md) for compiler-free output, or import `compileShader` from `shooosh/compiler` and pass `shaders: compileShader(wgsl)` for inline strings.
+
 [Documentation](./README.md)
 
 ```shell
@@ -18,19 +21,18 @@ Dedicated `<canvas>` — fullscreen shader, section hero, or a Solid/React app s
 
 ```js
 import { createScene } from "shooosh"
+import { compileShader } from "shooosh/compiler"
 
 const scene = createScene(canvas, {
   autoInit: false,
   dpr: { max: 1.5 },
   screen: {
-    shaders: {
-      fragment: `
+    shaders: compileShader(`
 fn fsMain() -> vec4f {
   let t = uUni.values0.x;
   return vec4f(vUv, 0.5 + 0.5 * sin(t), 1.0);
 }
-`,
-    },
+`),
     onFrame(self, frame) {
       self.setUni({ value1: frame.now * 0.001 })
     },
@@ -47,13 +49,14 @@ Shared refcounted canvas. DOM nodes become GPU quads.
 
 ```js
 import { acquireLayer, createItem, releaseLayer } from "shooosh"
+import { compileShader } from "shooosh/compiler"
 
 export async function mountCard(element, wgsl) {
   const engine = await acquireLayer()
   if (!engine) return // no GPU — leave the page readable
 
   const item = createItem(element, {
-    shaders: { fragment: wgsl },
+    shaders: compileShader(wgsl),
     onFrame(self, frame) {
       self.setUni({ value1: frame.now * 0.001 })
     },

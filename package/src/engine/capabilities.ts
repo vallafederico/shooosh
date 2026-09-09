@@ -1,3 +1,5 @@
+declare const __SHOOOSH_GPU__: boolean;
+declare const __SHOOOSH_GL__: boolean;
 /**
  * probeRenderer — which GPU can this page use?
  *
@@ -61,14 +63,18 @@ async function canCreateWebGpu() {
 export async function probeRenderer(
   options: ProbeRendererOptions = {},
 ): Promise<RendererKind | null> {
-  const prefer = options.backend ?? "auto";
-  if (prefer === "webgpu") {
+  const requested = options.backend ?? "auto";
+  if ((!(typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && requested === "webgpu") || (!(typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) && requested === "webgl2")) {
+    throw new Error(`Backend ${requested} is excluded from this shooosh build.`);
+  }
+  const prefer = requested;
+  if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && prefer === "webgpu") {
     return (await canCreateWebGpu()) ? "webgpu" : null;
   }
-  if (prefer === "webgl2") {
+  if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) && prefer === "webgl2") {
     return canCreateWebGl2() ? "webgl2" : null;
   }
-  if (await canCreateWebGpu()) return "webgpu";
-  if (canCreateWebGl2()) return "webgl2";
+  if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && await canCreateWebGpu()) return "webgpu";
+  if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) && canCreateWebGl2()) return "webgl2";
   return null;
 }

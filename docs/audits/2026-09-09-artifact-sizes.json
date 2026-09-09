@@ -1,0 +1,42 @@
+{
+  "entries": [
+    {
+      "path": "dist/esm.js",
+      "rawBytes": 52027,
+      "gzipBytes": 16224
+    },
+    {
+      "path": "dist/cjs.js",
+      "rawBytes": 142817,
+      "gzipBytes": 43678
+    },
+    {
+      "path": "dist/shooosh.min.js",
+      "rawBytes": 141778,
+      "gzipBytes": 43437
+    },
+    {
+      "path": "dist/dom/esm.js",
+      "rawBytes": 13797,
+      "gzipBytes": 5408
+    },
+    {
+      "path": "dist/utils/esm.js",
+      "rawBytes": 1092,
+      "gzipBytes": 554
+    },
+    {
+      "path": "dist/utils/cjs.js",
+      "rawBytes": 1683,
+      "gzipBytes": 871
+    }
+  ],
+  "tarball": {
+    "packedBytes": 611255,
+    "unpackedBytes": 2210424,
+    "sourceMapBytes": 1432966,
+    "files": 129,
+    "runtimeDependencies": {},
+    "rapierFiles": []
+  }
+}

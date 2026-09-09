@@ -43,6 +43,10 @@ export class WebglObject {
     rotationX?: number;
     rotationY?: number;
     rotationZ?: number;
+    /** World-space translation, applied after scale and rotation. */
+    positionX?: number;
+    positionY?: number;
+    positionZ?: number;
   }) {
     this.manager.setTransform(next);
   }

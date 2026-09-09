@@ -1,3 +1,4 @@
+declare const __SHOOOSH_GPU__: boolean;
 /**
  * createCompute — WebGPU compute session on an engine.
  *
@@ -119,6 +120,11 @@ export function createCompute(
   engine: WebGLEngine,
   options: CreateComputeOptions = {},
 ): ComputeSession | null {
+  if (!(typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__)) {
+    console.warn("shooosh: compute is excluded from the WebGL2 build.");
+    return null;
+  }
+  if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__)) {
   const internals = getGpuInternals(engine);
   if (!internals) {
     console.warn("shooosh: createCompute requires the WebGPU engine.");
@@ -348,4 +354,6 @@ export function createCompute(
 
   engine.requestFrame();
   return session;
+  }
+  return null;
 }

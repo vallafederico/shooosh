@@ -40,6 +40,8 @@ export {
 } from "./src/engine/capabilities";
 export type { UniValues } from "./src/engine/uni";
 
+export { CanvasScene, createCanvasScene, type CanvasSceneOptions } from "./src/scene/canvas-scene";
+
 // Scene (declarative entry)
 export { Scene, createScene, type SceneOptions } from "./src/scene/scene";
 export { parseSceneDataset } from "./src/scene/dataset";
@@ -111,8 +113,6 @@ export {
   type TextureUvTransform,
 } from "./src/loaders/texture-loader";
 export { loadGlb, type GlbMesh } from "./src/loaders/glb-loader";
-export { convertWgslFragmentToGlsl } from "./src/shaders/wgsl-compat";
-export { convertGlslFragmentToWgsl } from "./src/shaders/glsl-compat";
 
 // Input helpers
 export {

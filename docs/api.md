@@ -1,5 +1,8 @@
 # Public API
 
+
+**Unreleased shader migration:** WebGL2 now requires prepared `fragmentGlsl`. Use the [build-time shader pipeline](./shader-build.md) for compiler-free output, or import `compileShader` from `shooosh/compiler` and pass `shaders: compileShader(wgsl)` for inline strings.
+
 [Documentation](./README.md)
 
 Source of truth: [`package/index.ts`](../package/index.ts). This page is the human/agent summary after the WebGPU renderer.
@@ -46,13 +49,22 @@ engine.onRender((frame) => {
 
 Settle window: the loop stays hot for 250ms after the last dirty mark (scroll, pointer, `setUni`, `setTransform`, `requestFrame`).
 
+## Lightweight canvas scene
+
+`createCanvasScene(canvas, options)` owns an engine and optional screen without
+full-scene conveniences. `scene.retain(resource)` transfers cleanup ownership.
+Use standalone `createItem`, `createObject`, `createPostProcessor` and `loadTexture`
+only when needed. Full `createScene` remains compatible. See [bundle setups](./bundle-setup.md).
+
 ## Scene / layer / item
 
 ```ts
+import { compileShader } from "shooosh/compiler"
+
 const scene = createScene(canvas, {
   backend: "auto",
   screen: {
-    shaders: { fragment: wgsl },
+    shaders: compileShader(wgsl),
     onFrame(self, frame) {
       self.setUni({ value1: frame.now * 0.001 })
     },
@@ -61,7 +73,7 @@ const scene = createScene(canvas, {
 
 const engine = await acquireLayer({ backend: "auto" })
 if (!engine) return
-const item = createItem(element, { shaders: { fragment: wgsl } })
+const item = createItem(element, { shaders: compileShader(wgsl) })
 // teardown:
 item.destroy()
 releaseLayer()
@@ -74,6 +86,8 @@ Scroll-tracked planes: see [`examples/scroll-cards.ts`](../examples/scroll-cards
 Author WGSL `fn fsMain`. See [shader-contract.md](./shader-contract.md).
 
 ```ts
+import { convertWgslFragmentToGlsl, convertGlslFragmentToWgsl } from "shooosh/compiler"
+
 convertWgslFragmentToGlsl(wgsl, { includeUv: true }) // WebGL fallback
 convertGlslFragmentToWgsl(glsl)                     // port an escape-hatch shader
 ```
@@ -150,3 +164,16 @@ Full flags and defaults: [msdf.md](./msdf.md).
 | `ShaderCompileError` | Program compile/link failed (WebGL helper) |
 
 Failed shader compile must not unmount the canvas.
+
+
+### Object world translation (unreleased)
+
+`createObject` options and `object.setTransform` accept `positionX`, `positionY`
+and `positionZ`, defaulting to zero. These are world-space coordinates applied
+after scale and rotation (`T × Rz × Ry × Rx × S`), before the camera projection,
+on WebGL2 and WebGPU. They differ from the NDC `placement.centerX/centerY` offsets.
+Changed position setters request a frame; non-finite setter values are ignored.
+See the [Rapier 3D recipe](../examples/physics.md) for body/quaternion mapping.
+
+Optional quaternion/pose helpers live in [`shooosh/utils`](./utils.md), imported
+explicitly; the root and DOM renderer do not depend on them.

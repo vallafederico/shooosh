@@ -1,3 +1,5 @@
+declare const __SHOOOSH_GPU__: boolean;
+declare const __SHOOOSH_GL__: boolean;
 /**
  * loadTexture — image → GPU texture for createItem / createScreen / MSDF.
  *
@@ -309,10 +311,10 @@ export class TextureLoader {
 
     let upload: TextureUpload;
     try {
-    if (webglController.backend === "webgpu") {
+    if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && webglController.backend === "webgpu") {
       const { uploadWebGpuTexture } = await import("./texture-upload-webgpu");
       upload = uploadWebGpuTexture(webglController, bitmap, options);
-    } else {
+    } else if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__)) {
       const gl = webglController.gl;
       if (!gl) {
         throw new Error(
@@ -321,7 +323,7 @@ export class TextureLoader {
       }
       const { uploadWebGl2Texture } = await import("./texture-upload-webgl2");
       upload = uploadWebGl2Texture(gl, bitmap, options);
-    }
+    } else { throw new Error("Texture backend is excluded from this build."); }
 
     } finally {
       // Uploads copy synchronously; release even when import/upload fails.

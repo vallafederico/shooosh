@@ -1,27 +1,20 @@
+import shader, { fragment } from "./object-mesh.wgsl"
 /**
+ * Copy the sibling .wgsl shader; use shooosh/build in your bundler.
  * Custom mesh — loadGlb-shaped geometry via shape: { type: "custom" }.
  *
  * How to use with a real file:
  *   const [mesh] = await loadGlb("/models/thing.glb")
- *   createObject(null, { shape: { type: "custom", ...mesh }, shaders: { fragment } })
+ *   createObject(null, { shape: { type: "custom", ...mesh }, shaders: shader })
  *
  * This demo builds a small icosahedron in-memory (no binary asset in the repo).
  */
 
-import { createObject, createScene } from "shooosh"
+import { createObject, createCanvasScene as createScene } from "shooosh"
 import type { ExampleHandle, ExampleRunOptions, ExampleSpec } from "./types"
 
-export const fragment = `fn fsMain() -> vec4f {
-  let n = normalize(vNormal);
-  let light = normalize(vec3f(-0.2, 0.8, 0.5));
-  let ndl = clamp(dot(n, light), 0.0, 1.0);
-  let ink = vec3f(0.047, 0.047, 0.043);
-  let acid = vec3f(0.847, 1.0, 0.243);
-  let paper = vec3f(0.925, 0.906, 0.863);
-  let color = mix(mix(ink, paper, 0.2), acid, ndl);
-  return vec4f(color, 1.0);
-}
-`
+export { fragment }
+
 
 /** Unit icosahedron: interleaved pos3 + nrm3 (stride 6). */
 function makeIcosahedron(): {
@@ -110,7 +103,7 @@ export function run(canvas: HTMLCanvasElement, options: ExampleRunOptions = {}):
     object = createObject(null, {
       shape: { type: "custom", ...mesh },
       placement: { centerX: 0, centerY: 0, scale: 1.5 },
-      shaders: { fragment },
+      shaders: shader,
       onFrame(self, frame) {
         const t = frame.now * 0.001
         self.setTransform({

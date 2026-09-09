@@ -1,0 +1,234 @@
+{
+  "capturedAt": "2026-09-09T11:02:10.076Z",
+  "oglVersion": "1.0.11",
+  "oglIntegrity": "sha512-kUpC154AFfxi16pmZUK4jk3J+8zxwTWGPo03EoYA8QPbzikHoaC82n6pNTbd+oEaJonaE8aPWBlX7ad9zrqLsA==",
+  "bunVersion": "1.4.0",
+  "viteVersion": "7.3.6",
+  "method": "Published ESM imports; browser target; minification; one complete JS file; gzip level 9. API fixtures retain callable exports, app fixtures retain full mounts.",
+  "results": [
+    {
+      "fixture": "engine",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 11865,
+      "gzip": 3520
+    },
+    {
+      "fixture": "engine",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 11465,
+      "gzip": 3488
+    },
+    {
+      "fixture": "engine",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 8070,
+      "gzip": 3244
+    },
+    {
+      "fixture": "engine",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 8532,
+      "gzip": 3502
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 44994,
+      "gzip": 12779
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 44163,
+      "gzip": 12758
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 18834,
+      "gzip": 7233
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 19123,
+      "gzip": 7509
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 44994,
+      "gzip": 12779
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 44163,
+      "gzip": 12758
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 20725,
+      "gzip": 7762
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 20993,
+      "gzip": 8040
+    },
+    {
+      "fixture": "box-api",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 49545,
+      "gzip": 14147
+    },
+    {
+      "fixture": "box-api",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 48703,
+      "gzip": 14116
+    },
+    {
+      "fixture": "box-api",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 23110,
+      "gzip": 8602
+    },
+    {
+      "fixture": "box-api",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 23256,
+      "gzip": 8875
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 45898,
+      "gzip": 13177
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 45078,
+      "gzip": 13164
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 21093,
+      "gzip": 7852
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 21362,
+      "gzip": 8129
+    },
+    {
+      "fixture": "all-exports",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 135079,
+      "gzip": 39310
+    },
+    {
+      "fixture": "all-exports",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 133249,
+      "gzip": 39257
+    },
+    {
+      "fixture": "all-exports",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 85856,
+      "gzip": 26081
+    },
+    {
+      "fixture": "all-exports",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 84949,
+      "gzip": 26299
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 45898,
+      "gzip": 13177
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 45078,
+      "gzip": 13164
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 33516,
+      "gzip": 11987
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 33364,
+      "gzip": 12146
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 135079,
+      "gzip": 39310
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 133249,
+      "gzip": 39257
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 134634,
+      "gzip": 41152
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 133741,
+      "gzip": 41218
+    }
+  ]
+}

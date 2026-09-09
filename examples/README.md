@@ -1,5 +1,10 @@
 # Examples
 
+
+**Unreleased shader setup:** copy the recipe's `.wgsl` imports and enable
+`shoooshShaders` from `shooosh/build`. Live examples use prepared shader data and
+`createCanvasScene` where appropriate. See [bundle setups](../docs/bundle-setup.md).
+
 Each file **uses shooosh** for a common shader look — `createScene`, `createItem`, `createPostProcessor`, `createCompute`, `createMouseMonad`. Looks and recipes live here (shaders + loops), not as package presets.
 
 Start with the [agent copy guide](./agent-guide.md): exact files to copy, mount targets,
@@ -27,6 +32,9 @@ bundle and runtime checks but are not marked production-ready.
 | [textured-plane.ts](./textured-plane.ts) | `createScene` + `loadTexture` | Procedural atlas; sample `fitUv(vUv)` |
 | [textured-item.ts](./textured-item.ts) | `acquireLayer` + `createItem` + `loadTexture` | Shared texture on DOM cards (`fitUv`) |
 | [dom-integration.ts](./dom-integration.ts) | `shooosh/dom` · `createDomLayer` + `media` | Interactive lab: native/GPU comparison, image shaders, nested clipping, fallback and lifecycle checks |
+| [physics-3d.ts](./physics-3d.ts) | Rapier 3D + `createObject` | Tumbling cubes, tray collisions and torque; full 3D transforms ([guide](./physics.md)) |
+| [physics-pile.ts](./physics-pile.ts) | Rapier 2D + `createObject` | Falling blocks, collisions, sleeping and impulses ([guide](./physics.md)) |
+| [physics-pendulum.ts](./physics-pendulum.ts) | Rapier 2D + `createObject` | Four revolute joints, damping and impulses ([guide](./physics.md)) |
 | [object-spin.ts](./object-spin.ts) | `createObject` | Rounded box + lit WGSL, spinning |
 | [object-env.ts](./object-env.ts) | `createObject` + `loadTexture(..., { flipY: false })` | Cube sampling `uEnvMap` |
 | [fabric-sheen.ts](./fabric-sheen.ts) **WIP** | `createObject` + independent WGSL material helpers | Static diffuse/sheen/coat comparison; [controls and copy guide](./fabric-sheen.md) |
@@ -133,3 +141,8 @@ Docs: [shader contract](../docs/shader-contract.md) · [site patterns](../docs/s
 Run only the three WIP runtime scenarios with `/perf.html?backend=webgpu&scenario=wip`
 (or `backend=webgl2`). An undisturbed WIP idle scenario now fails if it continues
 rendering after warm-up. These labels do not exempt the demos from bundle budgets.
+
+Performance audit: `/perf.html?backend=webgpu&scenario=physics` checks the three
+physics recipes while active, paused and asleep. `scenario=baseline` covers the
+existing engine/DOM/input paths. Repeat with `backend=webgl2`; see the
+[measured audit](../docs/audits/2026-09-09-physics-utils-performance.md).

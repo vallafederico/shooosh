@@ -53,6 +53,9 @@ type ObjectTransform = {
   rotationX: number;
   rotationY: number;
   rotationZ: number;
+  positionX?: number;
+  positionY?: number;
+  positionZ?: number;
 };
 
 /** mvp (16) + model (16) + values0..3 (16) floats. */
@@ -126,7 +129,7 @@ function resolveObjectFragment(options: ObjectOptions) {
   if (options.shaders?.vertex) {
     console.warn("shooosh: custom vertex shaders are not supported by createObject.");
   }
-  if (options.shaders?.fragmentGlsl) {
+  if (options.shaders?.fragmentGlsl && !options.shaders.fragment && !options.shaders.wgsl) {
     console.warn(
       "shooosh: `shaders.fragmentGlsl` is a WebGL2 escape hatch; the WebGPU object falls back to the default material.",
     );

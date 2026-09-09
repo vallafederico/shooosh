@@ -1,10 +1,11 @@
 /**
+ * Shader data comes from .wgsl build imports; see docs/shader-build.md.
  * Browser SDF helpers for demos — same encoding as shooosh/msdf (0.5 edge, >0.5 inside).
  *
  * How to use (icons):
  *   const canvas = makeIconSdfCanvas("mark")
  *   const tex = await loadTexture(canvas)
- *   createItem(el, { texture: tex, shaders: { fragment: sdfIconFragment } })
+ *   createItem(el, { texture: tex, shaders: shader })
  *
  * How to use (text):
  *   const atlas = makeDemoFontAtlas("shooosh")

@@ -9,7 +9,7 @@
  * WebGL2 draws POINTS; WebGPU draws instanced soft quads.
  */
 
-import { createParticles, createScene } from "shooosh"
+import { createParticles, createCanvasScene as createScene } from "shooosh"
 import type { ExampleHandle, ExampleRunOptions, ExampleSpec } from "./types"
 
 const COUNT = 48

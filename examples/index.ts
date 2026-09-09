@@ -49,3 +49,7 @@ export { run as runFabricSheen, fragment as fabricSheenFragment } from "./fabric
 
 export { run as runSss } from "./sss"
 export { run as runSsao } from "./ssao"
+
+export { run as runPhysicsPile } from "./physics-pile"
+export { run as runPhysicsPendulum } from "./physics-pendulum"
+export { run as runPhysics3D } from "./physics-3d"

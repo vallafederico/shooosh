@@ -1,3 +1,4 @@
+import { computeObjectMatrices, createObjectMatrixScratch } from "./object.utils"
 import { expect, test } from "bun:test"
 import { createRoundedBoxGeometry } from "./object.utils"
 
@@ -50,4 +51,22 @@ test("rounded box with zero rounding matches sharp extents", () => {
     )
   }
   expect(maxAbs).toBeCloseTo(1, 5)
+})
+
+
+test("object translation follows rotation/scale and affects perspective depth on both backends", () => {
+  for (const zeroToOneDepth of [false, true]) {
+    const base = {
+      placement: { centerX: 0, centerY: 0, x: 0, y: 0, width: 800, height: 600, scale: 2, isVisible: true },
+      canvas: { width: 800, height: 600 }, camera: { distance: 10 }, zeroToOneDepth,
+    }
+    const transform = { scale: 1, rotationX: 0.4, rotationY: 0.3, rotationZ: 0.2 }
+    const before = computeObjectMatrices({ ...base, scratch: createObjectMatrixScratch(), transform })
+    const after = computeObjectMatrices({ ...base, scratch: createObjectMatrixScratch(), transform: { ...transform, positionX: 3, positionY: 4, positionZ: 2 } })
+    expect(Array.from(after.model.slice(0, 12))).toEqual(Array.from(before.model.slice(0, 12)))
+    expect(Array.from(after.model.slice(12))).toEqual([3, 4, 2, 1])
+    expect(after.mvp[15]).toBeCloseTo(8)
+    expect(before.mvp[15]).toBeCloseTo(10)
+    expect(after.mvp[12]).not.toBe(before.mvp[12])
+  }
 })

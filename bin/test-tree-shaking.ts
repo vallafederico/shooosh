@@ -3,6 +3,7 @@
  * aliases. Initial sizes sum gzip-9 of the static closure; emitted includes lazy
  * backend code and is reported separately. No network or extra dependencies.
  */
+import { shoooshShaders, shoooshBunShaders } from "../package/build/index"
 import { strict as assert } from "node:assert"
 import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -27,16 +28,26 @@ type Fixture = { name: string; budget: number; code?: string; symbols?: string[]
 const fixtures: Fixture[] = [
   { name: "unused", code: 'import {createScene} from "shooosh"; import "shooosh"; globalThis.__fixture = 1;', budget: 100 },
   { name: "utility-unused", code: 'import {createSpinner} from "shooosh/utility"; import "shooosh/utility"; globalThis.__fixture = 1;', budget: 100 },
+  { name: "compiler", code: 'import {compileShader} from "shooosh/compiler"; globalThis.__fixture = [compileShader];', budget: 8000 },
+  { name: "utils", code: 'import {poseToTransform} from "shooosh/utils"; globalThis.__fixture = [poseToTransform];', budget: 1000 },
+  { name: "utils-vector", code: 'import {rotateVector3} from "shooosh/utils"; globalThis.__fixture = [rotateVector3];', budget: 500 },
+  { name: "utils-unused", code: 'import "shooosh/utils"; globalThis.__fixture = 1;', budget: 100 },
   { name: "utility", code: 'import {createSpinner} from "shooosh/utility"; globalThis.__fixture = [createSpinner];', budget: 1500 },
   { name: "probe", symbols: ["probeRenderer"], budget: 550 },
   { name: "screen", symbols: ["createScreen"], budget: 8500 },
   { name: "screen+engine", symbols: ["createScreen", "initEngine"], gpu: true, renderer: "createGpuFullscreenPlaneRenderer", budget: 10000 },
   { name: "item+layer", symbols: ["createItem", "acquireLayer"], gpu: true, renderer: "createGpuItemRenderer", budget: 10200 },
+  { name: "canvas-scene", symbols: ["createCanvasScene"], gpu: true, budget: 11000 },
   { name: "scene", symbols: ["createScene"], gpu: true, budget: 21000 },
   { name: "item", symbols: ["createItem"], budget: 8700 },
   { name: "dom", dom: true, gpu: true, budget: 15500 },
   { name: "combined", symbols: ["createScene"], dom: true, gpu: true, budget: 26000 },
   ...[
+    ["gradient-run", "gradient.ts", "run", 21000],
+    ["physics-3d", "physics-3d.ts", "run", 26000],
+    ["physics-pile", "physics-pile.ts", "run", 25000],
+    ["physics-pendulum", "physics-pendulum.ts", "run", 25000],
+    ["physics-barrel", "index.ts", "runPhysicsPile", 25000],
     ["plasma-fragment", "plasma.ts", "fragment", 600],
     ["plasma-barrel", "index.ts", "plasmaFragment", 600],
     ["glass-run", "refractive-glass.ts", "run", 24000],
@@ -90,7 +101,7 @@ globalThis.__fixture = [${[...symbols, ...(fixture.dom ? ["createDomLayer"] : []
         if (bundler === "bun") {
           const output = await Bun.build({ entrypoints: [entry], target: "browser", format: "esm", minify: true,
             splitting: true, outdir: resolve(temporary, `${fixture.name}-bun`), naming: { entry: "entry.js", chunk: "[name]-[hash].js" },
-            plugins: "example" in fixture ? [{ name: "published-example-imports", setup(build) {
+            plugins: "example" in fixture ? [shoooshBunShaders(),{ name: "published-example-imports", setup(build) {
               build.onResolve({ filter: /^shooosh(?:\/(?:dom|utility))?$/ }, args => ({ path: resolve(root, args.path === "shooosh" ? "dist/esm.js" : `dist/${args.path.split("/")[1]}/esm.js`) }))
             } }] : [] })
           assert(output.success, output.logs.map(String).join("\n"))
@@ -99,8 +110,8 @@ globalThis.__fixture = [${[...symbols, ...(fixture.dom ? ["createDomLayer"] : []
             return { name: file.path, code, imports: staticImports(code), entry: file.kind === "entry-point" }
           }))
         } else {
-          const output = await viteBuild({ configFile: false, root: temporary, logLevel: "silent", publicDir: false,
-            resolve: "example" in fixture ? { alias: ["dom", "utility", ""].map(subpath => ({
+          const output = await viteBuild({ configFile: false, root: temporary, logLevel: "silent", publicDir: false, plugins: [shoooshShaders()],
+            resolve: "example" in fixture ? { alias: ["dom", "utility", "utils", "compiler", ""].map(subpath => ({
               find: subpath ? `shooosh/${subpath}` : "shooosh", replacement: resolve(root, subpath ? `dist/${subpath}/esm.js` : "dist/esm.js"),
             })) } : undefined,
             build: { write: false, minify: "esbuild", target: "esnext", modulePreload: false,
@@ -114,14 +125,24 @@ globalThis.__fixture = [${[...symbols, ...(fixture.dom ? ["createDomLayer"] : []
         console.log(`${bundler.padEnd(4)} ${fixture.name.padEnd(8)} initial ${JSON.stringify(initial)} emitted ${JSON.stringify(emitted)}`)
         assert(initial.gzip <= fixture.budget, `${initial.gzip} gzip bytes exceeds ${fixture.budget} ceiling`)
         const source = chunks.map(chunk => chunk.code).join("\n")
+        if (fixture.name === "canvas-scene") {
+          assert(!/createGpuObjectRenderer|createWebGpuPostBackend|createWebGl2PostBackend|uploadWebGl2Texture|uploadWebGpuTexture/.test(source), "Optional scene conveniences leaked")
+        }
+        if (fixture.name !== "compiler") assert(!source.includes("Unable to locate fsMain"), "Compiler leaked into a runtime/example fixture")
         assert(!/msdf-bmfont-xml|generateFontAtlas|generateIconSdf/.test(source), "Node font tools leaked into browser consumer")
-        if (fixture.name === "unused" || fixture.name === "probe" || fixture.name.startsWith("utility")) {
+        const physics = fixture.name.startsWith("physics-")
+        if (physics) {
+          assert(/WebAssembly/.test(source), "Physics lost WASM runtime")
+          assert(!/WebAssembly/.test(closure(chunks).map(chunk => chunk.code).join("\n")), "Rapier leaked into initial download")
+          assert(emitted.gzip < (fixture.name === "physics-3d" ? 1200000 : 900000), "Physics exceeded optional download budget")
+        } else assert(!/WebAssembly/.test(source), "Rapier leaked into unrelated consumer")
+        if (fixture.name === "unused" || fixture.name === "probe" || fixture.name.startsWith("utility") || fixture.name.startsWith("utils")) {
           assert.equal(chunks.length, 1, "Tiny consumer retained lazy renderer chunks")
           assert(!/\bimport\s*\(/.test(source), "Tiny consumer retained dynamic renderer imports")
           assert(!/createShader|createRenderPipeline|GPUBufferUsage|DomLayer/.test(source), "Tiny consumer retained renderer implementation")
           const context: Record<string, any> = {}
           runInNewContext(source, context)
-          assert((fixture.name === "unused" || fixture.name === "utility-unused") ? context.__fixture === 1 : typeof context.__fixture?.[0] === "function", "Tiny consumer behavior missing")
+          assert((fixture.name === "unused" || fixture.name === "utility-unused" || fixture.name === "utils-unused") ? context.__fixture === 1 : typeof context.__fixture?.[0] === "function", "Tiny consumer behavior missing")
         }
         if ("example" in fixture) {
           assert(!/dom-lab|fn sample_field|mountCanvasInput/.test(source), "Unrelated DOM/fluid examples retained")
@@ -138,8 +159,18 @@ globalThis.__fixture = [${[...symbols, ...(fixture.dom ? ["createDomLayer"] : []
           } else if (fixture.name.startsWith("fabric-")) {
             assert(/fabricSheen/.test(source) && /fabricCoat/.test(source) && /createRenderPipeline/.test(source), "Fabric lost its materials or GPU renderer")
             assert(!/glassBox|createComputePipeline/.test(source), "Fabric retained an unrelated glass/compute demo")
+          } else if (fixture.name === "gradient-run") {
+            assert(!source.includes("Unable to locate fsMain"), "Precompiled example retained converter");
+          } else if (physics) {
+            assert(/createRenderPipeline/.test(source), "Physics lost its renderer")
           } else assert(/glassBox/.test(source) && /createRenderPipeline/.test(source), "Glass lost its shader or GPU backend")
         }
+        if (fixture.name === "utils-vector") assert(!/atan2|asin/.test(source), "Vector helper retained Euler math")
+        if (fixture.name === "dom" || fixture.name === "item+layer" || fixture.name === "utils-unused") {
+          assert(!/Math\.atan2|Math\.asin/.test(source), "Flat consumer retained optional transform math")
+        }
+        if (!fixture.example && fixture.name !== "compiler") assert(!source.includes("Unable to locate fsMain"), "Runtime consumer retained shader converter");
+        if (fixture.name === "compiler") assert(source.includes("Unable to locate fsMain"), "Explicit compiler lost conversion logic");
         if (fixture.gpu) {
           assert(/createShaderModule/.test(source) && /createRenderPipeline/.test(source), "Runnable consumer lost GPU pipeline construction")
           assert(chunks.some(chunk => !chunk.entry && /createShaderModule|createRenderPipeline/.test(chunk.code)), "GPU pipeline unexpectedly missing from lazy output")

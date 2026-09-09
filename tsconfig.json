@@ -1,8 +1,17 @@
 {
-  "exclude": ["dist", "web", "harness", "examples"],
+  "exclude": [
+    "dist",
+    "web",
+    "harness",
+    "examples"
+  ],
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ES2022",
     "moduleResolution": "bundler",
     "esModuleInterop": true,
@@ -16,8 +25,19 @@
     "isolatedModules": true,
     "noEmit": true,
     "paths": {
-      "shooosh/utility": ["./package/utility/index.ts"],
-      "shooosh": ["./package/index.ts"]
-    }
+      "shooosh/utils": [
+        "./package/utils/index.ts"
+      ],
+      "shooosh/utility": [
+        "./package/utility/index.ts"
+      ],
+      "shooosh": [
+        "./package/index.ts"
+      ],
+      "shooosh/compiler": [
+        "./package/compiler/index.ts"
+      ]
+    },
+    "rootDir": "."
   }
 }

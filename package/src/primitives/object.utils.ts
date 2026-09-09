@@ -469,6 +469,9 @@ export type ObjectTransformState = {
   rotationX: number;
   rotationY: number;
   rotationZ: number;
+  positionX?: number;
+  positionY?: number;
+  positionZ?: number;
 };
 
 export type ObjectCameraOptions = {
@@ -522,6 +525,11 @@ export function computeObjectMatrices(options: {
   const ryrxs = mat4Multiply(ry, rxs, scratch.b);
   const rz = mat4RotationZ(transform.rotationZ, scratch.a);
   const model = mat4Multiply(rz, ryrxs, scratch.model);
+
+  // T × Rz × Ry × Rx × S: translation must not rotate or scale with the mesh.
+  model[12] = transform.positionX ?? 0;
+  model[13] = transform.positionY ?? 0;
+  model[14] = transform.positionZ ?? 0;
 
   const cameraEnabled = camera?.enabled ?? true;
   if (!cameraEnabled) {

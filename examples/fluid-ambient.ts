@@ -2,7 +2,7 @@
  * Fluid ambient — createCompute + example fluid-sim / fluid-shaders.
  *
  * How to use:
- *   import { createScene, createCompute } from "shooosh"
+ *   import { createCanvasScene as createScene, createCompute } from "shooosh"
  *   import { createFluidSim } from "./fluid-sim"
  *   import { fluidShaders } from "./fluid-shaders"
  *   const gpu = createCompute(engine)
@@ -12,7 +12,7 @@
  * Requires WebGPU. Edit WGSL in fluid-shaders.ts; pass loop in fluid-sim.ts.
  */
 
-import { createCompute, createScene, type ComputeSession } from "shooosh"
+import { createCompute, createCanvasScene as createScene, type ComputeSession } from "shooosh"
 import { createFluidSim, type FluidSim } from "./fluid-sim"
 import { fluidShaders } from "./fluid-shaders"
 import type { ExampleHandle, ExampleRunOptions, ExampleSpec } from "./types"

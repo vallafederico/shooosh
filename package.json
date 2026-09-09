@@ -2,12 +2,13 @@
   "name": "shooosh",
   "author": "vallafederico",
   "version": "0.0.5",
-  "description": "WGSL-first site engine: WebGPU when available, WebGL2 fallback \u2014 scenes, DOM-tracked items, and post-processing.",
+  "description": "WGSL-first site engine: WebGPU when available, WebGL2 fallback — scenes, DOM-tracked items, and post-processing.",
   "type": "module",
   "sideEffects": [
     "./package/global.ts",
     "./dist/shooosh.min.js",
-    "./bin/msdf.mjs"
+    "./bin/msdf.mjs",
+    "./bin/shader.mjs"
   ],
   "main": "./dist/cjs.js",
   "module": "./dist/esm.js",
@@ -34,10 +35,46 @@
       "types": "./dist/dom/index.d.ts",
       "import": "./dist/dom/esm.js",
       "require": "./dist/dom/cjs.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/esm.js",
+      "require": "./dist/utils/cjs.js"
+    },
+    "./compiler": {
+      "types": "./dist/compiler/index.d.ts",
+      "import": "./dist/compiler/esm.js",
+      "require": "./dist/compiler/cjs.js"
+    },
+    "./build": {
+      "types": "./dist/build/index.d.ts",
+      "import": "./dist/build/esm.js",
+      "require": "./dist/build/cjs.js"
+    },
+    "./webgl2": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/webgl2/esm.js",
+      "require": "./dist/webgl2/cjs.js"
+    },
+    "./webgl2/dom": {
+      "types": "./dist/dom/index.d.ts",
+      "import": "./dist/webgl2/dom/esm.js",
+      "require": "./dist/webgl2/dom/cjs.js"
+    },
+    "./webgpu": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/webgpu/esm.js",
+      "require": "./dist/webgpu/cjs.js"
+    },
+    "./webgpu/dom": {
+      "types": "./dist/dom/index.d.ts",
+      "import": "./dist/webgpu/dom/esm.js",
+      "require": "./dist/webgpu/dom/cjs.js"
     }
   },
   "bin": {
-    "shooosh-msdf": "./bin/msdf.mjs"
+    "shooosh-msdf": "./bin/msdf.mjs",
+    "shooosh-shader": "./bin/shader.mjs"
   },
   "repository": {
     "type": "git",
@@ -77,7 +114,7 @@
     "release:patch": "npm version patch && pnpm run build:package && npm publish",
     "release:minor": "npm version minor && pnpm run build:package && npm publish",
     "release:major": "npm version major && pnpm run build:package && npm publish",
-    "test:examples": "bun test examples/materials.test.ts"
+    "test:examples": "bun test examples/materials.test.ts examples/physics.test.ts"
   },
   "files": [
     "dist/",
@@ -87,10 +124,15 @@
     "package.json",
     "readme.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "bin/shader.mjs"
   ],
   "license": "MIT",
   "devDependencies": {
+    "@dimforge/rapier2d-compat": "^0.20.0",
+    "@dimforge/rapier3d-compat": "^0.20.0",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^26.5.0",
     "bun-plugin-dts": "^0.3.0",
     "msdf-bmfont-xml": "^2.8.0",
     "sharp": "^0.34.5"

@@ -12,7 +12,7 @@ Read [docs/shader-translation.md](../../../docs/shader-translation.md) and [docs
 If the source is a `#version 300 es` fragment with `void main` and `outColor`, call the library:
 
 ```ts
-import { convertGlslFragmentToWgsl } from "shooosh"
+import { convertGlslFragmentToWgsl } from "shooosh/compiler"
 
 const wgsl = convertGlslFragmentToWgsl(glsl)
 ```

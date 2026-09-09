@@ -1,3 +1,4 @@
+import imageShader from "./image-shader";
 /** One adapter session over an explicit engine; the existing engine owns rAF. */
 import { createEngine, type WebGLEngine, type EngineOptions } from "../src/engine/engine";
 import { loadTexture, resolveTextureUvTransform, type TextureLoaderResult } from "../src/loaders/texture-loader";
@@ -42,12 +43,7 @@ export type DomLayer = {
   destroy(): void;
 };
 
-const imageFragment = `fn fsMain() -> vec4f {
-  let uv = fitUv(vUv);
-  let color = textureSample(uTexture, uSampler, uv);
-  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return vec4f(0.0); }
-  return color;
-}`;
+
 const empty: Geometry = { rect: { left: 0, top: 0, width: 0, height: 0 }, clip: null };
 
 type Entry = {
@@ -111,7 +107,7 @@ export async function createDomLayer(options: DomLayerOptions): Promise<DomLayer
     if (e.item || e.failed || !e.supported || e.media && !e.texture || printing || unavailable) return;
     const generation = e.generation;
     e.item = new ItemManager(e.el, { ...e.options, layer: 10 + e.order,
-      texture: e.texture, shaders: e.options.shaders ?? { fragment: imageFragment } }, {
+      texture: e.texture, shaders: e.options.shaders ?? imageShader }, {
       engine,
       geometry: out => clipGeometry(e.geometry, canvasRect, out),
       uv: e.media ? () => {

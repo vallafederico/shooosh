@@ -30,6 +30,7 @@ Use source matching your installed version; unreleased recipes can require new A
 
 - `probeRenderer()` → `"webgpu" | "webgl2" | null`
 - `createEngine` / `initEngine` / `getDefaultEngine` — `{ backend?: "auto"|"webgpu"|"webgl2" }`
+- `createCanvasScene` — lightweight owned canvas + `retain(resource)` cleanup; full `createScene` retains convenience features. See [bundle setups](./docs/bundle-setup.md).
 - `createScene` / `parseSceneDataset`
 - `acquireLayer` / `releaseLayer`
 - `shooosh/dom`: `createDomLayer({ canvas, root })` → cached `bind` / `media`, native fallback, explicit cleanup. See [docs/dom.md](./docs/dom.md) for the supported subset.
@@ -38,17 +39,21 @@ Use source matching your installed version; unreleased recipes can require new A
 - `effects.custom` — thin sugar for `createScene({ post })` (author shaders only)
 - `createCompute` — WebGPU; fluids = copy `examples/fluid-sim.ts` + `fluid-shaders.ts`
 - `loadTexture` (+ `fitUv` / `textureFit` / `{ flipY: false }` for env) / `loadGlb`
-- `convertWgslFragmentToGlsl` / `convertGlslFragmentToWgsl`
+- `shooosh/webgl2` / `shooosh/webgpu` and matching `/dom`: backend-only builds; default root remains both.
+- `shooosh/build`: build-time `.wgsl` plugin / CLI — [shader pipeline](./docs/shader-build.md)
+- `shooosh/compiler`: optional `compileShader`, `convertWgslFragmentToGlsl` / `convertGlslFragmentToWgsl` (removed from root)
 - `createMouseMonad` / `createMouseTrail`
 - `shooosh/utility`: `createSpinner({ element })` → drag rotation + release inertia; see [docs/utility.md](./docs/utility.md).
 
 Node/Bun only (`shooosh/msdf`): `generateMsdf` / `generateFontAtlas` / `generateIconSdf` / `alphaToSdf` · CLI `pnpm msdf`
 
+- `shooosh/utils`: optional quaternion composition, vector rotation and pose mapping; see [docs/utils.md](./docs/utils.md). No renderer imports.
+
 ## Shader contract (short)
 
 See [docs/shader-contract.md](./docs/shader-contract.md).
 
-- Author `fn fsMain() -> vec4f`. `vUv` is top-origin.
+- Author `fn fsMain() -> vec4f`. `vUv` is top-origin. WebGL2 requires a generated `fragmentGlsl` alongside WGSL; the browser runtime does not translate.
 - Textures: sample `fitUv(vUv)` when using `uTexture` + cover/contain.
 - `setUni({ value1 })` → `uUni.values0.x` / `uUni[0].x` (16 floats).
 - Post is `applyEffect`, not `fsMain` — both GLSL + WGSL for dual backends.
@@ -69,5 +74,9 @@ See [docs/shader-contract.md](./docs/shader-contract.md).
 
 ## Optional
 
+- [Rapier physics recipes](./examples/physics.md): falling blocks, jointed pendulum and true 3D tumbling cubes, lazy example-only WASM dependency.
+
 - [docs/api.md](./docs/api.md) · [docs/shader-translation.md](./docs/shader-translation.md) · [ROADMAP.md](./ROADMAP.md)
 - [Source](https://github.com/vallafederico/shooosh) · [vgpu llms.txt](https://vgpu.sh/llms.txt) (inspiration only)
+
+- [Physics/utils performance audit](./docs/audits/2026-09-09-physics-utils-performance.md): package footprint, 58 tree-shaking checks, active/idle browser measurements, limits and next opportunities.

@@ -1,3 +1,4 @@
+import { compileShader } from "shooosh/compiler"
 import { createDomLayer, type DomLayer, type DomBinding } from "../../package/dom";
 import { createEngine, getDefaultEngine, initEngine } from "../../package/index";
 
@@ -23,7 +24,7 @@ async function mount() {
     onError: ({ error }) => console.warn("DOM harness", error) });
   if (dom) {
     bindings = [...root.querySelectorAll("img")].map(img => dom!.media(img));
-    bindings.push(dom.bind($("shader"), { shaders: { fragment: shader } }));
+    bindings.push(dom.bind($("shader"), { shaders: compileShader(shader) }));
     await Promise.all(bindings.slice(0,3).map(b => b.ready));
   }
   status();

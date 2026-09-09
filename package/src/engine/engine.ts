@@ -1,3 +1,5 @@
+declare const __SHOOOSH_GPU__: boolean;
+declare const __SHOOOSH_GL__: boolean;
 /**
  * createEngine — pick a backend and return the shared runtime handle.
  *
@@ -155,19 +157,19 @@ export async function createEngine(
     throw new GpuUnavailableError("WebGPU is not available in this browser.");
   }
 
-  if (kind === "webgpu") {
+  if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && kind === "webgpu") {
     const { createWebGpuEngine } = await import("./webgpu-engine");
     try {
       return await createWebGpuEngine(canvas, options);
     } catch (error) {
-      if (prefer === "webgpu") throw error;
+      if (!(typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) || prefer === "webgpu") throw error;
       console.warn("shooosh: WebGPU device failed, falling back to WebGL2.", error);
     }
   }
 
-  const webgl2 =
+  const webgl2 = !(typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) ? null :
     kind === "webgl2" ? "webgl2" : await probeRenderer({ backend: "webgl2" });
-  if (webgl2 === "webgl2") {
+  if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__) && webgl2 === "webgl2") {
     const { createWebGl2Engine } = await import("./webgl2-engine");
     return createWebGl2Engine(canvas, options);
   }

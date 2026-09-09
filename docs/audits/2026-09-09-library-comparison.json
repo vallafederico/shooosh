@@ -1,0 +1,836 @@
+{
+  "shoooshVariants": {
+    "shooosh": "webgl2",
+    "shoooshBoth": "both",
+    "shoooshWebgpu": "webgpu",
+    "shoooshBothGpu": "both (WebGPU requested)"
+  },
+  "threeVariants": {
+    "three": "WebGLRenderer",
+    "threeWebgpu": "WebGPURenderer with bundled WebGL2 fallback; WebGPU required by app fixture"
+  },
+  "formats": [
+    {
+      "backend": "both",
+      "format": "cjs",
+      "file": "dist/cjs.js",
+      "minified": 136274,
+      "gzip": 41652
+    },
+    {
+      "backend": "both",
+      "format": "iife",
+      "file": "dist/shooosh.min.js",
+      "minified": 134889,
+      "gzip": 41320
+    },
+    {
+      "backend": "webgl2",
+      "format": "cjs",
+      "file": "dist/webgl2/cjs.js",
+      "minified": 86982,
+      "gzip": 26531
+    },
+    {
+      "backend": "webgpu",
+      "format": "cjs",
+      "file": "dist/webgpu/cjs.js",
+      "minified": 91842,
+      "gzip": 29528
+    }
+  ],
+  "capturedAt": "2026-09-09T11:16:44.735Z",
+  "oglVersion": "1.0.11",
+  "oglIntegrity": "sha512-kUpC154AFfxi16pmZUK4jk3J+8zxwTWGPo03EoYA8QPbzikHoaC82n6pNTbd+oEaJonaE8aPWBlX7ad9zrqLsA==",
+  "threeVersion": "0.186.0",
+  "threeIntegrity": "sha512-cr/fIM2ddMSVbYVgkfD4jLJv7Fh/8ZTjvo+7gQeSVGUZHxpx9FDwoL5iC7hUz/LiRA8wMbqfnb90xKfm1/HHkQ==",
+  "bunVersion": "1.4.0",
+  "viteVersion": "7.3.6",
+  "method": "Published ESM imports; browser target; minification; one complete JS file; gzip level 9. API fixtures retain callable exports, app fixtures retain full mounts.",
+  "results": [
+    {
+      "fixture": "engine",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 11865,
+      "gzip": 3520
+    },
+    {
+      "fixture": "engine",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 11465,
+      "gzip": 3488
+    },
+    {
+      "fixture": "engine",
+      "library": "three",
+      "bundler": "bun",
+      "minified": 531797,
+      "gzip": 132026
+    },
+    {
+      "fixture": "engine",
+      "library": "three",
+      "bundler": "vite",
+      "minified": 510768,
+      "gzip": 126679
+    },
+    {
+      "fixture": "engine",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 8070,
+      "gzip": 3244
+    },
+    {
+      "fixture": "engine",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 8532,
+      "gzip": 3502
+    },
+    {
+      "fixture": "engine",
+      "library": "shoooshBoth",
+      "bundler": "bun",
+      "minified": 12399,
+      "gzip": 4644
+    },
+    {
+      "fixture": "engine",
+      "library": "shoooshBoth",
+      "bundler": "vite",
+      "minified": 12723,
+      "gzip": 4828
+    },
+    {
+      "fixture": "engine",
+      "library": "shoooshWebgpu",
+      "bundler": "bun",
+      "minified": 8176,
+      "gzip": 3389
+    },
+    {
+      "fixture": "engine",
+      "library": "shoooshWebgpu",
+      "bundler": "vite",
+      "minified": 8555,
+      "gzip": 3640
+    },
+    {
+      "fixture": "engine",
+      "library": "threeWebgpu",
+      "bundler": "bun",
+      "minified": 797119,
+      "gzip": 215512
+    },
+    {
+      "fixture": "engine",
+      "library": "threeWebgpu",
+      "bundler": "vite",
+      "minified": 774981,
+      "gzip": 210522
+    },
+    {
+      "fixture": "engine",
+      "library": "shoooshBothGpu",
+      "bundler": "bun",
+      "minified": 12399,
+      "gzip": 4644
+    },
+    {
+      "fixture": "engine",
+      "library": "shoooshBothGpu",
+      "bundler": "vite",
+      "minified": 12723,
+      "gzip": 4828
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 44994,
+      "gzip": 12779
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 44163,
+      "gzip": 12758
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "three",
+      "bundler": "bun",
+      "minified": 531812,
+      "gzip": 132018
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "three",
+      "bundler": "vite",
+      "minified": 510783,
+      "gzip": 126700
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 18834,
+      "gzip": 7233
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 19123,
+      "gzip": 7509
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "shoooshBoth",
+      "bundler": "bun",
+      "minified": 31164,
+      "gzip": 11358
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "shoooshBoth",
+      "bundler": "vite",
+      "minified": 31032,
+      "gzip": 11494
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "shoooshWebgpu",
+      "bundler": "bun",
+      "minified": 21511,
+      "gzip": 8478
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "shoooshWebgpu",
+      "bundler": "vite",
+      "minified": 21524,
+      "gzip": 8623
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "threeWebgpu",
+      "bundler": "bun",
+      "minified": 797134,
+      "gzip": 215531
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "threeWebgpu",
+      "bundler": "vite",
+      "minified": 774996,
+      "gzip": 210521
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "shoooshBothGpu",
+      "bundler": "bun",
+      "minified": 31164,
+      "gzip": 11358
+    },
+    {
+      "fixture": "fullscreen-api",
+      "library": "shoooshBothGpu",
+      "bundler": "vite",
+      "minified": 31032,
+      "gzip": 11494
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 44994,
+      "gzip": 12779
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 44163,
+      "gzip": 12758
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "three",
+      "bundler": "bun",
+      "minified": 531812,
+      "gzip": 132018
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "three",
+      "bundler": "vite",
+      "minified": 510783,
+      "gzip": 126700
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 20725,
+      "gzip": 7762
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 20993,
+      "gzip": 8040
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "shoooshBoth",
+      "bundler": "bun",
+      "minified": 33055,
+      "gzip": 11884
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "shoooshBoth",
+      "bundler": "vite",
+      "minified": 32902,
+      "gzip": 12033
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "shoooshWebgpu",
+      "bundler": "bun",
+      "minified": 23402,
+      "gzip": 9005
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "shoooshWebgpu",
+      "bundler": "vite",
+      "minified": 23399,
+      "gzip": 9172
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "threeWebgpu",
+      "bundler": "bun",
+      "minified": 797134,
+      "gzip": 215531
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "threeWebgpu",
+      "bundler": "vite",
+      "minified": 774996,
+      "gzip": 210521
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "shoooshBothGpu",
+      "bundler": "bun",
+      "minified": 33055,
+      "gzip": 11884
+    },
+    {
+      "fixture": "canvas-scene-api",
+      "library": "shoooshBothGpu",
+      "bundler": "vite",
+      "minified": 32902,
+      "gzip": 12033
+    },
+    {
+      "fixture": "box-api",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 49545,
+      "gzip": 14147
+    },
+    {
+      "fixture": "box-api",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 48703,
+      "gzip": 14116
+    },
+    {
+      "fixture": "box-api",
+      "library": "three",
+      "bundler": "bun",
+      "minified": 531809,
+      "gzip": 132027
+    },
+    {
+      "fixture": "box-api",
+      "library": "three",
+      "bundler": "vite",
+      "minified": 510780,
+      "gzip": 126691
+    },
+    {
+      "fixture": "box-api",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 23110,
+      "gzip": 8602
+    },
+    {
+      "fixture": "box-api",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 23256,
+      "gzip": 8875
+    },
+    {
+      "fixture": "box-api",
+      "library": "shoooshBoth",
+      "bundler": "bun",
+      "minified": 35727,
+      "gzip": 12814
+    },
+    {
+      "fixture": "box-api",
+      "library": "shoooshBoth",
+      "bundler": "vite",
+      "minified": 35725,
+      "gzip": 13047
+    },
+    {
+      "fixture": "box-api",
+      "library": "shoooshWebgpu",
+      "bundler": "bun",
+      "minified": 25970,
+      "gzip": 9960
+    },
+    {
+      "fixture": "box-api",
+      "library": "shoooshWebgpu",
+      "bundler": "vite",
+      "minified": 25916,
+      "gzip": 10144
+    },
+    {
+      "fixture": "box-api",
+      "library": "threeWebgpu",
+      "bundler": "bun",
+      "minified": 797131,
+      "gzip": 215524
+    },
+    {
+      "fixture": "box-api",
+      "library": "threeWebgpu",
+      "bundler": "vite",
+      "minified": 774993,
+      "gzip": 210548
+    },
+    {
+      "fixture": "box-api",
+      "library": "shoooshBothGpu",
+      "bundler": "bun",
+      "minified": 35727,
+      "gzip": 12814
+    },
+    {
+      "fixture": "box-api",
+      "library": "shoooshBothGpu",
+      "bundler": "vite",
+      "minified": 35725,
+      "gzip": 13047
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 45898,
+      "gzip": 13177
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 45078,
+      "gzip": 13164
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "three",
+      "bundler": "bun",
+      "minified": 532779,
+      "gzip": 132439
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "three",
+      "bundler": "vite",
+      "minified": 511767,
+      "gzip": 127119
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 21093,
+      "gzip": 7852
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 21362,
+      "gzip": 8129
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "shoooshBoth",
+      "bundler": "bun",
+      "minified": 33516,
+      "gzip": 11987
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "shoooshBoth",
+      "bundler": "vite",
+      "minified": 33364,
+      "gzip": 12146
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "shoooshWebgpu",
+      "bundler": "bun",
+      "minified": 23673,
+      "gzip": 9084
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "shoooshWebgpu",
+      "bundler": "vite",
+      "minified": 23671,
+      "gzip": 9266
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "threeWebgpu",
+      "bundler": "bun",
+      "minified": 906435,
+      "gzip": 246632
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "threeWebgpu",
+      "bundler": "vite",
+      "minified": 882706,
+      "gzip": 240644
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "shoooshBothGpu",
+      "bundler": "bun",
+      "minified": 33516,
+      "gzip": 11987
+    },
+    {
+      "fixture": "fullscreen-app",
+      "library": "shoooshBothGpu",
+      "bundler": "vite",
+      "minified": 33364,
+      "gzip": 12146
+    },
+    {
+      "fixture": "all-exports",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 135079,
+      "gzip": 39310
+    },
+    {
+      "fixture": "all-exports",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 133249,
+      "gzip": 39257
+    },
+    {
+      "fixture": "all-exports",
+      "library": "three",
+      "bundler": "bun",
+      "minified": 748834,
+      "gzip": 189814
+    },
+    {
+      "fixture": "all-exports",
+      "library": "three",
+      "bundler": "vite",
+      "minified": 745479,
+      "gzip": 190439
+    },
+    {
+      "fixture": "all-exports",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 85856,
+      "gzip": 26081
+    },
+    {
+      "fixture": "all-exports",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 84949,
+      "gzip": 26299
+    },
+    {
+      "fixture": "all-exports",
+      "library": "shoooshBoth",
+      "bundler": "bun",
+      "minified": 134634,
+      "gzip": 41152
+    },
+    {
+      "fixture": "all-exports",
+      "library": "shoooshBoth",
+      "bundler": "vite",
+      "minified": 133741,
+      "gzip": 41218
+    },
+    {
+      "fixture": "all-exports",
+      "library": "shoooshWebgpu",
+      "bundler": "bun",
+      "minified": 90704,
+      "gzip": 29180
+    },
+    {
+      "fixture": "all-exports",
+      "library": "shoooshWebgpu",
+      "bundler": "vite",
+      "minified": 90034,
+      "gzip": 28986
+    },
+    {
+      "fixture": "all-exports",
+      "library": "threeWebgpu",
+      "bundler": "bun",
+      "minified": 1094629,
+      "gzip": 298324
+    },
+    {
+      "fixture": "all-exports",
+      "library": "threeWebgpu",
+      "bundler": "vite",
+      "minified": 1089433,
+      "gzip": 299506
+    },
+    {
+      "fixture": "all-exports",
+      "library": "shoooshBothGpu",
+      "bundler": "bun",
+      "minified": 134634,
+      "gzip": 41152
+    },
+    {
+      "fixture": "all-exports",
+      "library": "shoooshBothGpu",
+      "bundler": "vite",
+      "minified": 133741,
+      "gzip": 41218
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 45898,
+      "gzip": 13177
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 45078,
+      "gzip": 13164
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "three",
+      "bundler": "bun",
+      "minified": 532779,
+      "gzip": 132439
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "three",
+      "bundler": "vite",
+      "minified": 511767,
+      "gzip": 127119
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 33516,
+      "gzip": 11987
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 33364,
+      "gzip": 12146
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "shoooshBoth",
+      "bundler": "bun",
+      "minified": 33516,
+      "gzip": 11987
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "shoooshBoth",
+      "bundler": "vite",
+      "minified": 33364,
+      "gzip": 12146
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "shoooshWebgpu",
+      "bundler": "bun",
+      "minified": 23673,
+      "gzip": 9084
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "shoooshWebgpu",
+      "bundler": "vite",
+      "minified": 23671,
+      "gzip": 9266
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "threeWebgpu",
+      "bundler": "bun",
+      "minified": 906435,
+      "gzip": 246632
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "threeWebgpu",
+      "bundler": "vite",
+      "minified": 882706,
+      "gzip": 240644
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "shoooshBothGpu",
+      "bundler": "bun",
+      "minified": 33516,
+      "gzip": 11987
+    },
+    {
+      "fixture": "dual-fullscreen-app",
+      "library": "shoooshBothGpu",
+      "bundler": "vite",
+      "minified": 33364,
+      "gzip": 12146
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "ogl",
+      "bundler": "bun",
+      "minified": 135079,
+      "gzip": 39310
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "ogl",
+      "bundler": "vite",
+      "minified": 133249,
+      "gzip": 39257
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "three",
+      "bundler": "bun",
+      "minified": 748834,
+      "gzip": 189814
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "three",
+      "bundler": "vite",
+      "minified": 745479,
+      "gzip": 190439
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "shooosh",
+      "bundler": "bun",
+      "minified": 134634,
+      "gzip": 41152
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "shooosh",
+      "bundler": "vite",
+      "minified": 133741,
+      "gzip": 41218
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "shoooshBoth",
+      "bundler": "bun",
+      "minified": 134634,
+      "gzip": 41152
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "shoooshBoth",
+      "bundler": "vite",
+      "minified": 133741,
+      "gzip": 41218
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "shoooshWebgpu",
+      "bundler": "bun",
+      "minified": 90704,
+      "gzip": 29180
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "shoooshWebgpu",
+      "bundler": "vite",
+      "minified": 90034,
+      "gzip": 28986
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "threeWebgpu",
+      "bundler": "bun",
+      "minified": 1094629,
+      "gzip": 298324
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "threeWebgpu",
+      "bundler": "vite",
+      "minified": 1089433,
+      "gzip": 299506
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "shoooshBothGpu",
+      "bundler": "bun",
+      "minified": 134634,
+      "gzip": 41152
+    },
+    {
+      "fixture": "dual-all-exports",
+      "library": "shoooshBothGpu",
+      "bundler": "vite",
+      "minified": 133741,
+      "gzip": 41218
+    }
+  ]
+}
