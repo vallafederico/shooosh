@@ -101,3 +101,5 @@ See [docs/shader-contract.md](./docs/shader-contract.md).
 Hosted docs: [agent manifest](https://shooosh-web.vercel.app/agents.md) · [machine index](https://shooosh-web.vercel.app/llms.txt) · [interactive examples](https://shooosh-web.vercel.app/examples).
 
 - [GPGPU mouse particles](./examples/gpgpu-particles.md): GPU storage-buffer integration and instanced rendering, pointer forces, lifecycle and WebGPU requirements.
+
+- [GPGPU curl sphere](./examples/gpgpu-sphere.md): analytic 3D curl noise, GPU particle integration, pointer disturbance and depth-tested rendering.

@@ -8,16 +8,23 @@ import type { ExampleHandle, ExampleRunOptions, ExampleSpec } from "./types"
 
 export const fragment = `fn fsMain() -> vec4f { return vec4f(0.025, 0.035, 0.05, 1.0); }`
 
-export function run(target: HTMLElement, options: ExampleRunOptions = {}): ExampleHandle {
+export type ParticleSimulation = {
+  compute: string; display: string; title: string; description: string;
+  height: number; stride: number; depth?: boolean;
+}
+
+/** Shared example-owned lifecycle; shaders and particle layout remain configurable. */
+export function runParticleSimulation(target: HTMLElement, options: ExampleRunOptions, config: ParticleSimulation): ExampleHandle {
+  const count = 256 * config.height
   const root = document.createElement("section")
   root.style.cssText = "position:relative;width:100%;height:100%;min-height:420px;background:#06090d;color:#d5eee8;overflow:hidden"
   const canvas = document.createElement("canvas")
   canvas.style.cssText = "display:block;width:100%;height:100%;touch-action:none"
-  canvas.setAttribute("aria-label", "GPU particle field. Move the pointer or drag a finger to disturb it.")
+  canvas.setAttribute("aria-label", config.title + ". Move the pointer or drag a finger to disturb it.")
   const panel = document.createElement("div")
   panel.style.cssText = "position:absolute;left:24px;top:24px;right:24px;pointer-events:none;font:12px/1.6 ui-monospace,monospace"
   const title = document.createElement("h2")
-  title.textContent = "GPGPU / particle field"
+  title.textContent = config.title
   title.style.cssText = "font-size:18px;margin:0 0 6px"
   const status = document.createElement("p")
   status.textContent = "Starting WebGPU…"
@@ -76,11 +83,19 @@ export function run(target: HTMLElement, options: ExampleRunOptions = {}): Examp
     if (!gpu) throw new Error("WebGPU compute is unavailable.")
     const session = gpu
     // Standard GPUBufferUsage.STORAGE | COPY_DST; structural public device API.
-    const state = session.device.createBuffer({ size: 65536 * 16, usage: 0x80 | 0x08, label: "particle positions and velocities" })
+    const state = session.device.createBuffer({ size: count * config.stride, usage: 0x80 | 0x08, label: "particle positions and velocities" })
     const uniform = session.createUniformBuffer(48, "particle controls")
     releaseBuffers = () => { state.destroy(); uniform.destroy() }
-    const compute = session.createPipeline(computeShader, "particle integration")
-    const display = session.createDisplayPipeline(displayShader, "particle instances")
+    const compute = session.createPipeline(config.compute, "particle integration")
+    const display = config.depth ? (() => {
+      const module = session.device.createShaderModule({ code: config.display, label: "sphere particles" })
+      return session.device.createRenderPipeline({
+        layout: "auto", vertex: { module, entryPoint: "vsMain" },
+        fragment: { module, entryPoint: "fsMain", targets: [{ format: session.format }] },
+        primitive: { topology: "triangle-list" },
+        depthStencil: { format: "depth24plus", depthWriteEnabled: true, depthCompare: "less" },
+      })
+    })() : session.createDisplayPipeline(config.display, "particle instances")
     const entries = [{ binding: 0, resource: { buffer: uniform } }, { binding: 1, resource: { buffer: state } }]
     const computeGroup = session.device.createBindGroup({ layout: compute.getBindGroupLayout(0), entries })
     const displayGroup = session.device.createBindGroup({ layout: display.getBindGroupLayout(0), entries })
@@ -92,16 +107,16 @@ export function run(target: HTMLElement, options: ExampleRunOptions = {}): Examp
       const aspect = canvas.width / Math.max(1, canvas.height)
       values.set([dt, time, aspect, initialize ? 1 : 0, (pointerX * 2 - 1) * aspect, 1 - pointerY * 2, active ? 1 : 0, 0.32, canvas.width, canvas.height, Math.max(1, canvas.height / 650), 0])
       session.writeBuffer(uniform, values)
-      if (running || initialize) session.dispatch(encoder, compute, 256, 256, computeGroup)
+      if (running || initialize) session.dispatch(encoder, compute, 256, config.height, computeGroup)
       initialize = false
       if (running) session.requestFrame()
     })
     session.setOnDisplay(({ pass }) => {
       pass.setPipeline(display)
       pass.setBindGroup(0, displayGroup)
-      pass.draw(6, 65536)
+      pass.draw(6, count)
     })
-    status.textContent = "65,536 particles · move your mouse or drag to stir · springs restore the field"
+    status.textContent = config.description
     pause.disabled = reset.disabled = false
     return engine.backend
   }).catch(error => {
@@ -118,6 +133,13 @@ export function run(target: HTMLElement, options: ExampleRunOptions = {}): Examp
     disposed = true
     events.abort(); observe.disconnect(); gpu?.destroy(); releaseBuffers?.(); scene.destroy(); root.remove()
   } }
+}
+export function run(target: HTMLElement, options: ExampleRunOptions = {}): ExampleHandle {
+  return runParticleSimulation(target, options, {
+    compute: computeShader, display: displayShader, height: 256, stride: 16,
+    title: "GPGPU / particle field",
+    description: "65,536 particles · move your mouse or drag to stir · springs restore the field",
+  })
 }
 export const gpgpuParticles: ExampleSpec = {
   id: "gpgpu-particles", label: "GPGPU · mouse particles", kind: "view", fragment,

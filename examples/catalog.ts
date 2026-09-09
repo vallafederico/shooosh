@@ -1,3 +1,4 @@
+import { gpgpuSphere } from "./gpgpu-sphere"
 import { gpgpuParticles } from "./gpgpu-particles"
 import { rigBones } from "./rig-bones"
 import { raymarchClouds } from "./raymarch-clouds"
@@ -74,6 +75,7 @@ export const examples: ExampleSpec[] = [
   objectMesh,
   particlesField,
   gpgpuParticles,
+  gpgpuSphere,
   fluidPointer,
   fluidAmbient,
   scrollCards,
