@@ -65,6 +65,9 @@ async function runTests() {
         "build/esm.js",
         "build/cjs.js",
         "build/index.d.ts",
+        "rig/esm.js",
+        "rig/cjs.js",
+        "rig/index.d.ts",
         "utils/esm.js",
         "utils/cjs.js",
         "utils/index.d.ts",
@@ -78,6 +81,13 @@ async function runTests() {
       }
     }),
 
+    test("Rig is optional and SSR-safe in ESM and CJS", async () => {
+      for (const module of [await import(join(distDir, "rig/esm.js")), require(join(distDir, "rig/cjs.js"))]) {
+        const rig = module.createRig({ version: 1, nodes: [{ name: "Root" }] })
+        if (rig.bone("Root").worldMatrix()[15] !== 1) throw new Error("Invalid rig build")
+      }
+      if ("createRig" in await import(join(distDir, "esm.js"))) throw new Error("Rig leaked into root")
+    }),
     test("Utils imports without browser globals and stays out of root", async () => {
       for (const module of [await import(join(distDir, "utils/esm.js")), require(join(distDir, "utils/cjs.js"))]) {
         if (module.poseToTransform({ x: 1, y: 2, z: 3 }, { x: 0, y: 0, z: 0, w: 1 }).positionZ !== 3) throw new Error("Missing pose helper")

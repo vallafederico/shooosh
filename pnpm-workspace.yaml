@@ -2,6 +2,7 @@ packages:
   - package
   - harness
   - web
+  - packages/model
 
 onlyBuiltDependencies:
   - esbuild

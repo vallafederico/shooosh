@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Texture lab · shooosh</title>
+    <link rel="stylesheet" href="texture-viewer.css" />
+  </head>
+  <body>
+    <header>
+      <a href="#">shooosh<span> / texture lab</span></a
+      ><span id="status" role="status">Loading comparison…</span>
+    </header>
+    <main>
+      <section class="intro">
+        <!-- attribution -->
+        <div class="eyebrow">ASSET VERIFICATION</div>
+        <h1>Keep the detail.<br /><span>Lose the weight.</span></h1>
+        <p>
+          Inspect the actual decoded conversion. Wipe between versions, isolate channels,
+          and look closely at what changed.
+        </p>
+      </section>
+      <section class="toolbar">
+        <label>Texture<select id="asset"></select></label
+        ><label
+          >View<select id="mode">
+            <option value="0">Comparison wipe</option>
+            <option value="1">Original</option>
+            <option value="2">Converted</option>
+            <option value="3">Difference ×4</option>
+          </select></label
+        ><label
+          >Channel<select id="channel">
+            <option value="0">RGBA on checkerboard</option>
+            <option value="1">Alpha</option>
+            <option value="2">Red</option>
+            <option value="3">Green</option>
+            <option value="4">Blue</option>
+          </select></label
+        ><label
+          >Backend<select id="backend">
+            <option value="auto">Auto</option>
+            <option value="webgpu">WebGPU</option>
+            <option value="webgl2">WebGL2</option>
+          </select></label
+        >
+      </section>
+      <div class="labels"><span>ORIGINAL</span><span>CONVERTED</span></div>
+      <div id="stage">
+        <canvas aria-label="Original and converted texture comparison"></canvas>
+        <p id="error" role="alert" hidden></p>
+      </div>
+      <section class="controls">
+        <label
+          >Wipe
+          <input id="wipe" type="range" min="0" max="1" step="0.001" value="0.5" /></label
+        ><label
+          >Zoom
+          <input id="zoom" type="range" min="1" max="8" step="0.1" value="1" /></label
+        ><button id="reset">Reset view</button
+        ><span>Drag to pan · arrow keys to pan</span>
+      </section>
+      <section id="stats"></section>
+      <details>
+        <summary>Validation & comparison report</summary>
+        <pre id="report"></pre>
+      </details>
+      <p class="footnote">
+        Decoded preview through shooosh. KTX2 is decoded on Node; this view does not test
+        native compressed GPU upload. Metrics use preview-resolution RGBA samples. Model
+        textures are paired by index—verify their names.
+      </p>
+    </main>
+    <script type="module" src="texture-viewer.js"></script>
+  </body>
+</html>

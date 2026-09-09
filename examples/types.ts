@@ -27,6 +27,7 @@ export type ExampleSpec = {
   fragment: string
   /** Default: fullscreen createScene. */
   kind?:
+    | "view"
     | "screen"
     | "items"
     | "scroll-items"

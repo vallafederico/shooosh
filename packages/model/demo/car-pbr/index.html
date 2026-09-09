@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Car · shooosh material studio</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <a href="#">shooosh <span>/ material studio</span></a
+      ><span id="status" role="status">Loading car…</span>
+    </header>
+    <main>
+      <section class="stage">
+        <div class="heading">
+          <p class="eyebrow">CAR / MATERIAL STUDY</p>
+          <h1>Details make<br />the difference.</h1>
+          <p class="credit">
+            Model by
+            <a
+              href="https://sketchfab.com/cuadot"
+              target="_blank"
+              rel="noopener noreferrer"
+              >cuadot ↗</a
+            >
+          </p>
+        </div>
+        <div class="ground"></div>
+        <canvas aria-label="Textured PBR car. Drag or use arrow keys to orbit."></canvas>
+        <p id="error" role="alert" hidden></p>
+        <div class="hint">DRAG TO ORBIT <span>·</span> SCROLL TO ZOOM</div>
+        <div class="badge">
+          <span id="format">Converted material</span><strong id="bytes">—</strong
+          ><small>source texture payload</small>
+        </div>
+      </section>
+      <aside>
+        <div class="eyebrow">MATERIAL CONTROLS</div>
+        <h2>One car.<br />Three texture variants.</h2>
+        <p class="intro">Compare the converted maps under the same studio lighting.</p>
+        <label
+          >Texture variant<select id="variant">
+            <option value="webp">WebP · optimized</option>
+            <option value="ktx2">KTX2 · UASTC</option>
+            <option value="original">Original PNG</option>
+          </select></label
+        ><label
+          >Renderer<select id="backend">
+            <option value="auto">Auto · WebGPU first</option>
+            <option value="webgpu">WebGPU</option>
+            <option value="webgl2">WebGL2</option>
+          </select></label
+        >
+        <hr />
+        <label
+          >Exposure<input
+            id="exposure"
+            type="range"
+            min="0.3"
+            max="2.5"
+            step="0.05"
+            value="1.15" /></label
+        ><label
+          >Roughness multiplier<input
+            id="roughness"
+            type="range"
+            min="0.2"
+            max="1.8"
+            step="0.05"
+            value="1" /></label
+        ><label
+          >Studio reflections<input
+            id="reflections"
+            type="range"
+            min="0"
+            max="2"
+            step="0.05"
+            value="1" /></label
+        ><label
+          >Emissive lights<input
+            id="emission"
+            type="range"
+            min="0"
+            max="5"
+            step="0.1"
+            value="1.5" /></label
+        ><label class="check"
+          ><input id="normals" type="checkbox" checked />Normal-map detail</label
+        ><label class="check"><input id="rotate" type="checkbox" />Turntable</label
+        ><button id="reset">Reset camera</button>
+        <p class="note">
+          GGX shading · procedural studio reflections<br />Static reference pose · no
+          animation playback
+        </p>
+      </aside>
+    </main>
+    <footer>
+      Example-only rendering code. Conversion and normal baking happen in Node. KTX2 is
+      decoded before preview; the displayed payload size is the source model’s textures,
+      not the preview atlas transfer. Maps are previewed at 1024 px; ambiguous overlapping
+      UVs use geometric normals.
+    </footer>
+    <script type="module" src="viewer.js"></script>
+  </body>
+</html>

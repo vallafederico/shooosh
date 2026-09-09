@@ -9,10 +9,26 @@
 | Goal | Read |
 | --- | --- |
 | **Ship a look** | This file → [examples/README.md](./examples/README.md) → [agent copy guide](./examples/agent-guide.md) → copy the selected demo and helpers |
+| **Import/edit/optimize models or textures** | [Agent entry guide](./docs/agent-usage.md) → [model reference](./packages/model/README.md) |
+| **Use bones, rigs or animations** | [Agent entry guide](./docs/agent-usage.md) → [rig API](./docs/rig.md) → [rig example](./examples/rig-bones.md) |
 | **Change the engine** | This file → [agents.md](./agents.md) → next [docs/agent-tasks/](./docs/agent-tasks/) with `status: todo` |
 | **Mount on a site** | Skill [shooosh-site](./.cursor/skills/shooosh-site/SKILL.md) → [docs/site-patterns.md](./docs/site-patterns.md) if needed |
 
 Humans on GitHub: [readme.md](./readme.md) → [docs/README.md](./docs/README.md) → [docs/getting-started.md](./docs/getting-started.md).
+
+## Model, texture and rig entry points
+
+These additions are unreleased; verify installed exports and CLI help. See the
+[agent entry guide](./docs/agent-usage.md) for copyable workflows and limits.
+`shooosh-model/node` owns conversion/optimization/verification on Node.
+`shooosh-model` is a controller contract; `/shooosh` is the opt-in rigid browser
+adapter. `shooosh/rig` is a separate CPU utility entry, not automatic skinned
+rendering. No Node codecs or rig code leak into core browser imports.
+
+- [Model machine index](./packages/model/llms.txt) · [model agent guide](./packages/model/agents.md)
+- [Rig · bones & sockets](./examples/rig-bones.md): built-in arm or imported car; no mesh deformation.
+- [Car PBR studio](./examples/car-pbr.md): static textured model and material controls.
+- [Tree-shaking verification](./docs/audits/2026-09-09-final-tree-shaking.md): exact unused-import and baseline size checks.
 
 ## When to use shooosh
 
@@ -45,9 +61,10 @@ Use source matching your installed version; unreleased recipes can require new A
 - `createMouseMonad` / `createMouseTrail`
 - `shooosh/utility`: `createSpinner({ element })` → drag rotation + release inertia; see [docs/utility.md](./docs/utility.md).
 
-Node/Bun only (`shooosh/msdf`): `generateMsdf` / `generateFontAtlas` / `generateIconSdf` / `alphaToSdf` · CLI `pnpm msdf`
-
+- `shooosh/rig`: optional bone references, poses, TRS clip sampling, skin matrices and sockets. No renderer or clock; [rig guide](./docs/rig.md). Node extraction: `shooosh-model rig`.
 - `shooosh/utils`: optional quaternion composition, vector rotation and pose mapping; see [docs/utils.md](./docs/utils.md). No renderer imports.
+
+Node/Bun only (`shooosh/msdf`): `generateMsdf` / `generateFontAtlas` / `generateIconSdf` / `alphaToSdf` · CLI `pnpm msdf`
 
 ## Shader contract (short)
 
@@ -80,3 +97,5 @@ See [docs/shader-contract.md](./docs/shader-contract.md).
 - [Source](https://github.com/vallafederico/shooosh) · [vgpu llms.txt](https://vgpu.sh/llms.txt) (inspiration only)
 
 - [Physics/utils performance audit](./docs/audits/2026-09-09-physics-utils-performance.md): package footprint, 58 tree-shaking checks, active/idle browser measurements, limits and next opportunities.
+
+Hosted docs: [agent manifest](https://shooosh-web.vercel.app/agents.md) · [machine index](https://shooosh-web.vercel.app/llms.txt) · [interactive examples](https://shooosh-web.vercel.app/examples).

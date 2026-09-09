@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>shooosh · model workbench</title>
+    <link rel="stylesheet" href="./viewer.css" />
+  </head>
+  <body>
+    <header>
+      <a href="./">shooosh <span>/ model workbench</span></a
+      ><span id="status" role="status">Opening model…</span>
+    </header>
+    <main>
+      <aside>
+        <!-- attribution -->
+        <h1>Scene contents</h1>
+        <label>Scene<select id="scene"></select></label
+        ><label
+          >Find a part<input id="search" type="search" placeholder="Name or node ID"
+        /></label>
+        <p id="counts"></p>
+        <div id="tree" aria-label="Model parts"></div>
+        <button id="more" hidden>Show 100 more</button>
+        <details>
+          <summary>Asset inventory</summary>
+          <pre id="inventory"></pre>
+        </details>
+      </aside>
+      <section id="stage" aria-label="Model preview">
+        <canvas id="canvas" aria-label="3D model, drag to orbit"></canvas>
+        <div class="view">
+          <span>Drag to orbit · scroll to zoom</span>
+          <label
+            >Appearance<select id="appearance">
+              <option value="textured">Textured</option>
+              <option value="solid">Solid colors</option>
+            </select></label
+          ><button id="frame">Reset view</button
+          ><label
+            >Backend<select id="backend">
+              <option value="auto">Auto</option>
+              <option value="webgpu">WebGPU</option>
+              <option value="webgl2">WebGL2</option>
+            </select></label
+          ><label
+            >Orbit yaw<input
+              id="yaw"
+              type="range"
+              min="-3.14"
+              max="3.14"
+              step="0.01"
+              value="0.4"
+          /></label>
+        </div>
+      </section>
+      <aside class="properties">
+        <h2 id="selected">Choose a part</h2>
+        <p id="selection-info">Select a named node in the scene tree.</p>
+        <div id="controls" hidden>
+          <div class="row">
+            <button id="visible">Hide</button><button id="isolate">Isolate</button>
+          </div>
+          <fieldset>
+            <legend>Local offset from imported pose</legend>
+            <div class="triplet">
+              <label>X<input id="x" type="number" step="0.1" value="0" /></label
+              ><label>Y<input id="y" type="number" step="0.1" value="0" /></label
+              ><label>Z<input id="z" type="number" step="0.1" value="0" /></label>
+            </div>
+            <label
+              >Rotation Y (degrees)<input
+                id="rotation"
+                type="number"
+                step="5"
+                value="0" /></label
+            ><label
+              >Scale multiplier<input
+                id="scale"
+                type="number"
+                min="0.01"
+                step="0.1"
+                value="1" /></label
+            ><button id="transform">Apply transform</button>
+          </fieldset>
+          <fieldset id="material-controls">
+            <legend>Material preview</legend>
+            <label
+              >Base color / texture tint<input
+                id="color"
+                type="color"
+                value="#b3b8bf" /></label
+            ><label
+              >Metallic<input
+                id="metallic"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value="1" /></label
+            ><label
+              >Roughness<input
+                id="roughness"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value="1" /></label
+            ><button id="material">Apply to this mesh</button
+            ><label>Use asset material<select id="material-list"></select></label
+            ><button id="assign">Assign material</button>
+          </fieldset>
+        </div>
+        <button id="reset">Reset all parts</button>
+        <h2>Use in your site</h2>
+        <p>Operations address the same parts as the generated TypeScript interface.</p>
+        <textarea
+          id="recipe"
+          readonly
+          aria-label="Runtime operations code"
+          rows="8"
+        ></textarea
+        ><button id="download">Download runtime operations</button>
+        <details open>
+          <summary>Rendering support</summary>
+          <ul id="limits"></ul>
+        </details>
+        <p id="error" role="alert"></p>
+      </aside>
+    </main>
+    <script type="module" src="./viewer.js"></script>
+  </body>
+</html>

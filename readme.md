@@ -9,6 +9,8 @@ The engine already running on our sites — a fullscreen fragment, a page-behind
 
 **Docs:** [docs/](./docs/README.md) · [Changelog](./CHANGELOG.md) · [Getting started](./docs/getting-started.md) · [API](./docs/api.md) · [Shader contract](./docs/shader-contract.md)
 
+**For coding agents:** [llms.txt](./llms.txt) → [task-based usage guide](./docs/agent-usage.md). Model/texture tooling and `shooosh/rig` are opt-in additions available in shooosh 0.0.7 and shooosh-model 0.1.0; the guide states exact imports and limits.
+
 ```shell
 pnpm i shooosh
 ```

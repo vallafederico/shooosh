@@ -26,7 +26,7 @@ export function mountExample(
   stage: HTMLElement,
   options: MountExampleOptions = {},
 ) {
-  if (spec.kind === "dom-integration") {
+  if (spec.kind === "dom-integration" || spec.kind === "view") {
     let live = true
     const handle = spec.run(stage, { backend: options.backend, onInitError: options.onError })
     void handle.ready?.then((backend) => { if (live) options.onBackend?.(backend ?? null) })

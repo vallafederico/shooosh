@@ -1,0 +1,15 @@
+# shooosh-model
+
+> Separate Node 22+ model/texture pipeline with optional shooosh runtime controls.
+
+This package is experimental. These APIs require shooosh-model 0.1.0+ and
+shooosh 0.0.7+. Read exports and `shooosh-model --help` for the installed version.
+
+- [Agent entry](./agents.md): import boundaries, workflow, limitations and verification.
+- [API and CLI reference](./README.md): conversions, edits, optimization, textures, viewers and rigs.
+- [Rig API](https://github.com/vallafederico/shooosh/blob/main/docs/rig.md): optional `shooosh/rig` bone utilities.
+- [Copy guide](https://github.com/vallafederico/shooosh/blob/main/examples/agent-guide.md): complete repository example sets.
+
+Imports: `shooosh-model/node` on Node; `shooosh-model` for a dependency-free
+controller; `shooosh-model/shooosh` for the explicit browser adapter. Rig runtime
+is `shooosh/rig`, not `shooosh-model/rig`. No Three.js. No Node codecs in browsers.

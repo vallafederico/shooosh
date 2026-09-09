@@ -19,6 +19,12 @@
       "types": "./msdf/index.ts",
       "import": "./msdf/index.ts",
       "default": "./msdf/index.ts"
+    },
+    "./rig": {
+      "types": "./rig/index.ts",
+      "import": "./rig/index.ts",
+      "default": "./rig/index.ts"
     }
-  }
+  },
+  "version": "0.0.7"
 }

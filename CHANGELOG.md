@@ -5,6 +5,16 @@ All notable changes to [shooosh](https://www.npmjs.com/package/shooosh) are docu
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [SemVer](https://semver.org/).
 
+## [0.0.7] — 2026-09-09
+
+### Added
+
+- Optional, tree-shakeable `shooosh/rig` bone references, poses, animation sampling, sockets and skin matrices.
+- Separate `shooosh-model` 0.1.0 CLI/Node package for model conversion, inspection, light edits, compression, texture optimization and original/converted previews.
+- Cloud fly-through, raymarched lighting, textured car and interactive rig examples, now hosted at `/examples`.
+- Agent usage guides and hosted machine-readable documentation.
+- Adversarial model/texture tests and browser boundary audits. Existing core JavaScript and consumer bundle sizes are unchanged.
+
 ## [0.0.6] — 2026-09-09
 
 ### Added

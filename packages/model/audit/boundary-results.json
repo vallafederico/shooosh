@@ -1,0 +1,137 @@
+{
+  "baselineRef": "72fe4c7cc204b4a6fdec80a9538727aace10747a",
+  "core": {
+    "sha256": "9febdbbee2a16c804c117a9d2a09a17e9cf9e483b2fc3039309cdf4488e00769",
+    "files": 78,
+    "bytes": 1012674
+  },
+  "coreIdentical": true,
+  "consumerSizesIdentical": true,
+  "transferCases": [
+    {
+      "name": "probeRenderer",
+      "initial": {
+        "files": 1,
+        "rawBytes": 749,
+        "gzipBytes": 452
+      },
+      "emitted": {
+        "files": 1,
+        "rawBytes": 749,
+        "gzipBytes": 452
+      }
+    },
+    {
+      "name": "createItem",
+      "initial": {
+        "files": 2,
+        "rawBytes": 11136,
+        "gzipBytes": 4887
+      },
+      "emitted": {
+        "files": 3,
+        "rawBytes": 18762,
+        "gzipBytes": 8226
+      }
+    },
+    {
+      "name": "createScene",
+      "initial": {
+        "files": 11,
+        "rawBytes": 39686,
+        "gzipBytes": 15927
+      },
+      "emitted": {
+        "files": 23,
+        "rawBytes": 87309,
+        "gzipBytes": 36248
+      }
+    },
+    {
+      "name": "createDomLayer",
+      "initial": {
+        "files": 4,
+        "rawBytes": 27989,
+        "gzipBytes": 11369
+      },
+      "emitted": {
+        "files": 12,
+        "rawBytes": 52232,
+        "gzipBytes": 22343
+      }
+    },
+    {
+      "name": "scene+dom",
+      "initial": {
+        "files": 11,
+        "rawBytes": 53416,
+        "gzipBytes": 20969
+      },
+      "emitted": {
+        "files": 23,
+        "rawBytes": 100950,
+        "gzipBytes": 41289
+      }
+    }
+  ],
+  "browserGraphs": [
+    {
+      "name": "core",
+      "rawBytes": 133401,
+      "gzipBytes": 41117,
+      "modules": 29,
+      "forbidden": [],
+      "unusedBytesAdded": 0
+    },
+    {
+      "name": "dom",
+      "rawBytes": 50560,
+      "gzipBytes": 18060,
+      "modules": 20,
+      "forbidden": [],
+      "unusedBytesAdded": 0
+    },
+    {
+      "name": "webgpu",
+      "rawBytes": 89926,
+      "gzipBytes": 29229,
+      "modules": 23,
+      "forbidden": [],
+      "unusedBytesAdded": 0
+    },
+    {
+      "name": "webgl2",
+      "rawBytes": 84781,
+      "gzipBytes": 26098,
+      "modules": 10,
+      "forbidden": [],
+      "unusedBytesAdded": 0
+    },
+    {
+      "name": "rig",
+      "rawBytes": 9467,
+      "gzipBytes": 3885,
+      "modules": 2,
+      "forbidden": [],
+      "unusedBytesAdded": 0
+    },
+    {
+      "name": "model-controller",
+      "rawBytes": 5061,
+      "gzipBytes": 2226,
+      "modules": 3,
+      "forbidden": [],
+      "unusedBytesAdded": 0
+    },
+    {
+      "name": "model-shooosh",
+      "rawBytes": 72854,
+      "gzipBytes": 24467,
+      "modules": 35,
+      "forbidden": [],
+      "unusedBytesAdded": 0
+    }
+  ],
+  "rejectsNodeEntry": true,
+  "notes": "Same Bun and installed dependency versions for both builds. Optional rig/model-controller/adapter are measured separately; they are not included in core."
+}

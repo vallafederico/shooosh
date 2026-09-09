@@ -44,6 +44,8 @@ the intended backend path, not a claim of exhaustive visual parity or accessibil
 
 | ID / source | `run` target | Additional local files | Backend / adaptation note |
 | --- | --- | --- | --- |
+| [rig-bones](./rig-bones.ts) | Empty host, minimum 640px height | [rig-fixture.ts](./rig-fixture.ts), [physics-lab.wgsl](./physics-lab.wgsl), [types.ts](./types.ts), [shaders.d.ts](./shaders.d.ts) | Both; built-in arm or local rig JSON, bones/socket visualization only. See [setup](./rig-bones.md). |
+| [car-pbr](./car-pbr.ts) | Empty host with explicit height | [types.ts](./types.ts), prepared [standalone studio](../packages/model/demo/car-pbr/README.md) at `./car-pbr/` | Both; local model assets required; decoded KTX2 preview, static pose. See [setup](./car-pbr.md). |
 | [sss](./sss.ts) **WIP** | Canvas in a positioned, sized parent | [sss-shaders.ts](./sss-shaders.ts), [screen-space-scene.ts](./screen-space-scene.ts), [screen-space-lab.ts](./screen-space-lab.ts), [types.ts](./types.ts) | WebGPU only; see [pass guide](./screen-space-effects.md). |
 | [ssao](./ssao.ts) **WIP** | Canvas in a positioned, sized parent | [ssao-shaders.ts](./ssao-shaders.ts), [screen-space-scene.ts](./screen-space-scene.ts), [screen-space-lab.ts](./screen-space-lab.ts), [types.ts](./types.ts) | WebGPU only; explicit WebGL2 fallback. |
 | [dom-integration](./dom-integration.ts) | Empty host with explicit height | [dom-canvas-input.ts](./dom-canvas-input.ts), [dom-integration-art.ts](./dom-integration-art.ts), [dom-integration-style.ts](./dom-integration-style.ts), [types.ts](./types.ts) | Both; source-only lab including experimental input (see below). |
@@ -195,3 +197,12 @@ Known limits are recorded in the [DOM specification](../docs/proposals/dom-mirro
 and [performance audit](../docs/audits/2026-09-08-tree-shaking-results.md), including
 the WebGPU screen path with an unused uniform binding. Do not claim all browser
 edge cases are solved because the catalog renders or a build passes.
+
+## Rig example
+
+`rig-bones` → `rig-bones.ts`, `rig-fixture.ts`, `physics-lab.wgsl`, `types.ts` and
+`shaders.d.ts`. Mount in an element, both backends. `shooosh/rig` and `/utils`
+are explicit imports. Built-in arm requires no external asset; prepare the car
+JSON locally as described in [rig-bones.md](./rig-bones.md). Playback/scrubbing
+show bones and a socket marker, not deformed model geometry. Await `ready`,
+retain the readable controls on GPU failure and call `destroy` on unmount.

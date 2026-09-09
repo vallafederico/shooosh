@@ -41,6 +41,8 @@ bundle and runtime checks but are not marked production-ready.
 | [object-env.ts](./object-env.ts) | `createObject` + `loadTexture(..., { flipY: false })` | Cube sampling `uEnvMap` |
 | [fabric-sheen.ts](./fabric-sheen.ts) **WIP** | `createObject` + independent WGSL material helpers | Static diffuse/sheen/coat comparison; [controls and copy guide](./fabric-sheen.md) |
 | [object-pbr.ts](./object-pbr.ts) | `createObject` + [pbr-shaders](./pbr-shaders.ts) | Cook–Torrance GGX + env IBL (3 materials) |
+| [rig-bones.ts](./rig-bones.ts) | `shooosh/rig` + `createObject` | Animated bones, clip scrubbing and a socket marker; built-in arm or imported car ([guide](./rig-bones.md)) |
+| [car-pbr.ts](./car-pbr.ts) | Isolated studio view using `createObject` | Car with converted textures, PBR lighting, orbit and material controls; [prepare local assets](./car-pbr.md) |
 | [object-mesh.ts](./object-mesh.ts) | `createObject` custom shape | Icosahedron — same packing as `loadGlb` |
 | [particles-field.ts](./particles-field.ts) | `createParticles` | Animated clip-space dots |
 | [item-fill.ts](./item-fill.ts) | `acquireLayer` + `createItem` | SDF capsule in the element's `vUv` |

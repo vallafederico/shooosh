@@ -7,6 +7,8 @@ understand its limits and verify the result without guessing package APIs.
 
 | Task | Read in order |
 | --- | --- |
+| Import/optimize a model or texture | [Agent entry guide](./agent-usage.md) → [model reference](https://github.com/vallafederico/shooosh/blob/main/packages/model/README.md) |
+| Use bones or imported animation | [Rig API](./rig.md) → [rig example](../examples/rig-bones.md); utilities do not deform meshes automatically |
 | Add a visual look | [llms.txt](../llms.txt) → [example catalog](../examples/README.md) → [copy guide](../examples/agent-guide.md) → selected source and helpers |
 | Bind DOM images to GPU effects | [DOM guide](./dom.md) → [DOM lab](../examples/dom-integration.ts); distinguish public image APIs from the input prototype |
 | Add drag rotation | [Utility guide](./utility.md) → [glass recipe](../examples/refractive-glass.ts) |
@@ -46,8 +48,9 @@ on both backends. A converter pass is not evidence of visual correctness.
 
 ## Distribution and verification
 
-This agent interface currently lives in the repository. An npm install does not
-include the example catalog, skills or all source paths linked here. Use a source
+The next core package includes `llms.txt`, `agents.md` and `docs/`; the separate
+model package includes its own machine index and agent guide. An npm install does
+not include the example catalog, skills or all source paths linked here. Use a source
 checkout matching the installed release; the working tree can contain unreleased
 APIs. Hosted agent documentation remains [task 06](./agent-tasks/06-agent-docs-hosting.md).
 

@@ -177,3 +177,11 @@ See the [Rapier 3D recipe](../examples/physics.md) for body/quaternion mapping.
 
 Optional quaternion/pose helpers live in [`shooosh/utils`](./utils.md), imported
 explicitly; the root and DOM renderer do not depend on them.
+
+## Optional model and rig workflows
+
+Use the [agent entry guide](./agent-usage.md) to select `shooosh-model/node`,
+`shooosh-model/shooosh` or `shooosh/rig`. The [rig API](./rig.md) provides bone
+references, explicit animation sampling and palettes independently of the
+renderer. Model import, texture conversion and rig extraction run on Node.
+These opt-in additions require shooosh 0.0.7 and shooosh-model 0.1.0; validate installed exports before use.

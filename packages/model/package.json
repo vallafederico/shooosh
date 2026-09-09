@@ -1,0 +1,64 @@
+{
+  "name": "shooosh-model",
+  "version": "0.1.0",
+  "description": "Inspect, edit and optimize glTF assets; generate typed runtime controls and explore models locally.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "shooosh-model": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    },
+    "./shooosh": {
+      "types": "./dist/shooosh.d.ts",
+      "import": "./dist/shooosh.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "llms.txt",
+    "agents.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "node prepare-material.mjs && tsc -p tsconfig.json && node build-viewer.mjs",
+    "test": "bun test test",
+    "check": "node prepare-material.mjs && tsc -p tsconfig.viewer.json",
+    "test:boundary": "node audit/browser-boundary.mjs"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^4.2.1",
+    "@gltf-transform/extensions": "^4.2.1",
+    "assimpjs": "^0.0.10",
+    "draco3dgltf": "^1.5.7",
+    "gltf-validator": "^2.0.0-dev.3.10",
+    "meshoptimizer": "^1.0.1",
+    "sharp": "^0.34.5",
+    "texture2ddecoder-wasm": "^1.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "esbuild": "^0.28.2",
+    "shooosh": "workspace:*",
+    "typescript": "^5.9.2"
+  },
+  "peerDependencies": {
+    "shooosh": ">=0.0.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vallafederico/shooosh.git",
+    "directory": "packages/model"
+  }
+}

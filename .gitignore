@@ -15,3 +15,15 @@ pnpm-debug.log*
 .idea/
 .npmrc
 .vercel/
+
+# Locally prepared car model and texture previews (not redistributed).
+harness/public/car-pbr/
+
+# Locally extracted rig data (author credit remains in the example).
+harness/public/rig/
+
+# Prepared website demo assets, staged locally for production deployment.
+web/public/car-pbr/
+web/public/rig/
+.vercel
+.env*

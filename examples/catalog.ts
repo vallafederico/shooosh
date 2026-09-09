@@ -1,4 +1,6 @@
+import { rigBones } from "./rig-bones"
 import { raymarchClouds } from "./raymarch-clouds"
+import { carPbr } from "./car-pbr"
 import { raymarchLights } from "./raymarch-lights"
 import { physics3D } from "./physics-3d"
 import { physicsPile } from "./physics-pile"
@@ -65,6 +67,8 @@ export const examples: ExampleSpec[] = [
   physicsPendulum,
   objectEnv,
   objectPbr,
+  carPbr,
+  rigBones,
   fabricSheen,
   objectMesh,
   particlesField,

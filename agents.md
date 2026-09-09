@@ -19,6 +19,27 @@ Common use cases:
 - WebGPU compute (`createCompute`); fluids as example shaders + loop (`examples/fluid-sim.ts` / `fluid-shaders.ts`)
 - Hot-swap a `.wgsl` file without remounting the scene (roadmap)
 
+## Using the optional model and rig APIs
+
+For consumer tasks, start with [docs/agent-usage.md](./docs/agent-usage.md).
+`shooosh-model/node` owns model/texture conversion, verification and extraction;
+`shooosh-model/shooosh` loads prepared rigid geometry in browsers. `shooosh/rig`
+provides separate bone/pose/sampling/socket/palette utilities, with no renderer
+or clock. See [the model reference](./packages/model/README.md) and
+[rig API](./docs/rig.md). Never move Node codecs or rig exports into core.
+
+Inspect the installed exports/declarations and CLI help: these additions are
+unreleased, and repository examples may need a newer build than npm. Root
+packages ship this manifest, `llms.txt` and `docs/`; examples, skills, source and
+private model assets require a matching checkout. The model package ships its
+own [machine index](./packages/model/llms.txt) and [agent guide](./packages/model/agents.md).
+
+Use [rig-bones](./examples/rig-bones.md) for bone/clip/socket integration and
+[car-pbr](./examples/car-pbr.md) for a static textured material studio. The rigid
+workbench does not deform skinned meshes or play animation clips. Generating a
+skin palette is not renderer integration. Preserve attribution and verify both
+backends for visual changes. See [bundle checks](./docs/audits/2026-09-09-final-tree-shaking.md).
+
 ## Documentation surfaces
 
 - [llms.txt](./llms.txt) — machine index (**start here**)
@@ -89,3 +110,5 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 - Source: https://github.com/vallafederico/shooosh
 - npm: https://www.npmjs.com/package/shooosh
 - DX reference (not a port): https://vgpu.sh/agents.md
+
+Hosted docs: [agent manifest](https://shooosh-web.vercel.app/agents.md) · [machine index](https://shooosh-web.vercel.app/llms.txt) · [interactive examples](https://shooosh-web.vercel.app/examples).

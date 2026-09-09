@@ -10,6 +10,7 @@ This folder is what [the GitHub repo](https://github.com/vallafederico/shooosh) 
 
 | | |
 | --- | --- |
+| [Agent entry guide](./agent-usage.md) | Model/texture/rig workflows, exact imports, deployment artifacts and limits |
 | [Getting started](./getting-started.md) | Install, two mounts, first `fsMain` |
 | [Agent copy guide](../examples/agent-guide.md) | Per-demo dependencies, mount targets, backend limits and verification |
 | [Examples](../examples/README.md) | Using the library: plasma, noise, SDF, mouse, bloom, fluid, scroll, cards |
@@ -21,6 +22,8 @@ This folder is what [the GitHub repo](https://github.com/vallafederico/shooosh) 
 | | |
 | --- | --- |
 | [Site patterns](./site-patterns.md) | App-shell canvas, items, post, Webflow — from aiuis |
+| [Rig and bone utilities](./rig.md) | Optional CPU poses, clip sampling, sockets and palettes |
+| [Model and texture tools](https://github.com/vallafederico/shooosh/blob/main/packages/model/README.md) | Separate Node pipeline, typed parts, KTX2/WebP verification and local viewers |
 | [Interaction utilities](./utility.md) | Optional `shooosh/utility`: drag rotation and inertia |
 | [DOM integration](./dom.md) | Optional `shooosh/dom`: cached shader bindings and safe image enhancement |
 | [WGSL ↔ GLSL](./shader-translation.md) | Fallback converter + mapping |
@@ -62,3 +65,5 @@ Completed follow-up: [DOM idle optimization](./audits/2026-09-08-dom-idle-optimi
 
 - [Build-time shaders and migration](./shader-build.md) — `.wgsl` plugin, CLI and optional runtime compiler.
 - [Small bundle setups](./bundle-setup.md) — backend-only entries, lightweight scenes and production shaders.
+
+- [Optional rig and bone utilities](./rig.md) — explicit poses, animation sampling and skin matrices; no renderer dependency.

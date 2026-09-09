@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => ({
       "shooosh/webgl2": fileURLToPath(new URL("../dist/webgl2/esm.js", import.meta.url)),
       "shooosh/webgpu": fileURLToPath(new URL("../dist/webgpu/esm.js", import.meta.url)),
       "shooosh/compiler": fileURLToPath(new URL("../package/compiler/index.ts", import.meta.url)),
+      "shooosh/rig": fileURLToPath(new URL("../package/rig/index.ts", import.meta.url)),
       "shooosh/utils": fileURLToPath(new URL("../package/utils/index.ts", import.meta.url)),
       "shooosh/utility": fileURLToPath(new URL("../package/utility/index.ts", import.meta.url)),
       "shooosh/dom": fileURLToPath(new URL("../package/dom/index.ts", import.meta.url)),

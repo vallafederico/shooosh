@@ -1,0 +1,32 @@
+---
+import "../../../harness/src/styles.css"
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title>Examples — shooosh</title>
+    <meta name="description" content="Interactive shooosh examples: shaders, clouds, lighting, physics, textured models and bones. Try WebGPU or WebGL2." />
+    <link rel="canonical" href={new URL("/examples", Astro.site)} />
+  </head>
+  <body>
+    <aside class="rail">
+      <p class="mark"><a href="/">shooosh</a> / examples</p>
+      <p class="backend" id="backend">backend · …</p>
+      <div id="backend-toggle"></div>
+      <nav id="nav" aria-label="Examples"></nav>
+      <p class="hint"><a href="https://github.com/vallafederico/shooosh/tree/main/examples">Source & copy guides</a> · <a href="/llms.txt">Agent docs</a></p>
+    </aside>
+    <main id="stage" aria-label="Interactive example"></main>
+    <script>import "../../../harness/src/main"</script>
+  </body>
+</html>
+<style is:global>
+  .rail a { color: inherit; }
+  @media (max-width: 720px) {
+    .rail #nav { max-height: 180px; overflow-y: auto; }
+    #stage:not(.scroll-demo) { height: 75dvh; min-height: 520px; position: relative; overflow: hidden; }
+  }
+</style>

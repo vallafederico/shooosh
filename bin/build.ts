@@ -79,6 +79,12 @@ async function run() {
         minify: true,
         sourcemap: "none",
       }),
+      // Separate build: new rig modules cannot alter the core shared chunk graph.
+      ...(["esm", "cjs"] as const).map(format => build({
+        entrypoints: ["./package/rig/index.ts"], outdir: "./dist/rig", target: "browser",
+        format, naming: `${format}.js`, minify: true, emitDCEAnnotations: true,
+        plugins: format === "esm" ? [dts()] : [],
+      })),
       ...(["esm", "cjs"] as const).map(format => build({
         entrypoints: ["./package/build/index.ts"], outdir: "./dist/build", target: "node",
         format, naming: format === "esm" ? "esm.js" : "cjs.js", minify: true, plugins: [dts()],

@@ -1,11 +1,13 @@
 ---
 import "../styles/global.css"
+import { version } from "../../../package.json"
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
     <title>shooosh — WGSL, WebGPU with WebGL2 fallback</title>
     <meta
       name="description"
@@ -24,6 +26,7 @@ import "../styles/global.css"
         <header>
           <span>shooosh</span>
           <nav>
+            <a href="/examples">examples</a>
             <a href="https://github.com/vallafederico/shooosh/tree/main/docs">docs</a>
             <a href="https://www.npmjs.com/package/shooosh">npm</a>
             <a href="https://github.com/vallafederico/shooosh">github</a>
@@ -39,7 +42,7 @@ import "../styles/global.css"
           <pre>pnpm i shooosh</pre>
         </div>
         <footer>
-          <span>0.0.1</span>
+          <span>{version}</span>
           <span>createScene · createItem · acquireLayer</span>
         </footer>
       </div>

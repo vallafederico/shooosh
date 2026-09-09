@@ -24,11 +24,19 @@ writeFileSync(resolve(temporary, "package.json"), '{"type":"module","private":tr
 // runnable screen+engine and item+layer cases ensure GPU code remains available.
 // Frozen transfer ceilings: deliberately allow modest minifier/version movement.
 // These are initial static bytes, not a claim that lazy backend code is free.
-type Fixture = { name: string; budget: number; code?: string; symbols?: string[]; dom?: boolean; gpu?: boolean; renderer?: string; example?: boolean }
+type Fixture = { name: string; budget: number; code?: string; symbols?: string[]; dom?: boolean; gpu?: boolean; renderer?: string; example?: boolean; empty?: boolean; sameSizeAs?: string }
 const fixtures: Fixture[] = [
+  { name: "bare", code: 'globalThis.__fixture = 1;', empty: true, budget: 100 },
+  { name: "all-browser-unused", code: 'import "shooosh"; import "shooosh/rig"; import "shooosh/utils"; import "shooosh/dom"; import "shooosh/webgpu"; import "shooosh/webgl2"; globalThis.__fixture = 1;', empty: true, budget: 100 },
+  { name: "rig-unused-namespace", code: 'import * as rig from "shooosh/rig"; globalThis.__fixture = 1;', empty: true, budget: 100 },
+  { name: "rig-unused-example", code: `import {run} from ${JSON.stringify(resolve(root, "examples/rig-bones.ts"))}; globalThis.__fixture = 1;`, example: true, empty: true, budget: 100 },
+  { name: "rig-unused-barrel", code: `import {runRigBones} from ${JSON.stringify(resolve(root, "examples/index.ts"))}; globalThis.__fixture = 1;`, example: true, empty: true, budget: 100 },
   { name: "unused", code: 'import {createScene} from "shooosh"; import "shooosh"; globalThis.__fixture = 1;', budget: 100 },
   { name: "utility-unused", code: 'import {createSpinner} from "shooosh/utility"; import "shooosh/utility"; globalThis.__fixture = 1;', budget: 100 },
   { name: "compiler", code: 'import {compileShader} from "shooosh/compiler"; globalThis.__fixture = [compileShader];', budget: 8000 },
+  { name: "rig-unused", code: 'import {createRig} from "shooosh/rig"; import "shooosh/rig"; globalThis.__fixture = 1;', budget: 100 },
+  { name: "rig", code: 'import {createRig} from "shooosh/rig"; globalThis.__fixture = [createRig];', budget: 6000 },
+  { name: "rig-animation", code: 'import {createRigAnimator} from "shooosh/rig"; globalThis.__fixture = [createRigAnimator];', budget: 3000 },
   { name: "utils", code: 'import {poseToTransform} from "shooosh/utils"; globalThis.__fixture = [poseToTransform];', budget: 1000 },
   { name: "utils-vector", code: 'import {rotateVector3} from "shooosh/utils"; globalThis.__fixture = [rotateVector3];', budget: 500 },
   { name: "utils-unused", code: 'import "shooosh/utils"; globalThis.__fixture = 1;', budget: 100 },
@@ -39,6 +47,7 @@ const fixtures: Fixture[] = [
   { name: "item+layer", symbols: ["createItem", "acquireLayer"], gpu: true, renderer: "createGpuItemRenderer", budget: 10200 },
   { name: "canvas-scene", symbols: ["createCanvasScene"], gpu: true, budget: 11000 },
   { name: "scene", symbols: ["createScene"], gpu: true, budget: 21000 },
+  { name: "scene+unused-rig", code: 'import {createScene} from "shooosh"; import * as unusedRig from "shooosh/rig"; globalThis.__fixture = [createScene];', gpu: true, sameSizeAs: "scene", budget: 21000 },
   { name: "item", symbols: ["createItem"], budget: 8700 },
   { name: "dom", dom: true, gpu: true, budget: 15500 },
   { name: "combined", symbols: ["createScene"], dom: true, gpu: true, budget: 26000 },
@@ -87,10 +96,13 @@ function closure(chunks: Chunk[]) {
   visit(entry)
   return [...seen]
 }
+const emptyOutputs = new Map<string,string>()
+const consumerSizes = new Map<string,unknown>()
 let failed = 0
 try {
   for (const fixture of fixtures) {
-    const entry = resolve(temporary, `${fixture.name}.js`)
+    // Paired consumers use the same basename: Bun includes it in shared chunk names.
+    const entry = resolve(temporary, `${fixture.sameSizeAs ?? fixture.name}.js`)
     const symbols = fixture.symbols ?? []
     writeFileSync(entry, fixture.code ?? `${symbols.length ? `import {${symbols.join(",")}} from "shooosh";` : ""}
 ${fixture.dom ? 'import {createDomLayer} from "shooosh/dom";' : ""}
@@ -111,7 +123,7 @@ globalThis.__fixture = [${[...symbols, ...(fixture.dom ? ["createDomLayer"] : []
           }))
         } else {
           const output = await viteBuild({ configFile: false, root: temporary, logLevel: "silent", publicDir: false, plugins: [shoooshShaders()],
-            resolve: "example" in fixture ? { alias: ["dom", "utility", "utils", "compiler", ""].map(subpath => ({
+            resolve: "example" in fixture ? { alias: ["dom", "utility", "utils", "rig", "compiler", ""].map(subpath => ({
               find: subpath ? `shooosh/${subpath}` : "shooosh", replacement: resolve(root, subpath ? `dist/${subpath}/esm.js` : "dist/esm.js"),
             })) } : undefined,
             build: { write: false, minify: "esbuild", target: "esnext", modulePreload: false,
@@ -122,9 +134,18 @@ globalThis.__fixture = [${[...symbols, ...(fixture.dom ? ["createDomLayer"] : []
         }
         const initial = sizes(closure(chunks))
         const emitted = sizes(chunks)
+        const measured = { initial, emitted }
+        if (fixture.sameSizeAs) assert.deepEqual(measured, consumerSizes.get(`${bundler}/${fixture.sameSizeAs}`), "Unused optional import changed a live consumer bundle")
+        consumerSizes.set(`${bundler}/${fixture.name}`, measured)
         console.log(`${bundler.padEnd(4)} ${fixture.name.padEnd(8)} initial ${JSON.stringify(initial)} emitted ${JSON.stringify(emitted)}`)
         assert(initial.gzip <= fixture.budget, `${initial.gzip} gzip bytes exceeds ${fixture.budget} ceiling`)
         const source = chunks.map(chunk => chunk.code).join("\n")
+        const emptyConsumer = fixture.empty || fixture.name === "unused" || fixture.name.endsWith("-unused")
+        if (fixture.name === "bare") emptyOutputs.set(bundler, source)
+        if (emptyConsumer) assert.equal(source, emptyOutputs.get(bundler), "Unused import added bytes beyond the bare application")
+        if (!fixture.name.startsWith("rig")) assert(!/Cyclic rig hierarchy|Duplicate animation channel|Incorrect palette output length/.test(source), "Rig leaked into unrelated consumer")
+        if (fixture.name === "rig") assert(!/CUBICSPLINE|Skin matrix exceeds/.test(source), "Bone-only entry retained animation or palette code")
+        if (fixture.name === "rig-animation") assert(!/Cyclic rig hierarchy|Skin matrix exceeds/.test(source), "Sampler retained rig construction or palette code")
         if (fixture.name === "canvas-scene") {
           assert(!/createGpuObjectRenderer|createWebGpuPostBackend|createWebGl2PostBackend|uploadWebGl2Texture|uploadWebGpuTexture/.test(source), "Optional scene conveniences leaked")
         }
@@ -136,15 +157,15 @@ globalThis.__fixture = [${[...symbols, ...(fixture.dom ? ["createDomLayer"] : []
           assert(!/WebAssembly/.test(closure(chunks).map(chunk => chunk.code).join("\n")), "Rapier leaked into initial download")
           assert(emitted.gzip < (fixture.name === "physics-3d" ? 1200000 : 900000), "Physics exceeded optional download budget")
         } else assert(!/WebAssembly/.test(source), "Rapier leaked into unrelated consumer")
-        if (fixture.name === "unused" || fixture.name === "probe" || fixture.name.startsWith("utility") || fixture.name.startsWith("utils")) {
+        if (emptyConsumer || fixture.name === "probe" || fixture.name.startsWith("utility") || fixture.name.startsWith("utils") || fixture.name.startsWith("rig")) {
           assert.equal(chunks.length, 1, "Tiny consumer retained lazy renderer chunks")
           assert(!/\bimport\s*\(/.test(source), "Tiny consumer retained dynamic renderer imports")
           assert(!/createShader|createRenderPipeline|GPUBufferUsage|DomLayer/.test(source), "Tiny consumer retained renderer implementation")
           const context: Record<string, any> = {}
           runInNewContext(source, context)
-          assert((fixture.name === "unused" || fixture.name === "utility-unused" || fixture.name === "utils-unused") ? context.__fixture === 1 : typeof context.__fixture?.[0] === "function", "Tiny consumer behavior missing")
+          assert(emptyConsumer ? context.__fixture === 1 : typeof context.__fixture?.[0] === "function", "Tiny consumer behavior missing")
         }
-        if ("example" in fixture) {
+        if ("example" in fixture && !emptyConsumer) {
           assert(!/dom-lab|fn sample_field|mountCanvasInput/.test(source), "Unrelated DOM/fluid examples retained")
           if (fixture.name.startsWith("plasma")) {
             assert.equal(chunks.length, 1, "Fragment retained renderer chunks")

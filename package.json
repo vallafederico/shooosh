@@ -1,8 +1,8 @@
 {
   "name": "shooosh",
   "author": "vallafederico",
-  "version": "0.0.6",
-  "description": "WGSL-first site engine: WebGPU when available, WebGL2 fallback — scenes, DOM-tracked items, and post-processing.",
+  "version": "0.0.7",
+  "description": "WGSL-first site engine: WebGPU when available, WebGL2 fallback \u2014 scenes, DOM-tracked items, and post-processing.",
   "type": "module",
   "sideEffects": [
     "./package/global.ts",
@@ -70,6 +70,11 @@
       "types": "./dist/dom/index.d.ts",
       "import": "./dist/webgpu/dom/esm.js",
       "require": "./dist/webgpu/dom/cjs.js"
+    },
+    "./rig": {
+      "types": "./dist/rig/index.d.ts",
+      "import": "./dist/rig/esm.js",
+      "require": "./dist/rig/cjs.js"
     }
   },
   "bin": {
@@ -125,7 +130,9 @@
     "readme.md",
     "LICENSE",
     "CHANGELOG.md",
-    "bin/shader.mjs"
+    "bin/shader.mjs",
+    "llms.txt",
+    "agents.md"
   ],
   "license": "MIT",
   "devDependencies": {

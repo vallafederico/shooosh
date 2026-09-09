@@ -30,6 +30,7 @@ export { run as runDomIntegration, fragment as domIntegrationFragment } from "./
 export { run as runObjectSpin, fragment as objectSpinFragment } from "./object-spin"
 export { run as runObjectEnv, fragment as objectEnvFragment } from "./object-env"
 export { run as runObjectPbr, fragment as objectPbrFragment } from "./object-pbr"
+export { run as runCarPbr } from "./car-pbr"
 export { pbrFragment } from "./pbr-shaders"
 export { run as runObjectMesh, fragment as objectMeshFragment } from "./object-mesh"
 export { run as runParticlesField, fragment as particlesFieldFragment } from "./particles-field"
@@ -56,3 +57,5 @@ export { run as runPhysics3D } from "./physics-3d"
 
 export { run as runRaymarchClouds, fragment as raymarchCloudsFragment } from "./raymarch-clouds"
 export { run as runRaymarchLights, fragment as raymarchLightsFragment } from "./raymarch-lights"
+
+export { run as runRigBones } from "./rig-bones"
