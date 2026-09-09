@@ -52,3 +52,24 @@ runtime dependencies. WebGL2 uses transform feedback with 8,192 particles.
 Also copy `gpgpu-webgl.ts` and `gpgpu-webgl-shaders.ts`, loaded dynamically on
 WebGL2. See [the conversion/validation guide](../docs/gpgpu-fallbacks.md) for
 execution differences, counts and agent skills. There is no CPU simulation.
+
+## Light and self-shadowing
+
+A warm directional light orbits the sphere. Neutral particles use diffuse and
+specular lighting with a small cool ambient fill, replacing the old height and
+velocity color gradient. The shell's radial direction approximates the material
+normal; particles do not reconstruct a surface mesh.
+
+After simulation, particles render into a light-space depth map (1024² on
+WebGPU, 512² on WebGL2). The camera pass samples it with a 3×3 comparison filter,
+so particles can occlude light reaching other particles. This is actual shadow
+mapping, not normal coloring or a dark-side gradient. The circular shadow splats
+are slightly enlarged for coverage at these particle counts; finite map
+resolution and depth bias make this an approximation, not ray-traced volumetric
+scattering. Shadows off skips the light depth pass; Pause freezes the light and
+simulation together. Both maps are released on teardown.
+
+The standalone `/gpgpu-verify.html` harness also renders a controlled two-sheet
+occluder/receiver setup. With a fixed pose, enabling shadows must darken more
+than 100 pixels and brighten none; it checks framebuffer/viewport/texture state
+restoration and deletion of shadow resources.

@@ -10,7 +10,7 @@ import type { ExampleHandle, ExampleRunOptions, ExampleSpec } from "./types"
 export const fragment = `fn fsMain() -> vec4f { return vec4f(0.025, 0.035, 0.05, 1.0); }`
 
 export type ParticleSimulation = {
-  compute: string; display: string; title: string; description: string;
+  compute: string; display: string; shadow?: string; title: string; description: string;
   height: number; stride: number; depth?: boolean; webgl: "field" | "sphere";
 }
 
@@ -42,6 +42,15 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
   let playing = !matchMedia("(prefers-reduced-motion: reduce)").matches
   pause.textContent = playing ? "Pause" : "Play"
   controls.append(pause, reset)
+  let shadows = true
+  const shadowToggle = document.createElement("button")
+  if (config.shadow) {
+    shadowToggle.type = "button"; shadowToggle.disabled = true
+    shadowToggle.style.cssText = pause.style.cssText
+    shadowToggle.textContent = "Shadows on"
+    shadowToggle.setAttribute("aria-pressed", "true")
+    controls.append(shadowToggle)
+  }
   panel.append(title, status, controls)
   root.append(canvas, panel)
   target.append(root)
@@ -57,7 +66,7 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
   })
   canvas.addEventListener("webglcontextlost", () => {
     playing = false
-    pause.disabled = reset.disabled = true
+    pause.disabled = reset.disabled = shadowToggle.disabled = true
     status.textContent = "Graphics context lost. Switch backend or reopen this example to restart."
   }, { signal: events.signal })
   const wake = () => { if (!disposed) scene.getEngine()?.requestFrame() }
@@ -77,6 +86,12 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
     canvas.addEventListener(name, () => { active = false }, { signal: events.signal })
   }
   pause.addEventListener("click", () => { playing = !playing; pause.textContent = playing ? "Pause" : "Play"; wake() }, { signal: events.signal })
+  shadowToggle.addEventListener("click", () => {
+    shadows = !shadows
+    shadowToggle.textContent = shadows ? "Shadows on" : "Shadows off"
+    shadowToggle.setAttribute("aria-pressed", String(shadows))
+    wake()
+  }, { signal: events.signal })
   reset.addEventListener("click", () => { initialize = true; time = 0; active = false; wake() }, { signal: events.signal })
   const ready = Promise.resolve(scene.getInitPromise()).then(async () => {
     if (disposed) return null
@@ -95,12 +110,12 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
         const dt = running ? Math.min(1 / 30, Math.max(0, delta / 1000)) : 0
         time += dt
         const aspect = canvas.width / Math.max(1, canvas.height)
-        values.set([dt, time, aspect, initialize ? 1 : 0, (pointerX * 2 - 1) * aspect, 1 - pointerY * 2, active ? 1 : 0, 0.32, canvas.width, canvas.height, Math.max(1, canvas.height / 650), 0])
+        values.set([dt, time, aspect, initialize ? 1 : 0, (pointerX * 2 - 1) * aspect, 1 - pointerY * 2, active ? 1 : 0, 0.32, canvas.width, canvas.height, Math.max(1, canvas.height / 650), shadows ? 0 : 1])
         try { simulation.render(values, running) }
         catch (error) {
           failed = true
           status.textContent = error instanceof Error ? error.message : "WebGL2 particle simulation failed"
-          pause.disabled = reset.disabled = true
+          pause.disabled = reset.disabled = shadowToggle.disabled = true
           options.onInitError?.(error)
           return
         }
@@ -109,7 +124,7 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
       })
       releaseWebgl = () => { unsubscribe(); simulation.destroy() }
       status.textContent = `${simulation.count.toLocaleString("en-US")} particles · WebGL2 GPGPU fallback · move your mouse or drag to stir`
-      pause.disabled = reset.disabled = false
+      pause.disabled = reset.disabled = shadowToggle.disabled = false
       engine.requestFrame()
       return engine.backend
     }
@@ -132,16 +147,35 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
     })() : session.createDisplayPipeline(config.display, "particle instances")
     const entries = [{ binding: 0, resource: { buffer: uniform } }, { binding: 1, resource: { buffer: state } }]
     const computeGroup = session.device.createBindGroup({ layout: compute.getBindGroupLayout(0), entries })
-    const displayGroup = session.device.createBindGroup({ layout: display.getBindGroupLayout(0), entries })
+    const shadow = config.shadow ? (() => {
+      const texture = session.device.createTexture({ size: { width: 1024, height: 1024 }, format: "depth24plus", usage: 0x10 | 0x04, label: "particle shadow map" })
+      const priorRelease = releaseBuffers
+      releaseBuffers = () => { texture.destroy(); priorRelease?.() }
+      const view = texture.createView()
+      const module = session.device.createShaderModule({ code: config.shadow, label: "particle light pass" })
+      const pipeline = session.device.createRenderPipeline({
+        layout: "auto", vertex: { module, entryPoint: "vsMain" },
+        fragment: { module, entryPoint: "fsMain", targets: [] },
+        primitive: { topology: "triangle-list" },
+        depthStencil: { format: "depth24plus", depthWriteEnabled: true, depthCompare: "less" },
+      })
+      const group = session.device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries })
+      return { view, pipeline, group }
+    })() : null
+    const displayGroup = session.device.createBindGroup({ layout: display.getBindGroupLayout(0), entries: shadow ? [...entries, { binding: 2, resource: shadow.view }] : entries })
     const values = new Float32Array(12)
     session.setOnCompute(({ encoder, delta }) => {
       const running = playing && visible && !document.hidden
       const dt = running ? Math.min(1 / 30, Math.max(0, delta / 1000)) : 0
       time += dt
       const aspect = canvas.width / Math.max(1, canvas.height)
-      values.set([dt, time, aspect, initialize ? 1 : 0, (pointerX * 2 - 1) * aspect, 1 - pointerY * 2, active ? 1 : 0, 0.32, canvas.width, canvas.height, Math.max(1, canvas.height / 650), 0])
+      values.set([dt, time, aspect, initialize ? 1 : 0, (pointerX * 2 - 1) * aspect, 1 - pointerY * 2, active ? 1 : 0, 0.32, canvas.width, canvas.height, Math.max(1, canvas.height / 650), shadows ? 0 : 1])
       session.writeBuffer(uniform, values)
       if (running || initialize) session.dispatch(encoder, compute, 256, config.height, computeGroup)
+      if (shadow && shadows) {
+        const pass = encoder.beginRenderPass({ colorAttachments: [], depthStencilAttachment: { view: shadow.view, depthClearValue: 1, depthLoadOp: "clear", depthStoreOp: "store" }, label: "particle self shadows" })
+        pass.setPipeline(shadow.pipeline); pass.setBindGroup(0, shadow.group); pass.draw(6, count); pass.end()
+      }
       initialize = false
       if (running) session.requestFrame()
     })
@@ -151,7 +185,7 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
       pass.draw(6, count)
     })
     status.textContent = config.description
-    pause.disabled = reset.disabled = false
+    pause.disabled = reset.disabled = shadowToggle.disabled = false
     return engine.backend
   }).catch(error => {
     if (!disposed) {

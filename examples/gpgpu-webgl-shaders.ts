@@ -87,6 +87,32 @@ void main() {
   `}
 }`
 }
+const lighting = `
+vec3 lightDirection() { return normalize(vec3(cos(uStep.y*0.18)*0.9,0.65,sin(uStep.y*0.18)*0.9+0.6)); }
+vec3 lightPosition(vec3 p) {
+  vec3 light=lightDirection();
+  vec3 right=normalize(cross(vec3(0,1,0),light));
+  vec3 up=cross(light,right);
+  return vec3(dot(p,right)/1.6,dot(p,up)/1.6,0.5-dot(p,light)/4.0);
+}
+`
+export const shadowVertex = `#version 300 es
+precision highp float;
+precision highp int;
+${uniforms}
+${lighting}
+out vec2 vUv;
+void main() {
+  vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
+  vUv=corners[gl_VertexID];
+  vec3 p=lightPosition(aPosition.xyz);
+  gl_Position=vec4(p.xy+vUv*0.016,p.z*2.0-1.0,1.0);
+}`
+export const shadowFragment = `#version 300 es
+precision highp float;
+in vec2 vUv;
+void main() { if(dot(vUv,vUv)>1.0) discard; }
+`
 export function displayVertex(sphere: boolean) {
   return `#version 300 es
 precision highp float;
@@ -94,18 +120,16 @@ precision highp int;
 ${uniforms}
 out vec2 vUv;
 out vec3 vColor;
+${sphere ? 'out vec3 vWorld;' : ''}
 void main() {
   vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
   vec2 corner=corners[gl_VertexID];
   vUv=corner;
   ${sphere ? `
   vec3 p=aPosition.xyz;
-  float speed=clamp(length(aVelocity.xyz)*1.2,0.0,1.0);
-  float front=clamp(p.z/1.64+0.5,0.0,1.0);
-  float size=uViewport.z*(0.65+front*0.45)*1.35;
-  gl_Position=vec4(p.xy*fit()/vec2(uStep.z,1.0)+corner*size*2.0/uViewport.xy, -p.z*0.4,1.0);
-  vec3 base=mix(vec3(0.10,0.38,0.9),vec3(0.36,0.95,0.8),clamp(p.y*0.5+0.5,0.0,1.0));
-  vColor=mix(base,vec3(1.0,0.71,0.42),speed*0.65)*(0.3+front*1.2);
+  float size=uViewport.z*1.5;
+  gl_Position=vec4(p.xy*fit()/vec2(uStep.z,1.0)+corner*size*2.0/uViewport.xy,-p.z*0.4,1.0);
+  vWorld=p;vColor=vec3(1.0);
   ` : `
   float speed=clamp(length(aVelocity.xy)*1.5,0.0,1.0);
   float radius=uViewport.z*(1.0+speed*0.65)*1.25;
@@ -123,12 +147,37 @@ void main() { color=vec4(0.0); }
 export function displayFragment(sphere: boolean) {
   return `#version 300 es
 precision highp float;
+precision highp int;
 in vec2 vUv;
 in vec3 vColor;
 out vec4 color;
+${sphere ? `
+uniform vec4 uStep;
+uniform vec4 uViewport;
+uniform highp sampler2D uShadow;
+in vec3 vWorld;
+${lighting}
+` : ''}
 void main() {
   float d=length(vUv);
   if(d>1.0) discard;
-  color=vec4(vColor*${sphere ? '(1.0-smoothstep(0.25,1.15,d))' : '(0.3+(1.0-smoothstep(0.35,1.0,d))*0.7)'},1.0);
+  ${sphere ? `
+  vec3 light=lightDirection();
+  vec3 projected=lightPosition(vWorld);
+  ivec2 size=textureSize(uShadow,0);
+  ivec2 pixel=ivec2((projected.xy*0.5+0.5)*vec2(size));
+  float visibility=0.0;
+  for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++) {
+    float depth=texelFetch(uShadow,clamp(pixel+ivec2(x,y),ivec2(0),size-ivec2(1)),0).r;
+    visibility+=projected.z-0.003<depth?1.0:0.0;
+  }
+  visibility/=9.0;
+  if(uViewport.w>0.5) visibility=1.0;
+  vec3 normal=normalize(vWorld);
+  float diffuse=max(dot(normal,light),0.0);
+  float specular=pow(max(dot(normal,normalize(light+vec3(0,0,1))),0.0),32.0)*0.45;
+  vec3 linear=vec3(0.78,0.75,0.69)*(vec3(0.065,0.085,0.12)+vec3(1.6,1.45,1.22)*visibility*(diffuse+specular));
+  color=vec4(pow(linear/(vec3(1.0)+linear),vec3(1.0/2.2))*(1.0-smoothstep(0.45,1.1,d)),1.0);
+  ` : 'color=vec4(vColor*(0.3+(1.0-smoothstep(0.35,1.0,d))*0.7),1.0);'}
 }`
 }

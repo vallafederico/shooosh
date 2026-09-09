@@ -2,7 +2,7 @@
  * A vertex update pass writes interleaved position/velocity to the other buffer.
  * Draw reads the newly written buffer, then the next tick swaps source/target.
  */
-import { updateVertex, displayVertex, discardFragment, displayFragment } from "./gpgpu-webgl-shaders"
+import { updateVertex, displayVertex, discardFragment, displayFragment, shadowVertex, shadowFragment } from "./gpgpu-webgl-shaders"
 
 export function createWebglParticles(gl: WebGL2RenderingContext, sphere: boolean) {
   const count = sphere ? 8192 : 16384
@@ -25,8 +25,10 @@ export function createWebglParticles(gl: WebGL2RenderingContext, sphere: boolean
     if (feedback) gl.transformFeedbackVaryings(value, ["nextPosition", "nextVelocity"], gl.INTERLEAVED_ATTRIBS)
     gl.linkProgram(value)
     if (!gl.getProgramParameter(value, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(value) || "GPGPU program linking failed")
-    return { value, step: gl.getUniformLocation(value, "uStep"), pointer: gl.getUniformLocation(value, "uPointer"), viewport: gl.getUniformLocation(value, "uViewport"), count: gl.getUniformLocation(value, "uCount") }
+    return { value, step: gl.getUniformLocation(value, "uStep"), pointer: gl.getUniformLocation(value, "uPointer"), viewport: gl.getUniformLocation(value, "uViewport"), count: gl.getUniformLocation(value, "uCount"), shadow: gl.getUniformLocation(value, "uShadow") }
   }
+  const previousFramebuffer = gl.getParameter(gl.DRAW_FRAMEBUFFER_BINDING)
+  const previousTexture = gl.getParameter(gl.TEXTURE_BINDING_2D)
   const previousArray = gl.getParameter(gl.ARRAY_BUFFER_BINDING)
   const previousVao = gl.getParameter(gl.VERTEX_ARRAY_BINDING)
   const previousFeedbackBuffer = gl.getParameter(gl.TRANSFORM_FEEDBACK_BUFFER_BINDING)
@@ -34,6 +36,26 @@ export function createWebglParticles(gl: WebGL2RenderingContext, sphere: boolean
   try {
     const update = program(updateVertex(sphere), discardFragment, true)
     const display = program(displayVertex(sphere), displayFragment(sphere))
+    const shadow = sphere ? (() => {
+      const pipeline = program(shadowVertex, shadowFragment)
+      const texture = gl.createTexture()
+      if (!texture) throw new Error("Could not allocate particle shadow map")
+      cleanups.push(() => gl.deleteTexture(texture))
+      gl.bindTexture(gl.TEXTURE_2D, texture)
+      gl.texStorage2D(gl.TEXTURE_2D, 1, gl.DEPTH_COMPONENT24, 512, 512)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+      const framebuffer = gl.createFramebuffer()
+      if (!framebuffer) throw new Error("Could not allocate shadow framebuffer")
+      cleanups.push(() => gl.deleteFramebuffer(framebuffer))
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebuffer)
+      gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, texture, 0)
+      gl.drawBuffers([gl.NONE])
+      if (gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error("Particle shadow framebuffer is incomplete")
+      return { pipeline, texture, framebuffer }
+    })() : null
     const buffers = [0, 1].map(() => {
       const buffer = gl.createBuffer()
       if (!buffer) throw new Error("Could not allocate particle state")
@@ -69,6 +91,10 @@ export function createWebglParticles(gl: WebGL2RenderingContext, sphere: boolean
           feedback: gl.getParameter(gl.TRANSFORM_FEEDBACK_BINDING),
           discard: gl.isEnabled(gl.RASTERIZER_DISCARD), blend: gl.isEnabled(gl.BLEND),
           depth: gl.isEnabled(gl.DEPTH_TEST), cull: gl.isEnabled(gl.CULL_FACE),
+          framebuffer: gl.getParameter(gl.DRAW_FRAMEBUFFER_BINDING), viewport: gl.getParameter(gl.VIEWPORT),
+          activeTexture: gl.getParameter(gl.ACTIVE_TEXTURE), texture: gl.getParameter(gl.TEXTURE_BINDING_2D),
+          sampler: gl.getParameter(gl.SAMPLER_BINDING), depthClear: gl.getParameter(gl.DEPTH_CLEAR_VALUE),
+          scissor: gl.isEnabled(gl.SCISSOR_TEST),
           depthMask: gl.getParameter(gl.DEPTH_WRITEMASK), depthFunc: gl.getParameter(gl.DEPTH_FUNC),
         }
         const bind = (p: typeof update) => {
@@ -92,9 +118,31 @@ export function createWebglParticles(gl: WebGL2RenderingContext, sphere: boolean
           gl.disable(gl.RASTERIZER_DISCARD); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE)
           if (sphere) gl.enable(gl.DEPTH_TEST); else gl.disable(gl.DEPTH_TEST)
           gl.depthMask(sphere); gl.depthFunc(gl.LESS)
-          bind(display); gl.bindVertexArray(displayVaos[current])
+          if (shadow && values[11] < 0.5) {
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, shadow.framebuffer)
+            gl.viewport(0,0,512,512); gl.disable(gl.SCISSOR_TEST)
+            gl.clearDepth(1); gl.clear(gl.DEPTH_BUFFER_BIT)
+            bind(shadow.pipeline); gl.bindVertexArray(displayVaos[current])
+            gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count)
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, state.framebuffer)
+            gl.viewport(state.viewport[0],state.viewport[1],state.viewport[2],state.viewport[3])
+            if (state.scissor) gl.enable(gl.SCISSOR_TEST)
+          }
+          bind(display)
+          if (shadow) {
+            const unit = (state.activeTexture - gl.TEXTURE0)
+            gl.bindSampler(unit, null); gl.bindTexture(gl.TEXTURE_2D,shadow.texture); gl.uniform1i(display.shadow,unit)
+          }
+          gl.bindVertexArray(displayVaos[current])
           gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count)
         } finally {
+          if (shadow) {
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, state.framebuffer)
+            gl.viewport(state.viewport[0],state.viewport[1],state.viewport[2],state.viewport[3])
+            gl.clearDepth(state.depthClear)
+            gl.bindTexture(gl.TEXTURE_2D,state.texture); gl.bindSampler(state.activeTexture-gl.TEXTURE0,state.sampler)
+            if(state.scissor) gl.enable(gl.SCISSOR_TEST); else gl.disable(gl.SCISSOR_TEST)
+          }
           gl.bindVertexArray(state.vao); gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, state.feedback)
           gl.useProgram(state.program); gl.depthMask(state.depthMask); gl.depthFunc(state.depthFunc)
           for (const [cap, enabled] of [[gl.RASTERIZER_DISCARD, state.discard], [gl.BLEND, state.blend], [gl.DEPTH_TEST, state.depth], [gl.CULL_FACE, state.cull]] as const) {
@@ -105,6 +153,8 @@ export function createWebglParticles(gl: WebGL2RenderingContext, sphere: boolean
     }
   } catch (error) { destroy(); throw error }
   finally {
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, previousFramebuffer)
+    gl.bindTexture(gl.TEXTURE_2D, previousTexture)
     gl.bindVertexArray(previousVao); gl.bindBuffer(gl.ARRAY_BUFFER, previousArray)
     gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, previousFeedback)
     gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, previousFeedbackBuffer)

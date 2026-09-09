@@ -55,3 +55,5 @@ WebGL2 harness runs both actual GLSL kernels and reads back state only for tests
 initial bounds, 120 updates, finite values, mouse effect, pause, deterministic
 reset, GL state restoration, resource deletion and injected allocation/compilation failures.
 The displayed result must say `ALL CHECKS PASSED`; browser GPU support is needed.
+
+The curl sphere also uses a depth shadow pass on both backends. See [lighting details](../examples/gpgpu-sphere.md#light-and-self-shadowing); the validation harness includes a rendered shadow-on/off occlusion comparison.

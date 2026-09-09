@@ -13,7 +13,7 @@ try {
     let feedback: WebGLTransformFeedback | null = null, latest: WebGLBuffer | null = null
     const allocations: WebGLBuffer[] = []
     const resources = new Map<string, object[]>()
-    const creators: Record<string,string> = { createShader:'isShader', createProgram:'isProgram', createVertexArray:'isVertexArray', createTransformFeedback:'isTransformFeedback' }
+    const creators: Record<string,string> = { createShader:'isShader', createProgram:'isProgram', createVertexArray:'isVertexArray', createTransformFeedback:'isTransformFeedback', createTexture:'isTexture', createFramebuffer:'isFramebuffer' }
     const wrapped = new Proxy(gl, { get(target, key) {
       if (typeof key === 'string' && creators[key]) return (...args: unknown[]) => {
         const value = (target as any)[key](...args)
@@ -27,7 +27,7 @@ try {
       const value = Reflect.get(target, key, target)
       return typeof value === 'function' ? value.bind(target) : value
     } })
-    const before = () => [gl.getParameter(gl.CURRENT_PROGRAM), gl.getParameter(gl.VERTEX_ARRAY_BINDING), gl.getParameter(gl.ARRAY_BUFFER_BINDING), gl.getParameter(gl.TRANSFORM_FEEDBACK_BINDING), gl.getParameter(gl.TRANSFORM_FEEDBACK_BUFFER_BINDING), gl.isEnabled(gl.BLEND), gl.isEnabled(gl.DEPTH_TEST), gl.isEnabled(gl.CULL_FACE), gl.isEnabled(gl.RASTERIZER_DISCARD), gl.getParameter(gl.DEPTH_FUNC), gl.getParameter(gl.DEPTH_WRITEMASK)]
+    const before = () => [gl.getParameter(gl.CURRENT_PROGRAM), gl.getParameter(gl.VERTEX_ARRAY_BINDING), gl.getParameter(gl.ARRAY_BUFFER_BINDING), gl.getParameter(gl.TRANSFORM_FEEDBACK_BINDING), gl.getParameter(gl.TRANSFORM_FEEDBACK_BUFFER_BINDING), gl.isEnabled(gl.BLEND), gl.isEnabled(gl.DEPTH_TEST), gl.isEnabled(gl.CULL_FACE), gl.isEnabled(gl.RASTERIZER_DISCARD), gl.getParameter(gl.DEPTH_FUNC), gl.getParameter(gl.DEPTH_WRITEMASK), gl.getParameter(gl.DRAW_FRAMEBUFFER_BINDING), gl.getParameter(gl.TEXTURE_BINDING_2D), gl.getParameter(gl.SAMPLER_BINDING), gl.getParameter(gl.DEPTH_CLEAR_VALUE), gl.isEnabled(gl.SCISSOR_TEST), ...gl.getParameter(gl.VIEWPORT)]
     gl.enable(gl.BLEND); gl.enable(gl.CULL_FACE); gl.enable(gl.RASTERIZER_DISCARD); gl.depthFunc(gl.GREATER); gl.depthMask(false)
     const original = before()
     const sim = createWebglParticles(wrapped, sphere)
@@ -61,6 +61,40 @@ try {
     values[3]=1;draw(false);values[3]=0;values[6]=1;draw(true);const disturbed=read()
     assert(disturbed.some((v,i)=>Math.abs(v-untouched[i])>0.00001),'Pointer had no effect')
     values[3]=1;draw(false);assert(read().every((v,i)=>v===initial[i]),'Reset was not deterministic')
+    if(sphere) {
+      // Two separated sheets aligned with the light: visible receivers must be occluded.
+      values[3]=0;values[1]=0;values[6]=0
+      const fixture=new Float32Array(sim.count*8)
+      const length=Math.hypot(0.9,0.65,0.6)
+      for(let i=0;i<sim.count;i++) {
+        const j=i%4096, offset=i>=4096?0.25:0
+        fixture[i*8]=(j%64)*0.008-0.25+0.9/length*offset
+        fixture[i*8+1]=Math.floor(j/64)*0.008-0.25+0.65/length*offset
+        fixture[i*8+2]=0.45+0.6/length*offset
+        fixture[i*8+3]=1
+      }
+      gl.bindBuffer(gl.COPY_WRITE_BUFFER,latest);gl.bufferSubData(gl.COPY_WRITE_BUFFER,0,fixture);gl.bindBuffer(gl.COPY_WRITE_BUFFER,null)
+      const image = (disableShadow: number) => {
+        values[3]=0;values[11]=disableShadow
+        gl.disable(gl.RASTERIZER_DISCARD);gl.depthMask(true);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.depthMask(false);gl.enable(gl.RASTERIZER_DISCARD)
+        draw(false)
+        const pixels=new Uint8Array(canvas.width*canvas.height*4)
+        gl.readPixels(0,0,canvas.width,canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,pixels)
+        assert(gl.getError()===gl.NO_ERROR,'Shadow image readback error')
+        return pixels
+      }
+      // Freeze one pose and compare lighting with and without actual occlusion.
+      const shadowed=image(0),unshadowed=image(1)
+      let darkened=0,brighter=0
+      for(let i=0;i<shadowed.length;i+=4) {
+        const difference=unshadowed[i]+unshadowed[i+1]+unshadowed[i+2]-shadowed[i]-shadowed[i+1]-shadowed[i+2]
+        if(difference>3) darkened++
+        if(difference< -3) brighter++
+      }
+      assert(darkened>100,`Shadow pass: darkened=${darkened}, brighter=${brighter}, image sum=${shadowed.reduce((a,b,i)=>a+(i%4<3?b:0),0)}, unshadowed=${unshadowed.reduce((a,b,i)=>a+(i%4<3?b:0),0)}`)
+      assert(brighter===0,'Shadows added light')
+      results.push(`shadow A/B: PASS — ${darkened} occluded pixels darkened, ${brighter} brightened`)
+    }
     sim.destroy();sim.destroy();assert(allocations.every(b=>!gl.isBuffer(b)),'Buffers leaked')
     assert(gl.getError()===gl.NO_ERROR,'Cleanup GL error')
     for(const [method, objects] of resources) assert(objects.every(value=>!(gl as any)[method](value)),method+' resource leak')

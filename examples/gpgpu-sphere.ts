@@ -3,14 +3,14 @@
  * both gpgpu-webgl modules and types.ts.
  */
 import { runParticleSimulation, fragment } from "./gpgpu-particles"
-import { computeShader, displayShader } from "./gpgpu-sphere-shaders"
+import { computeShader, displayShader, shadowShader } from "./gpgpu-sphere-shaders"
 import type { ExampleHandle, ExampleRunOptions, ExampleSpec } from "./types"
 export { fragment }
 export function run(target: HTMLElement, options: ExampleRunOptions = {}): ExampleHandle {
   return runParticleSimulation(target, options, {
-    compute: computeShader, display: displayShader, height: 128, stride: 32, depth: true, webgl: "sphere",
+    compute: computeShader, display: displayShader, shadow: shadowShader, height: 128, stride: 32, depth: true, webgl: "sphere",
     title: "GPGPU / curl sphere",
-    description: "32,768 particles · curl noise in 3D · move your mouse or drag to disturb the surface",
+    description: "32,768 particles · orbiting light · particle shadows · move your mouse to disturb",
   })
 }
 export const gpgpuSphere: ExampleSpec = {
