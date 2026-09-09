@@ -39,13 +39,13 @@ include transitive local imports and TypeScript types. The `types.ts` imports er
 at build time. Existing examples generate their texture/icon assets locally; SVG
 files under `assets/icons` are source references rather than required fetches.
 
-All rows use both render backends except the two fluid simulations, GPGPU particles/sphere and the SSS/SSAO compute labs. "Both" describes
+All rows use both render backends except the two fluid simulations and the SSS/SSAO compute labs. "Both" describes
 the intended backend path, not a claim of exhaustive visual parity or accessibility.
 
 | ID / source | `run` target | Additional local files | Backend / adaptation note |
 | --- | --- | --- | --- |
-| `gpgpu-sphere` | sized `HTMLElement` | `gpgpu-sphere-shaders.ts`, `gpgpu-particles.ts`, `gpgpu-particles-shaders.ts`, `types.ts` | WebGPU compute only; 3D curl noise and depth-tested sphere ([guide](./gpgpu-sphere.md)). |
-| `gpgpu-particles` | sized `HTMLElement` | `gpgpu-particles-shaders.ts`, `types.ts` | WebGPU compute only; visible unsupported message on WebGL2. See [guide](./gpgpu-particles.md). |
+| `gpgpu-sphere` | sized `HTMLElement` | `gpgpu-sphere-shaders.ts`, `gpgpu-particles.ts`, `gpgpu-particles-shaders.ts`, `gpgpu-webgl.ts`, `gpgpu-webgl-shaders.ts`, `types.ts` | WebGPU compute / WebGL2 transform feedback; 3D curl noise and depth-tested sphere ([guide](./gpgpu-sphere.md)). |
+| `gpgpu-particles` | sized `HTMLElement` | `gpgpu-particles-shaders.ts`, `gpgpu-webgl.ts`, `gpgpu-webgl-shaders.ts`, `types.ts` | WebGPU compute / lower-count WebGL2 transform feedback. See [guide](./gpgpu-particles.md). |
 | [rig-bones](./rig-bones.ts) | Empty host, minimum 640px height | [rig-fixture.ts](./rig-fixture.ts), [physics-lab.wgsl](./physics-lab.wgsl), [types.ts](./types.ts), [shaders.d.ts](./shaders.d.ts) | Both; built-in arm or local rig JSON, bones/socket visualization only. See [setup](./rig-bones.md). |
 | [car-pbr](./car-pbr.ts) | Empty host with explicit height | [types.ts](./types.ts), prepared [standalone studio](../packages/model/demo/car-pbr/README.md) at `./car-pbr/` | Both; local model assets required; decoded KTX2 preview, static pose. See [setup](./car-pbr.md). |
 | [sss](./sss.ts) **WIP** | Canvas in a positioned, sized parent | [sss-shaders.ts](./sss-shaders.ts), [screen-space-scene.ts](./screen-space-scene.ts), [screen-space-lab.ts](./screen-space-lab.ts), [types.ts](./types.ts) | WebGPU only; see [pass guide](./screen-space-effects.md). |

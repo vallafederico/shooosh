@@ -54,6 +54,8 @@ backends for visual changes. See [bundle checks](./docs/audits/2026-09-09-final-
 
 This repo *is* the agent interface until hosted docs (task 06). Index = `llms.txt`. Working rules = this file. Looks = `examples/`; [agent copy guide](./examples/agent-guide.md) lists the complete copy sets, mount targets and limits. Engine work = next `docs/agent-tasks/` with `status: todo`. Do not invent named post presets — copy `examples/post-shaders.ts`.
 
+GPU simulation skills: [compute → WebGL2 GPGPU](./.agents/skills/shooosh-gpgpu/SKILL.md) · [validation](./.agents/skills/shooosh-gpgpu-validation/SKILL.md). See [fallback guide](./docs/gpgpu-fallbacks.md).
+
 Cursor skills (read when converting shaders):
 
 - [wgsl-to-glsl](./.cursor/skills/wgsl-to-glsl/SKILL.md)

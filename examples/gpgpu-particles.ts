@@ -1,6 +1,7 @@
 /** 65,536 particles integrated by WGSL compute, then drawn from the same storage buffer.
- * Copy this file, gpgpu-particles-shaders.ts and types.ts. Mount into a sized HTMLElement.
- * WebGPU only; no CPU simulation, readback, external assets or runtime dependencies.
+ * Copy this file, gpgpu-particles-shaders.ts, both gpgpu-webgl modules and types.ts.
+ * Mount into a sized HTMLElement.
+ * WebGPU compute with a dynamically loaded WebGL2 transform-feedback fallback.
  */
 import { createCanvasScene, createCompute, type ComputeSession } from "shooosh"
 import { computeShader, displayShader } from "./gpgpu-particles-shaders"
@@ -10,7 +11,7 @@ export const fragment = `fn fsMain() -> vec4f { return vec4f(0.025, 0.035, 0.05,
 
 export type ParticleSimulation = {
   compute: string; display: string; title: string; description: string;
-  height: number; stride: number; depth?: boolean;
+  height: number; stride: number; depth?: boolean; webgl: "field" | "sphere";
 }
 
 /** Shared example-owned lifecycle; shaders and particle layout remain configurable. */
@@ -27,7 +28,7 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
   title.textContent = config.title
   title.style.cssText = "font-size:18px;margin:0 0 6px"
   const status = document.createElement("p")
-  status.textContent = "Starting WebGPU…"
+  status.textContent = "Starting GPU simulation…"
   const controls = document.createElement("div")
   controls.style.cssText = "display:flex;gap:8px;pointer-events:auto;width:fit-content"
   const pause = document.createElement("button")
@@ -47,13 +48,19 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
   let disposed = false, visible = true, initialize = true, time = 0
   let pointerX = 0.5, pointerY = 0.5, active = false
   let gpu: ComputeSession | null = null
+  let releaseWebgl: (() => void) | undefined
   let releaseBuffers: (() => void) | undefined
   const events = new AbortController()
   const scene = createCanvasScene(canvas, {
     backend: options.backend ?? "auto", dpr: { max: 1.5 },
     clearColor: { r: 0.025, g: 0.035, b: 0.05, a: 1 },
   })
-  const wake = () => { if (!disposed) gpu?.requestFrame() }
+  canvas.addEventListener("webglcontextlost", () => {
+    playing = false
+    pause.disabled = reset.disabled = true
+    status.textContent = "Graphics context lost. Switch backend or reopen this example to restart."
+  }, { signal: events.signal })
+  const wake = () => { if (!disposed) scene.getEngine()?.requestFrame() }
   const observe = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) wake() })
   observe.observe(root)
   document.addEventListener("visibilitychange", () => { active = false; if (!document.hidden) wake() }, { signal: events.signal })
@@ -71,12 +78,39 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
   }
   pause.addEventListener("click", () => { playing = !playing; pause.textContent = playing ? "Pause" : "Play"; wake() }, { signal: events.signal })
   reset.addEventListener("click", () => { initialize = true; time = 0; active = false; wake() }, { signal: events.signal })
-  const ready = Promise.resolve(scene.getInitPromise()).then(() => {
+  const ready = Promise.resolve(scene.getInitPromise()).then(async () => {
     if (disposed) return null
     const engine = scene.getEngine()
     if (!engine) throw new Error("No GPU backend is available.")
     if (engine.backend !== "webgpu") {
-      status.textContent = "This simulation requires WebGPU compute shaders. Select WebGPU on a supported browser; WebGL2 does not run this example."
+      const { createWebglParticles } = await import("./gpgpu-webgl")
+      if (disposed) return null
+      if (!engine.gl) throw new Error("WebGL2 context is unavailable")
+      const simulation = createWebglParticles(engine.gl, config.webgl === "sphere")
+      const values = new Float32Array(12)
+      let failed = false
+      const unsubscribe = engine.onRender(({ delta }) => {
+        if (failed) return
+        const running = playing && visible && !document.hidden
+        const dt = running ? Math.min(1 / 30, Math.max(0, delta / 1000)) : 0
+        time += dt
+        const aspect = canvas.width / Math.max(1, canvas.height)
+        values.set([dt, time, aspect, initialize ? 1 : 0, (pointerX * 2 - 1) * aspect, 1 - pointerY * 2, active ? 1 : 0, 0.32, canvas.width, canvas.height, Math.max(1, canvas.height / 650), 0])
+        try { simulation.render(values, running) }
+        catch (error) {
+          failed = true
+          status.textContent = error instanceof Error ? error.message : "WebGL2 particle simulation failed"
+          pause.disabled = reset.disabled = true
+          options.onInitError?.(error)
+          return
+        }
+        initialize = false
+        if (running) engine.requestFrame()
+      })
+      releaseWebgl = () => { unsubscribe(); simulation.destroy() }
+      status.textContent = `${simulation.count.toLocaleString("en-US")} particles · WebGL2 GPGPU fallback · move your mouse or drag to stir`
+      pause.disabled = reset.disabled = false
+      engine.requestFrame()
       return engine.backend
     }
     gpu = createCompute(engine)
@@ -121,7 +155,7 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
     return engine.backend
   }).catch(error => {
     if (!disposed) {
-      gpu?.destroy(); releaseBuffers?.(); releaseBuffers = undefined
+      gpu?.destroy(); releaseWebgl?.(); releaseBuffers?.(); releaseBuffers = undefined
       scene.destroy()
       status.textContent = error instanceof Error ? error.message : "Could not start the particle simulation."
       options.onInitError?.(error)
@@ -131,17 +165,17 @@ export function runParticleSimulation(target: HTMLElement, options: ExampleRunOp
   return { ready, getEngine: () => scene.getEngine(), destroy() {
     if (disposed) return
     disposed = true
-    events.abort(); observe.disconnect(); gpu?.destroy(); releaseBuffers?.(); scene.destroy(); root.remove()
+    events.abort(); observe.disconnect(); gpu?.destroy(); releaseWebgl?.(); releaseBuffers?.(); scene.destroy(); root.remove()
   } }
 }
 export function run(target: HTMLElement, options: ExampleRunOptions = {}): ExampleHandle {
   return runParticleSimulation(target, options, {
-    compute: computeShader, display: displayShader, height: 256, stride: 16,
+    compute: computeShader, display: displayShader, height: 256, stride: 16, webgl: "field",
     title: "GPGPU / particle field",
     description: "65,536 particles · move your mouse or drag to stir · springs restore the field",
   })
 }
 export const gpgpuParticles: ExampleSpec = {
   id: "gpgpu-particles", label: "GPGPU · mouse particles", kind: "view", fragment,
-  copy: "65,536 GPU particles with compute integration, mouse repulsion and a restoring spring. WebGPU only.", run,
+  copy: "65,536 GPU particles with compute integration, mouse repulsion and a restoring spring. WebGPU compute / WebGL2 GPGPU.", run,
 }

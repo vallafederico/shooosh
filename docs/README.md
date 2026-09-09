@@ -67,3 +67,5 @@ Completed follow-up: [DOM idle optimization](./audits/2026-09-08-dom-idle-optimi
 - [Small bundle setups](./bundle-setup.md) — backend-only entries, lightweight scenes and production shaders.
 
 - [Optional rig and bone utilities](./rig.md) — explicit poses, animation sampling and skin matrices; no renderer dependency.
+
+- [GPGPU fallback guide](./gpgpu-fallbacks.md) — compute-to-WebGL2 conversion, reference examples and agent skills.

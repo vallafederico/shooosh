@@ -16,8 +16,8 @@ bundle and runtime checks but are not marked production-ready.
 
 | File | Uses | What it draws |
 | --- | --- | --- |
-| [gpgpu-sphere.ts](./gpgpu-sphere.ts) | `createCompute` | Particle sphere with analytic 3D curl noise and mouse disturbance ([guide](./gpgpu-sphere.md)); WebGPU only |
-| [gpgpu-particles.ts](./gpgpu-particles.ts) | `createCompute` | 65,536 particles: GPU integration, instanced storage-buffer rendering, mouse repulsion ([guide](./gpgpu-particles.md)); WebGPU only |
+| [gpgpu-sphere.ts](./gpgpu-sphere.ts) | `createCompute` | Particle sphere with analytic 3D curl noise and mouse disturbance ([guide](./gpgpu-sphere.md)); both backends |
+| [gpgpu-particles.ts](./gpgpu-particles.ts) | `createCompute` | 65,536 particles: GPU integration, instanced storage-buffer rendering, mouse repulsion ([guide](./gpgpu-particles.md)); both backends |
 | [sss.ts](./sss.ts) **WIP** | `createEngine` + `createCompute` | Separable diffuse scattering, sharp specular, debug views; WebGPU ([guide](./screen-space-effects.md)) |
 | [ssao.ts](./ssao.ts) **WIP** | `createEngine` + `createCompute` | Half-resolution depth-based AO, bilateral denoise and upsampling; WebGPU ([guide](./screen-space-effects.md)) |
 | [gradient.ts](./gradient.ts) | `createScene` | UV gradient + timed brand stripe |

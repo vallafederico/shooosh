@@ -103,3 +103,5 @@ Hosted docs: [agent manifest](https://shooosh-web.vercel.app/agents.md) · [mach
 - [GPGPU mouse particles](./examples/gpgpu-particles.md): GPU storage-buffer integration and instanced rendering, pointer forces, lifecycle and WebGPU requirements.
 
 - [GPGPU curl sphere](./examples/gpgpu-sphere.md): analytic 3D curl noise, GPU particle integration, pointer disturbance and depth-tested rendering.
+
+- [GPU simulation fallbacks and agent skills](./docs/gpgpu-fallbacks.md): WebGPU compute to WebGL2 transform feedback or render-target GPGPU, with validation guidance.

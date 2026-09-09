@@ -2,7 +2,7 @@
 
 32,768 particles start on a Fibonacci sphere and flow through animated 3D curl
 noise. Move the mouse or drag to disturb the front surface. Pause freezes the
-state; Reset recreates the sphere even while paused. WebGPU compute is required.
+state; Reset recreates the sphere even while paused. WebGPU compute and a lower-count WebGL2 GPGPU fallback are available.
 
 ## Copy and mount
 
@@ -45,4 +45,10 @@ Gallery: `/examples?demo=gpgpu-sphere&backend=webgpu`.
 Tune noise scales/amplitudes and the radial spring in `gpgpu-sphere-shaders.ts`.
 Keep the compute bounds, initialization count and wrapper dispatch dimensions
 consistent if changing particle count. The example adds no core package code or
-runtime dependencies. WebGL2 shows an explicit unsupported message.
+runtime dependencies. WebGL2 uses transform feedback with 8,192 particles.
+
+## WebGL2 fallback
+
+Also copy `gpgpu-webgl.ts` and `gpgpu-webgl-shaders.ts`, loaded dynamically on
+WebGL2. See [the conversion/validation guide](../docs/gpgpu-fallbacks.md) for
+execution differences, counts and agent skills. There is no CPU simulation.

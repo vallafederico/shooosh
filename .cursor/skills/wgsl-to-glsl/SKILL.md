@@ -7,6 +7,8 @@ description: Convert shooosh WGSL fragment shaders (fn fsMain) to GLSL 300 es fo
 
 Read [docs/shader-translation.md](../../../docs/shader-translation.md) and [docs/shader-contract.md](../../../docs/shader-contract.md) before rewriting anything.
 
+For compute kernels, storage buffers or simulation workgroups, use [shooosh-gpgpu](../../../.agents/skills/shooosh-gpgpu/SKILL.md). The fragment converter cannot implement their execution semantics.
+
 ## Do this first
 
 If the source is a shooosh `fn fsMain` fragment, call the library:

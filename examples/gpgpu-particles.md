@@ -21,7 +21,7 @@ demo.destroy()
 
 Give the container explicit dimensions, e.g. `height: 80vh; min-height: 420px`.
 The gallery route is `/examples?demo=gpgpu-particles&backend=webgpu`.
-WebGL2 shows a readable unsupported message, not a CPU substitute.
+WebGL2 uses transform feedback with 16,384 particles.
 
 ## GPU data flow
 
@@ -43,3 +43,9 @@ WebGL2 shows a readable unsupported message, not a CPU substitute.
 This is an independent-particle force field, not particle-particle collision or
 fluid dynamics. Keep it in application/example code: core library imports and
 runtime dependencies are unchanged.
+
+## WebGL2 fallback
+
+Also copy `gpgpu-webgl.ts` and `gpgpu-webgl-shaders.ts`, loaded dynamically on
+WebGL2. See [the conversion/validation guide](../docs/gpgpu-fallbacks.md) for
+execution differences, counts and agent skills. There is no CPU simulation.

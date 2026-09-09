@@ -132,7 +132,8 @@
     "CHANGELOG.md",
     "bin/shader.mjs",
     "llms.txt",
-    "agents.md"
+    "agents.md",
+    ".agents/skills/"
   ],
   "license": "MIT",
   "devDependencies": {
