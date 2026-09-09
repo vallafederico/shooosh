@@ -59,3 +59,5 @@ export { run as runRaymarchClouds, fragment as raymarchCloudsFragment } from "./
 export { run as runRaymarchLights, fragment as raymarchLightsFragment } from "./raymarch-lights"
 
 export { run as runRigBones } from "./rig-bones"
+
+export { run as runGpgpuParticles } from "./gpgpu-particles"

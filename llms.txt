@@ -99,3 +99,5 @@ See [docs/shader-contract.md](./docs/shader-contract.md).
 - [Physics/utils performance audit](./docs/audits/2026-09-09-physics-utils-performance.md): package footprint, 58 tree-shaking checks, active/idle browser measurements, limits and next opportunities.
 
 Hosted docs: [agent manifest](https://shooosh-web.vercel.app/agents.md) · [machine index](https://shooosh-web.vercel.app/llms.txt) · [interactive examples](https://shooosh-web.vercel.app/examples).
+
+- [GPGPU mouse particles](./examples/gpgpu-particles.md): GPU storage-buffer integration and instanced rendering, pointer forces, lifecycle and WebGPU requirements.
