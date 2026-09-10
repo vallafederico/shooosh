@@ -31,6 +31,7 @@ export function run(host: HTMLElement, options: ExampleRunOptions = {}): Example
       <div class="dl-mode" role="group" aria-label="Rendering mode"><button data-action="gpu" aria-pressed="true">GPU</button><button data-action="native" aria-pressed="false">DOM</button></div>
       <label>Shader mix <input data-control="mix" type="range" min="0" max="1" step="0.01" value="0.55" aria-label="Shader mix"></label>
       <label>Image fit <select data-control="fit" aria-label="Image fit"><option value="cover">Cover</option><option value="contain">Contain</option><option value="fill">Fill</option></select></label>
+      <button data-action="input">Try GPU input ↓</button>
       <button data-action="swap">Swap image</button><button data-action="radius" aria-pressed="false">Round corners</button>
     </div>
     <div class="dl-scroll" data-content>
@@ -79,8 +80,11 @@ export function run(host: HTMLElement, options: ExampleRunOptions = {}): Example
     query<HTMLInputElement>("[data-backend]").value = native ? "Native DOM" : dom ? dom.engine.backend : "Native fallback"
     const stats = dom?.stats
     const inputMode = query<HTMLInputElement>("[data-title-input]").parentElement!.dataset.canvasInput
-    const inputStatus = inputMode === "active" ? "Canvas input · GPU paint / native editing · LTR prototype"
-      : "Native input · canvas inactive, unsupported text, or composition in progress"
+    const inputStatus = inputMode === "active" ? `Canvas input · ${dom?.engine.backend.toUpperCase()} paint / native editing · LTR prototype`
+      : native || !dom ? "Native input · DOM rendering mode"
+      : inputMode === "fallback" ? "Native input · GPU paint failed; editing remains available"
+      : inputMode === "native" ? "Native input · composition or unsupported text"
+      : "GPU input pending · bring the field into view to paint"
     if (query<HTMLElement>("[data-input-status]").textContent !== inputStatus) query<HTMLElement>("[data-input-status]").textContent = inputStatus
     const fallback = bindings.filter(b => b.state === "fallback").length
     query<HTMLInputElement>("[data-metric]").value = stats ? `${stats.active} GPU / ${fallback} native / ${stats.bindings} bound · ${stats.rectReads} rect reads` : "Original HTML is painting"
@@ -153,6 +157,11 @@ export function run(host: HTMLElement, options: ExampleRunOptions = {}): Example
       nested.scrollTop = 64; session.engine.render()
       check(session.stats.rectReads === 1, "Nested scroll needs no new element bounds")
       nested.scrollTop = nestedScroll; content.scrollTop = 0
+      const field = query<HTMLInputElement>("[data-title-input]")
+      field.scrollIntoView({ block: "center" }); canvasInput?.invalidate()
+      await until(() => field.parentElement?.dataset.canvasInput === "active")
+      check(getComputedStyle(field).opacity === "0", "GPU input paints while native editing remains available")
+      content.scrollTop = 0
       session.destroy(); dom = null
       check(primary.style.opacity === "" && first.state === "disposed", "Destroy restores original paint")
       await mount(); await until(() => bindings[0]?.state === "active")
@@ -191,6 +200,13 @@ export function run(host: HTMLElement, options: ExampleRunOptions = {}): Example
   }, { signal: abort.signal })
   const editor = query<HTMLFormElement>("[data-editor]")
   const titleInput = query<HTMLInputElement>("[data-title-input]")
+  query<HTMLButtonElement>('[data-action="input"]').addEventListener("click", async () => {
+    if (native) await mount()
+    if (disposed) return
+    titleInput.scrollIntoView({ block: "center" })
+    titleInput.focus({ preventScroll: true })
+    canvasInput?.invalidate()
+  }, { signal: abort.signal })
   editor.addEventListener("submit", event => {
     event.preventDefault()
     const title = titleInput.value.trim()

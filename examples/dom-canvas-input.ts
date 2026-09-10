@@ -14,6 +14,7 @@ import type { GpuTexture } from "../package/src/engine/gpu-api"
 export function mountCanvasInput(input: HTMLInputElement, root: HTMLElement, engine: WebGLEngine,
   shaders: FullscreenPlaneShaders, initialMix: number) {
   const field = input.parentElement!
+  field.dataset.canvasInput = "pending"
   const bitmap = document.createElement("canvas")
   const ctx = bitmap.getContext("2d")!
   const abort = new AbortController()
