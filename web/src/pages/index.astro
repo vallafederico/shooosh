@@ -15,7 +15,13 @@ import Hud from "../components/Hud.astro"
     <div id="tastebuds-page-root">
       <div class="tastebuds-layout-grid" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <section class="home-section">
-        <div class="home-plane" data-plane data-sh-bind></div>
+        <div
+          class="home-plane home-can"
+          data-plane
+          data-can
+          tabindex="0"
+          aria-label="MTN Limited Edition Jean-Michel Basquiat can. Drag to spin, double-click to reset."
+        ></div>
       </section>
       <section class="home-section">
         <div class="home-plane" data-plane data-sh-bind></div>

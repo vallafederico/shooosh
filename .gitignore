@@ -24,6 +24,7 @@ harness/public/rig/
 
 # Prepared website demo assets, staged locally for production deployment.
 web/public/car-pbr/
+web/public/can/
 web/public/rig/
 .vercel
 .env*

@@ -33,7 +33,9 @@ not import the gallery. Deep-link with `?demo=rig-bones&backend=webgpu` or
 `/llms.txt`, `/agents.md`, `/docs/agent-dom-rendering.md`, the DOM/MSDF references and the model/rig guides are generated from repository
 Markdown at build time, with relative repository links resolved to GitHub.
 
-The car assets are locally prepared, not checked into Git. Before a deployment
+The car and homepage can assets are locally prepared, not checked into Git.
+The homepage requires `web/public/can/` (mesh binaries and PBR maps); generate
+it with `web/scripts/prepare-can.mjs` before building production. Before a deployment
 that includes the car studio and imported rig, copy `harness/public/car-pbr/` and
 `harness/public/rig/` into `web/public/` (see the example copy guides for generation).
 Build and deploy locally with `vercel build --prod` and
@@ -50,3 +52,21 @@ The homepage's single-pass bulge converts the mouse Y coordinate to bottom-origi
 for WebGL2 and top-origin for WebGPU (`bulgePointerY`). This is specific to the
 current post chain; recheck orientation when changing its pass layout. Do not flip
 DOM/item texture UVs to compensate for post-effect pointer coordinates.
+
+## Scrolling
+
+Touch uses Lenis `syncTouch: true` with 1:1 travel (`touchMultiplier: 1`), a short
+release tail (`syncTouchLerp: 0.15`, `touchInertiaExponent: 1.5`), and native pinch
+zoom. These release values are tuning choices, not a reproduction of OS physics.
+Do not add a transformed scrolling wrapper or a second easing step to GPU bounds.
+`Scroll.useRenderClock(engine)` suspends the app RAF and advances Lenis before the
+DOM layer reads layout in the GPU frame. Scroll updates keep the engine awake
+through inertia. Release this clock on page teardown to restore the app RAF.
+Only one page renderer owns the scroll clock at a time.
+
+Mobile/coarse-pointer rendering is capped at DPR 2 to avoid DPR 6 fullscreen post
+passes on DPR 3 devices; desktop retains supersampling. This trades some edge
+sampling for frame time. Verify drag, release, direction changes and pinch zoom
+on a physical phone with both forced backends. Desktop checks cannot establish
+mobile smoothness, and this approach cannot eliminate stutter under main-thread
+or GPU overload.

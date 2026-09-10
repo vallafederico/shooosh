@@ -63,7 +63,7 @@ type CreateMsdfGlyphs = typeof import("../src/primitives/msdf-glyphs").createMsd
 type Entry = {
   el: HTMLElement; kind: DomKind; options: DomBindingOptions; handle: DomBinding;
   tracker: RectTracker; paint: PaintLease; geometry: Geometry; style: ImageStyle;
-  box?: BoxStyle; text?: TextStyle; textDirty: boolean; textKey: string;
+  box?: BoxStyle; text?: TextStyle; textDirty: boolean; textKey: string; textPaintKey: string;
   item: ItemManager | null; glyphs: MsdfGlyphsHandle[]; texture: TextureLoaderResult | null; releaseTexture: () => void;
   source: string; rasterSize: number; generation: number; loading: boolean; failed: boolean; supported: boolean;
   state: DomBindingState; reason?: string; resolve: (result: DomReadyResult) => void;
@@ -111,7 +111,7 @@ export async function createDomLayer(options: DomLayerOptions): Promise<DomLayer
     e.state = state; e.reason = reason;
     if (state !== "preparing") e.resolve({ state, reason });
   };
-  const clearGlyphs = (e: Entry) => { e.textKey = ""; e.generation++; for (const g of e.glyphs) g.destroy(); e.glyphs = []; };
+  const clearGlyphs = (e: Entry) => { e.textKey = ""; e.textPaintKey = ""; e.generation++; for (const g of e.glyphs) g.destroy(); e.glyphs = []; };
   const fallback = (e: Entry, reason: string) => {
     restore(e); e.item?.destroy(); e.item = null; clearGlyphs(e); setState(e, "fallback", reason);
   };
@@ -193,33 +193,40 @@ export async function createDomLayer(options: DomLayerOptions): Promise<DomLayer
     if (e.el.textContent?.trim() && packed.groups.every(g => g.glyphCount === 0)) {
       fallback(e, "No glyphs to paint"); return;
     }
+    const groups = packed.groups.filter(g => g.glyphCount > 0);
+    const paintKey = JSON.stringify([e.text, groups.map(g => fonts.findIndex(f => f.atlas === g.atlas))]);
     // Invalidation can come from scrolling classes or unrelated DOM changes.
     // Keep ready GPU resources when the relative glyph layout/paint is identical.
-    const textKey = JSON.stringify([e.text, packed.width, packed.height,
-      packed.groups.map(group => [fonts.findIndex(font => font.atlas === group.atlas), ...group.glyphData])]);
+    const textKey = JSON.stringify([paintKey, packed.boxAspect, groups.map(g => [...g.glyphData])]);
     e.textDirty = false;
     if (e.glyphs.length && e.textKey === textKey) return;
+    // Reflow changes instance data, not the shader or atlas. Retain the ready
+    // renderer so mobile viewport changes cannot reopen a compilation gap.
+    if (e.glyphs.length && e.textPaintKey === paintKey) {
+      groups.forEach((group, index) => e.glyphs[index]!.setGlyphData(group.glyphData, group.glyphCount, packed.boxAspect));
+      e.textKey = textKey;
+      return;
+    }
     clearGlyphs(e);
     e.textKey = textKey;
+    e.textPaintKey = paintKey;
     const generation = e.generation;
     const color = e.text.color;
     const drawn = new Set<BmfontAtlas>();
-    const expected = packed.groups.filter(g => g.glyphCount > 0).length;
-    for (const group of packed.groups) {
-      if (!group.glyphCount) continue;
+    for (const group of groups) {
       const loaded = fonts.find(f => f.atlas === group.atlas);
       if (!loaded) continue;
       e.glyphs.push(createMsdfGlyphs(e.el, {
         onDraw: () => {
           if (destroyed || unavailable || printing || e.state === "disposed" || e.generation !== generation) return;
           drawn.add(group.atlas);
-          if (drawn.size === expected) { e.paint.hide(); e.ownStyle = e.el.style.cssText; setState(e, "active"); }
+          if (drawn.size === groups.length) { e.paint.hide(); e.ownStyle = e.el.style.cssText; setState(e, "active"); }
         },
         onError: error => { if (e.generation !== generation || destroyed) return; e.failed = true; fallback(e, "Glyph draw failed"); report(e, error); engine.requestFrame(); },
         engine, texture: loaded.texture, glyphData: group.glyphData, glyphCount: group.glyphCount,
         distanceRange: group.atlas.distanceField?.distanceRange ?? 8,
         atlasWidth: group.atlas.common.scaleW, color, alpha: 1, boxAspect: packed.boxAspect,
-        layer: 10 + e.order, uni: { value2: packed.width, value4: packed.height },
+        layer: 10 + e.order,
       }));
     }
 
@@ -263,13 +270,13 @@ export async function createDomLayer(options: DomLayerOptions): Promise<DomLayer
     target.addEventListener(name, callback, { capture, passive: true });
     listeners.push(() => target.removeEventListener(name, callback, capture));
   };
-  listen(document, "scroll", () => { engine.requestFrame(); }, true);
+  listen(document, "scroll", engine.requestFrame, true);
   for (const event of ["resize", "pageshow"]) listen(window, event, invalidate);
   listen(document, "load", invalidate, true);
   for (const event of ["pointerover", "pointerout", "focusin", "focusout", "transitionrun", "transitionend", "transitioncancel", "animationstart", "animationend", "animationcancel"])
     listen(document, event, invalidate, true);
   if (document.fonts) listen(document.fonts, "loadingdone", invalidate);
-  if (window.visualViewport) { listen(window.visualViewport, "resize", invalidate); listen(window.visualViewport, "scroll", invalidate); }
+  if (window.visualViewport) { listen(window.visualViewport, "resize", invalidate); listen(window.visualViewport, "scroll", engine.requestFrame); }
   const lose = () => {
     if (destroyed || unavailable) return;
     unavailable = true; canvas.style.visibility = "hidden";
@@ -368,7 +375,7 @@ export async function createDomLayer(options: DomLayerOptions): Promise<DomLayer
     const e: Entry = { el, kind, options: { ...bindingOptions, uni: { ...bindingOptions.uni } },
       handle: null!, tracker: new RectTracker(el), paint: new PaintLease(el, paintMode[kind]), geometry: empty,
       style: { fit: "stretch", position: [0.5, 0.5] }, item: null, glyphs: [], texture: null, releaseTexture: () => {},
-      textDirty: true, textKey: "", source: "", rasterSize: 0, generation: 0, loading: false, failed: false, supported: false,
+      textDirty: true, textKey: "", textPaintKey: "", source: "", rasterSize: 0, generation: 0, loading: false, failed: false, supported: false,
       state: "preparing", resolve, ownStyle: el.style.cssText, order: -1, cleanup: () => {} };
     const onError = () => { e.generation++; e.failed = true; fallback(e, "Native image failed to load"); };
     if (kind === "media") { el.addEventListener("error", onError); e.cleanup = () => el.removeEventListener("error", onError); }

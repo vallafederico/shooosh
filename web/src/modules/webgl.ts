@@ -1,6 +1,7 @@
 import { createCanvasScene, createMouseMonad, createPostProcessor } from "shooosh"
 import { createDomLayer, type DomLayer, type DomScan } from "shooosh/dom"
 import { bulgeEffect, bulgeEffectWgsl, bulgePointerY } from "../bulge-post"
+import { mountCan } from "../can"
 import vuvShader from "../vuv.wgsl"
 
 const landingFonts = [
@@ -35,11 +36,13 @@ export default function webgl(element: HTMLElement) {
   let layer: DomLayer | null = null
   let scan: DomScan | null = null
   let post: ReturnType<typeof createPostProcessor> | null = null
+  let stopCan: (() => void) | null = null
+  let stopScroll: (() => void) | undefined
   const mouse = createMouseMonad({ resetOnLeave: false, easing: 0.18 })
   const scene = createCanvasScene(element, {
     backend,
-    // Small mirrored UI needs extra samples, including through the bulge pass.
-    dpr: { scale: 2 },
+    // Avoid DPR 6 full-screen post passes on DPR 3 phones.
+    dpr: window.matchMedia("(pointer: coarse)").matches ? { max: 2 } : { scale: 2 },
     clearColor: { r: 0, g: 0, b: 0, a: 0 },
     onInitError: (error) => console.error("[shooosh]", error),
   })
@@ -74,6 +77,8 @@ export default function webgl(element: HTMLElement) {
     const engine = scene.getEngine()
     if (!engine) return
     element.dataset.backend = engine.backend
+    // Advance scroll in the same render callback sequence as DOM measurement.
+    stopScroll = window.sscroll?.useRenderClock(engine)
 
     let effectId = ""
     let lastX = Infinity
@@ -112,6 +117,19 @@ export default function webgl(element: HTMLElement) {
     layer = dom
     if (!native) paintGpu()
     setMode(native)
+
+    const canPlane = document.querySelector<HTMLElement>("[data-can]")
+    if (canPlane) {
+      try {
+        stopCan = await mountCan(canPlane, { engine })
+        if (disposed) {
+          stopCan()
+          stopCan = null
+        }
+      } catch (error) {
+        console.error("[shooosh] can", error)
+      }
+    }
   })
 
   const onToggle = (event: Event) => {
@@ -125,7 +143,10 @@ export default function webgl(element: HTMLElement) {
     disposed = true
     document.documentElement.classList.remove("has-gpu")
     document.removeEventListener("click", onToggle)
+    stopScroll?.()
     mouse.destroy()
+    stopCan?.()
+    stopCan = null
     post?.destroy()
     post = null
     scan?.destroy()

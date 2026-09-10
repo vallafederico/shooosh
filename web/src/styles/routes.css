@@ -9,6 +9,14 @@ html {
 img {
   -webkit-user-drag: none;
 }
+
+*:not([data-scrollbar]) {
+  scrollbar-width: none;
+}
+
+*:not([data-scrollbar])::-webkit-scrollbar {
+  display: none;
+}
 /* acquireLayer paints behind the body. Keep that surface transparent. */
 body { background-color: transparent; }
 
@@ -28,6 +36,14 @@ html.lenis body {
 .home-plane {
   width: calc(var(--grid-column-width) * 4 + var(--grid-gutter) * 3);
   aspect-ratio: 1;
+}
+
+.home-can {
+  position: relative;
+  z-index: 70;
+  touch-action: none;
+  cursor: grab;
+  outline: none;
 }
 
 .home-canvas {

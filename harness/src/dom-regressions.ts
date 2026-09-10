@@ -55,19 +55,28 @@ async function run() {
     assert(text.style.color !== "transparent", "native text remains visible while preparing");
     assert((await timeout(binding.ready)).state === "active", `${backend} explicit engine draws glyphs`);
     assert(text.style.color === "transparent", "native paint hides after draw");
-    let nativeFrames = 0;
-    await timeout(new Promise<void>(resolve => {
-      let frames = 0;
-      const off = engine.onRender(() => {
-        if (text.style.color !== "transparent") nativeFrames++;
-        if (++frames === 12) { off(); resolve(); return; }
-        // Emulate scrolling's ancestor-class changes and layout invalidations.
-        document.documentElement.classList.toggle("scrolling-test");
+    for (const resizeText of [false, true]) {
+      let nativeFrames = 0;
+      await timeout(new Promise<void>(resolve => {
+        let frames = 0;
+        const off = engine.onRender(frame => {
+          frame.onSubmitted?.(() => {
+            if (text.style.color !== "transparent") nativeFrames++;
+            if (++frames === 12) { off(); resolve(); return; }
+            document.documentElement.classList.toggle("scrolling-test");
+            if (resizeText) {
+              text.style.width = `${80 + frames * 3}px`;
+              text.style.height = `${40 + frames}px`;
+            }
+            dom.invalidate();
+          });
+        }, { layer: Number.MAX_VALUE });
         dom.invalidate();
-      }, { layer: Number.MAX_VALUE });
-      dom.invalidate();
-    }));
-    assert(nativeFrames === 0, "fixed text stays GPU-painted through repeated layout invalidation");
+      }));
+      assert(nativeFrames === 0, resizeText
+        ? "text remains GPU-painted through repeated changed layout bounds"
+        : "fixed text stays GPU-painted through repeated layout invalidation");
+    }
     text.textContent = "B"; // not in the fixture atlas: a real content change
     await timeout(new Promise<void>(resolve => {
       const off = engine.onRender(() => {

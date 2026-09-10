@@ -170,3 +170,12 @@ adapter orders supported GPU painters by their CSS context hierarchy, not just
 source order or the largest descendant z-index. Keep the canvas's own browser
 stacking position separate from that internal draw order. Native elements outside
 the canvas cannot be arbitrarily interleaved among GPU draws.
+
+During viewport scrolling, request a frame without invalidating text layout.
+Actual resizes still invalidate measurements. When a text layout changes but its
+paint and ordered font groups match, update glyph buffers and `boxAspect` in
+place; keep shader pipelines alive. `setGlyphData(data, count, boxAspect?)`
+supports this on both backends. Native text takeover happens after frame
+submission, not while the render pass is still being encoded. The harness checks
+repeated changed text bounds as well as unchanged invalidations. These checks do
+not substitute for physical mobile testing of browser toolbar/compositor motion.

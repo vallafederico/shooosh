@@ -1,14 +1,47 @@
+@font-face {
+  font-family: "Archivo";
+  src: url("../../web/public/landing/af98634ce4d06bb994f5a77ff2d7e86fb1eff21148812874dda84ac10b17958a.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Archivo";
+  src: url("../../web/public/landing/f8b0d6d185e3ed752c5605b053720ac425d476e9e56990b7636771f7755fccdd.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("../../web/public/landing/125a40e52db026e00ca98c8e7af9b55f4ae30306629e41453bdf37e0ecdf6c05.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
-  --bg: #0c0c0b;
-  --ink: #ece7dc;
-  --muted: #8a8478;
-  --line: #2a2823;
-  --accent: #d8ff3e;
+  --bg: #d3d3d3;
+  --ink: #171717;
+  --paper: #ffffff;
+  --muted: color-mix(in srgb, #171717 58%, #d3d3d3);
+  --line: #171717;
+  --accent: #171717;
   --rail: 220px;
+  --font-sans: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-2: "Archivo", sans-serif;
 }
 
 * {
   box-sizing: border-box;
+}
+
+*:not([data-scrollbar]) {
+  scrollbar-width: none;
+}
+
+*:not([data-scrollbar])::-webkit-scrollbar {
+  display: none;
 }
 
 html,
@@ -18,9 +51,9 @@ body {
   overflow: hidden;
   /* Kill rubber-band bounce on Apple (x and y). */
   overscroll-behavior: none;
-  background: transparent;
+  background: var(--bg);
   color: var(--ink);
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-sans);
 }
 
 body {
@@ -34,63 +67,66 @@ body {
   z-index: 2;
   height: 100%;
   min-height: 0;
-  padding: 24px 18px;
+  padding: 1.5rem 1.1rem;
   border-right: 1px solid var(--line);
   background: var(--bg);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1rem;
   overflow: hidden;
 }
 
 .mark {
   margin: 0;
   flex-shrink: 0;
-  font-size: 14px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 0.7857rem;
+  line-height: 1;
+  letter-spacing: 0.0629rem;
 }
 
 .backend {
   margin: 0;
   flex-shrink: 0;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-family: var(--font-sans);
+  font-size: var(--type-xs-font-size, 0.5714rem);
+  line-height: var(--type-xs-line-height, 0.5714rem);
+  letter-spacing: var(--type-xs-letter-spacing, 0.0686rem);
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--ink);
 }
 
 .backend-toggle {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 2px;
+  gap: 0.25rem;
   flex-shrink: 0;
-  padding: 2px;
-  border: 1px solid var(--line);
+  padding: 0;
+  border: 0;
 }
 
 .backend-toggle button {
   appearance: none;
-  border: 0;
+  border: 1px solid var(--line);
   background: transparent;
-  color: var(--muted);
-  padding: 6px 0;
+  color: var(--ink);
+  padding: 0.4rem 0;
   font: inherit;
-  font-size: 10px;
-  letter-spacing: 0.06em;
+  font-size: var(--type-xs-font-size, 0.5714rem);
+  letter-spacing: var(--type-xs-letter-spacing, 0.0686rem);
   text-transform: uppercase;
   cursor: pointer;
 }
 
 .backend-toggle button[aria-pressed="true"] {
-  background: var(--line);
-  color: var(--accent);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.15rem;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -103,23 +139,28 @@ nav button {
   background: transparent;
   color: var(--muted);
   text-align: left;
-  padding: 6px 0;
+  padding: 0.35rem 0.5rem;
   font: inherit;
-  font-size: 13px;
+  font-size: 0.7857rem;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 nav button[aria-current="true"] {
-  color: var(--accent);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .hint {
   flex-shrink: 0;
   margin: 0;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.5;
+  color: var(--ink);
+  font-family: var(--font-2);
+  font-size: var(--type-sm-font-size, 0.8571rem);
+  line-height: var(--type-sm-line-height, 1.0286rem);
+  letter-spacing: var(--type-sm-letter-spacing, -0.0343rem);
 }
 
 #stage {
@@ -159,6 +200,9 @@ nav button[aria-current="true"] {
   inset: auto 28px 28px 28px;
   pointer-events: none;
   max-width: 42ch;
+  padding: 0.75rem 0.9rem;
+  background: var(--bg);
+  color: var(--ink);
 }
 
 .scroll-demo .overlay {
@@ -171,15 +215,20 @@ nav button[aria-current="true"] {
 
 .overlay h1 {
   margin: 0 0 8px;
-  font-size: 22px;
+  font-family: var(--font-2);
+  font-size: 1.15rem;
+  line-height: 1.2;
+  letter-spacing: -0.04rem;
   font-weight: 400;
 }
 
 .overlay p {
   margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
+  color: var(--ink);
+  font-family: var(--font-2);
+  font-size: var(--type-sm-font-size, 0.8571rem);
+  line-height: var(--type-sm-line-height, 1.0286rem);
+  letter-spacing: var(--type-sm-letter-spacing, -0.0343rem);
 }
 
 .cards {
@@ -242,9 +291,10 @@ nav button[aria-current="true"] {
 
 .scroll-label {
   margin: 0;
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--type-xs-font-size, 0.5714rem);
+  letter-spacing: var(--type-xs-letter-spacing, 0.0686rem);
   text-transform: uppercase;
 }
 

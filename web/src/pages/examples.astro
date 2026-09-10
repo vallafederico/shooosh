@@ -1,4 +1,5 @@
 ---
+import "../styles/global.css"
 import "../../../harness/src/styles.css"
 import "../styles/routes.css"
 ---
@@ -25,7 +26,7 @@ import "../styles/routes.css"
   </body>
 </html>
 <style is:global>
-  .rail a { color: inherit; }
+  .rail a { color: inherit; text-underline-offset: 0.2em; }
   @media (max-width: 720px) {
     .rail #nav { max-height: 180px; overflow-y: auto; }
     #stage:not(.scroll-demo) { height: 75dvh; min-height: 520px; position: relative; overflow: hidden; }

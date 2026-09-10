@@ -31,7 +31,7 @@ import type { MsdfGlyphsOptions } from "./msdf-glyphs";
 
 export type GpuMsdfGlyphsRenderer = {
   render: (frame: EngineFrame) => void;
-  setGlyphData: (data: Float32Array, count: number) => void;
+  setGlyphData: (data: Float32Array, count: number, boxAspect?: number) => void;
   setUni: (next: Partial<MsdfUni>) => void;
   destroy: () => void;
 };
@@ -163,6 +163,7 @@ export function createGpuMsdfGlyphsRenderer(
 
   let glyphData = options.glyphData;
   let glyphCount = options.glyphCount;
+  let boxAspect = options.boxAspect;
   let instanceBuffer: GpuBuffer | null = null;
   let instanceCapacity = 0;
   let instanceDirty = true;
@@ -237,7 +238,7 @@ export function createGpuMsdfGlyphsRenderer(
       uniformValues[9] = options.color[1];
       uniformValues[10] = options.color[2];
       uniformValues[11] = options.alpha;
-      uniformValues[12] = options.boxAspect;
+      uniformValues[12] = boxAspect;
       uniformValues[13] = options.distanceRange;
       uniformValues[14] = options.atlasWidth;
       writeBufferFromArray(device, uniformBuffer, uniformValues);
@@ -248,9 +249,10 @@ export function createGpuMsdfGlyphsRenderer(
       pass.setVertexBuffer(0, quadBuffer);
       pass.setVertexBuffer(1, buffer);
       pass.draw(6, glyphCount);
-      options.onDraw?.();
+      if (options.onDraw) nextFrame.onSubmitted?.(options.onDraw);
     },
-    setGlyphData(data, count) {
+    setGlyphData(data, count, nextAspect) {
+      if (nextAspect !== undefined) boxAspect = nextAspect;
       glyphData = data;
       glyphCount = count;
       instanceDirty = true;

@@ -45,7 +45,8 @@ export type MsdfGlyphsOptions = {
 };
 
 export type MsdfGlyphsHandle = {
-  setGlyphData(data: Float32Array, count: number): void;
+  /** Update packed glyphs; pass boxAspect when the layout bounds change. */
+  setGlyphData(data: Float32Array, count: number, boxAspect?: number): void;
   setUni(next: Partial<{ value1: number; value2: number; value3: number; value4: number }>): void;
   destroy(): void;
 };
@@ -171,7 +172,7 @@ type UniStore = { value1: number; value2: number; value3: number; value4: number
 
 type MsdfGlyphsRenderer = {
   render: (frame: EngineFrame) => void;
-  setGlyphData: (data: Float32Array, count: number) => void;
+  setGlyphData: (data: Float32Array, count: number, boxAspect?: number) => void;
   setUni: (next: Partial<UniStore>) => void;
   destroy: () => void;
 };
@@ -194,6 +195,7 @@ function createMsdfGlyphsRenderer(
 
   let glyphData = options.glyphData;
   let glyphCount = options.glyphCount;
+  let boxAspect = options.boxAspect;
   let instanceDirty = true;
 
   const uni: UniStore = {
@@ -314,7 +316,7 @@ function createMsdfGlyphsRenderer(
         gl.uniform4f(loc_uElementNdc, ndcLeft, ndcTop, ndcRight, ndcBottom);
       }
       if (loc_uBoxAspect) {
-        gl.uniform1f(loc_uBoxAspect, options.boxAspect);
+        gl.uniform1f(loc_uBoxAspect, boxAspect);
       }
       if (loc_uDistanceRange) {
         gl.uniform1f(loc_uDistanceRange, options.distanceRange);
@@ -336,7 +338,7 @@ function createMsdfGlyphsRenderer(
 
       gl.bindVertexArray(vao);
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, glyphCount);
-      options.onDraw?.();
+      if (options.onDraw) nextFrame.onSubmitted?.(options.onDraw);
       gl.bindVertexArray(null);
 
       gl.disable(gl.BLEND);
@@ -345,7 +347,8 @@ function createMsdfGlyphsRenderer(
       }
     },
 
-    setGlyphData(data, count) {
+    setGlyphData(data, count, nextAspect) {
+      if (nextAspect !== undefined) boxAspect = nextAspect;
       glyphData = data;
       glyphCount = count;
       instanceDirty = true;
@@ -377,8 +380,6 @@ export function createMsdfGlyphs(
   options: MsdfGlyphsOptions,
 ): MsdfGlyphsHandle {
   let currentOptions = options;
-  let pendingUni: Partial<UniStore> = {};
-  let pendingGlyphData: { data: Float32Array; count: number } | null = null;
 
   const lifecycle = createPrimitiveLifecycle<MsdfGlyphsRenderer>({
     engine: options.engine,
@@ -395,17 +396,6 @@ export function createMsdfGlyphs(
       }
       return null;
     },
-    onRendererCreated: (renderer) => {
-      // Apply any queued updates that arrived before the renderer existed
-      if (Object.keys(pendingUni).length > 0) {
-        renderer.setUni(pendingUni);
-        pendingUni = {};
-      }
-      if (pendingGlyphData) {
-        renderer.setGlyphData(pendingGlyphData.data, pendingGlyphData.count);
-        pendingGlyphData = null;
-      }
-    },
     renderFrame: (renderer, frame) => {
       try { renderer.render(frame); }
       catch (error) { if (options.onError) options.onError(error); else throw error; }
@@ -413,28 +403,13 @@ export function createMsdfGlyphs(
   });
 
   return {
-    setGlyphData(data, count) {
-      const renderer = lifecycle.getRenderer();
-      if (renderer) {
-        renderer.setGlyphData(data, count);
-      } else {
-        pendingGlyphData = { data, count };
-        // Also update options so renderer created later gets the latest data
-        currentOptions = { ...currentOptions, glyphData: data, glyphCount: count };
-      }
+    setGlyphData(data, count, boxAspect) {
+      currentOptions = { ...currentOptions, glyphData: data, glyphCount: count, boxAspect: boxAspect ?? currentOptions.boxAspect };
+      lifecycle.getRenderer()?.setGlyphData(data, count, boxAspect);
     },
     setUni(next) {
-      const renderer = lifecycle.getRenderer();
-      if (renderer) {
-        renderer.setUni(next);
-      } else {
-        Object.assign(pendingUni, next);
-        // Merge into options.uni so renderer created later picks them up
-        currentOptions = {
-          ...currentOptions,
-          uni: { ...currentOptions.uni, ...next },
-        };
-      }
+      currentOptions = { ...currentOptions, uni: { ...currentOptions.uni, ...next } };
+      lifecycle.getRenderer()?.setUni(next);
     },
     destroy() {
       lifecycle.destroy();
