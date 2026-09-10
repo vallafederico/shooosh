@@ -27,6 +27,7 @@ export { run as runScrollSections, fragment as scrollSectionsFragment } from "./
 export { run as runTexturedPlane, fragment as texturedPlaneFragment } from "./textured-plane"
 export { run as runTexturedItem, fragment as texturedItemFragment } from "./textured-item"
 export { run as runDomIntegration, fragment as domIntegrationFragment } from "./dom-integration"
+export { run as runDomPage, fragment as domPageFragment } from "./dom-page"
 export { run as runObjectSpin, fragment as objectSpinFragment } from "./object-spin"
 export { run as runObjectEnv, fragment as objectEnvFragment } from "./object-env"
 export { run as runObjectPbr, fragment as objectPbrFragment } from "./object-pbr"

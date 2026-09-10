@@ -100,9 +100,12 @@ export type RenderSubscriptionOptions = {
 };
 
 export type EngineOptions = {
-  /** Cap device pixel ratio. Defaults to device DPR. */
+  /** Canvas pixel density; defaults to device DPR. */
   dpr?: {
+    /** Optional cap applied after scale. */
     max?: number;
+    /** Supersampling multiplier for fine text/edges (default 1). Pixel cost grows quadratically. */
+    scale?: number;
   };
   clearColor?: Partial<ClearColor>;
   /** Default `"auto"` probes WebGPU first, then WebGL2. */

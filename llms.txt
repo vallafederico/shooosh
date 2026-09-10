@@ -9,6 +9,7 @@
 | Goal | Read |
 | --- | --- |
 | **Ship a look** | This file → [examples/README.md](./examples/README.md) → [agent copy guide](./examples/agent-guide.md) → copy the selected demo and helpers |
+| **Mirror DOM / fix SVG or SDF/MSDF rendering** | [Agent rendering workflow](./docs/agent-dom-rendering.md) → [DOM API](./docs/dom.md) / [asset generation](./docs/msdf.md) |
 | **Import/edit/optimize models or textures** | [Agent entry guide](./docs/agent-usage.md) → [model reference](./packages/model/README.md) |
 | **Use bones, rigs or animations** | [Agent entry guide](./docs/agent-usage.md) → [rig API](./docs/rig.md) → [rig example](./examples/rig-bones.md) |
 | **Change the engine** | This file → [agents.md](./agents.md) → next [docs/agent-tasks/](./docs/agent-tasks/) with `status: todo` |
@@ -49,7 +50,7 @@ Use source matching your installed version; unreleased recipes can require new A
 - `createCanvasScene` — lightweight owned canvas + `retain(resource)` cleanup; full `createScene` retains convenience features. See [bundle setups](./docs/bundle-setup.md).
 - `createScene` / `parseSceneDataset`
 - `acquireLayer` / `releaseLayer`
-- `shooosh/dom`: `createDomLayer({ canvas, root })` → cached `bind` / `media`, native fallback, explicit cleanup. See [docs/dom.md](./docs/dom.md) for the supported subset.
+- `shooosh/dom`: `createDomLayer({ canvas, root, fonts })` → cached `bind` / `media` / `box` / `text`, optional `scan()` for marked descendants (`img[data-sh-media]`, `[data-sh-bind]`, `[data-sh-box]`, `[data-sh-text]`), native fallback, explicit cleanup. See [docs/dom.md](./docs/dom.md) for the supported subset.
 - `createItem` / `createScreen` / `createObject` / `createParticles` / `createMsdfGlyphs`
 - `createPostProcessor().addFragmentEffect({ fragmentShader, fragmentShaderWgsl })` — no named bloom/bw/noise; copy [`examples/post-shaders.ts`](./examples/post-shaders.ts)
 - `effects.custom` — thin sugar for `createScene({ post })` (author shaders only)

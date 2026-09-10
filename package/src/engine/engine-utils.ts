@@ -35,9 +35,10 @@ export function applyCanvasBackdrop(canvas: HTMLCanvasElement, color: ClearColor
       : "transparent";
 }
 
-export function getEffectiveDevicePixelRatio(max?: number) {
+export function getEffectiveDevicePixelRatio(max?: number, scale = 1) {
   const dpr = window.devicePixelRatio;
-  const resolved = !Number.isFinite(dpr) || (dpr ?? 0) <= 0 ? 1 : (dpr as number);
+  const native = !Number.isFinite(dpr) || (dpr ?? 0) <= 0 ? 1 : (dpr as number);
+  const resolved = native * (Number.isFinite(scale) && scale > 0 ? scale : 1);
   if (typeof max === "number" && max > 0) {
     return Math.min(resolved, max);
   }
@@ -48,15 +49,16 @@ export function getEffectiveDevicePixelRatio(max?: number) {
  * CSS size × effective DPR → backing-store size. Reads getBoundingClientRect,
  * which forces layout — call only when a canvas size tracker says it changed.
  */
-export function computeCanvasSize(canvas: HTMLCanvasElement, maxDpr?: number) {
-  const ratio = getEffectiveDevicePixelRatio(maxDpr);
+export function computeCanvasSize(canvas: HTMLCanvasElement, maxDpr?: number, scale = 1, maxDimension = Infinity) {
+  const ratio = getEffectiveDevicePixelRatio(maxDpr, scale);
   const rect = canvas.getBoundingClientRect();
   const cssWidth = rect.width > 0 ? rect.width : canvas.clientWidth;
   const cssHeight = rect.height > 0 ? rect.height : canvas.clientHeight;
+  const density = Math.min(ratio, maxDimension / Math.max(cssWidth, cssHeight, 1));
   return {
-    ratio,
-    width: Math.max(1, Math.round(cssWidth * ratio)),
-    height: Math.max(1, Math.round(cssHeight * ratio)),
+    ratio, // requested density keeps resize tracking idle when hardware-limited
+    width: Math.max(1, Math.round(cssWidth * density)),
+    height: Math.max(1, Math.round(cssHeight * density)),
   };
 }
 

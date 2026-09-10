@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 import {
+  loadTexture,
   applyTextureUv,
   resolveTextureUvTransform,
   textureFitToUni,
@@ -23,3 +24,8 @@ test("textureFitToUni packs value5–8", () => {
     textureFitToUni({ scaleX: 1, scaleY: 0.5, offsetX: 0, offsetY: 0.25 }),
   ).toEqual({ value5: 1, value6: 0.5, value7: 0, value8: 0.25 })
 })
+
+test("invalid vector raster dimensions fail before starting an engine or decoding", async () => {
+  for (const svgRasterSize of [NaN, Infinity, 0, -1])
+    await expect(loadTexture("icon.svg", { svgRasterSize, waitForEngine: false })).rejects.toThrow("svgRasterSize");
+});

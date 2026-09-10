@@ -37,3 +37,24 @@ test("pure queue construction does not schedule; enqueued managers still attach"
     else Reflect.deleteProperty(globalThis, "window");
   }
 });
+
+test("lazy renderer wakes every explicit engine when its chunk settles", async () => {
+  let first = 0, second = 0;
+  const a = { requestFrame() { first++; } } as WebGLEngine;
+  const b = { requestFrame() { second++; } } as WebGLEngine;
+  const ensure = createLazyGpuFactory({ label: "explicit", load: async () => () => {} });
+  ensure(a); ensure(a); ensure(b);
+  await Promise.resolve();
+  expect(first).toBe(1); expect(second).toBe(1);
+});
+
+test("failed lazy renderer wakes its engine and surfaces the error for native fallback", async () => {
+  let frames = 0;
+  const error = new Error("chunk unavailable");
+  const engine = { requestFrame() { frames++; } } as WebGLEngine;
+  const ensure = createLazyGpuFactory({ label: "failure test", load: async () => { throw error; } });
+  ensure(engine);
+  await Promise.resolve(); await Promise.resolve();
+  expect(frames).toBe(1);
+  expect(() => ensure(engine)).toThrow("chunk unavailable");
+});

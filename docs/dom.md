@@ -1,6 +1,6 @@
 # DOM integration
 
-[Documentation](./README.md) · [Design and later stages](./proposals/dom-integration.md)
+[Documentation](./README.md) · [Agent workflow](./agent-dom-rendering.md) · [Design and later stages](./proposals/dom-integration.md)
 
 [Gap specification and subagent delivery plan](./proposals/dom-mirroring-delivery-plan.md)
 tracks remaining work and its acceptance gates; it is not a list of supported APIs.
@@ -15,11 +15,16 @@ import { createDomLayer } from "shooosh/dom";
 const dom = await createDomLayer({
   canvas: document.querySelector<HTMLCanvasElement>("#gpu")!,
   root: document.querySelector<HTMLElement>("#gallery")!,
+  fonts: [
+    { family: "Archivo", weight: 400, json: "/msdf/archivo.json", texture: "/msdf/archivo.png" },
+  ],
   onError: ({ element, error }) => console.warn(element, error),
 });
 
 if (dom) {
   const image = dom.media(document.querySelector<HTMLImageElement>("#photo")!);
+  const chip = dom.box(document.querySelector<HTMLElement>("#chip")!);
+  const copy = dom.text(document.querySelector<HTMLElement>("#lede")!);
   console.log(await image.ready); // active, fallback, or disposed
   // After an application-owned layout or stylesheet change:
   dom.invalidate();
@@ -27,6 +32,23 @@ if (dom) {
   // dom.destroy();
 }
 ```
+
+Two authoring styles, one session. Piecewise calls `bind()` / `media()` on nodes you name. Page mode marks descendants and scans once:
+
+```ts
+import { compileShader } from "shooosh/compiler";
+
+const page = dom.scan({
+  shaders: { bind: compileShader(`fn fsMain() -> vec4f { return vec4f(vUv, 0.0, 1.0); }`) },
+});
+// page.refresh() after you add marks; page.destroy() restores native images
+```
+
+Default marks are `img[data-sh-media]`, `[data-sh-bind]`, `[data-sh-box]` and
+`[data-sh-text]`. Unmarked copy and inputs stay native. `scan()` is the same
+painter pipeline, not HTML capture. Pass `false` to skip a kind, or your own
+selectors. Bind targets need `shaders.bind`. Calling `scan()` again replaces the
+previous scan. Input marks remain reserved until `dom.input()`.
 
 Image enhancement retains the original `<img>`, alt text, and surrounding link.
 It suppresses only the image's paint, using reversible opacity after a frame with
@@ -51,8 +73,13 @@ The adapter applies `pointer-events:none` and `aria-hidden=true` to the canvas,
 restoring prior values on destruction. It does not rewrite page backgrounds or
 infer CSS stacking contexts. The canvas remains your DOM node after destruction.
 Only use this arrangement where a single canvas plane correctly composes with
-your native content. GPU bindings draw in DOM order, interleaving images and
-decorative quads; CSS z-index and native/GPU interleaving are not emulated.
+your native content. GPU bindings use the supported CSS stacking hierarchy: positioned elements and
+flex/grid items with explicit z-index, fixed/sticky contexts, and isolation.
+Nested contexts stay grouped; equal levels use DOM order. Ancestor z-index therefore
+applies to mirrored children. Style invalidation updates ordering; scrolling alone
+reuses it. This is a subset of CSS painting, not arbitrary native/GPU interleaving.
+The browser still composites the entire canvas as one element at its own z-index;
+GPU children cannot interleave with unrelated native elements outside that canvas.
 
 Alternatively pass `{ engine, root }`. This does not start, stop, or destroy the
 borrowed engine; its owner must start it or render frames. A canvas-owned session
@@ -62,24 +89,34 @@ Use one adapter session per canvas and one binding owner per element.
 ## Shaders and bindings
 
 ```ts
+import { compileShader } from "shooosh/compiler";
+
 const decoration = dom.bind(element, {
-  shaders: { fragment: `fn fsMain() -> vec4f {
+  shaders: compileShader(`fn fsMain() -> vec4f {
     return vec4f(vUv, uUni.values0.x, 1.0);
-  }` },
+  }`),
   uni: { value1: 0.5 },
 });
 decoration.setUni({ value1: 0.7 });
 
 const image = dom.media(img, {
-  shaders: { fragment: `fn fsMain() -> vec4f {
+  shaders: compileShader(`fn fsMain() -> vec4f {
     return textureSample(uTexture, uSampler, fitUv(vUv));
-  }` },
+  }`),
 });
 ```
 
+These inline examples opt into `shooosh/compiler`. For static shaders, prefer
+plain `.wgsl` imports through [shooosh/build](./shader-build.md), which prepares
+WGSL and GLSL before deployment. Raw WGSL alone does not support WebGL2.
+
 `bind()` draws a decorative quad and leaves native paint unchanged. Make the
 target transparent where you want a canvas behind it to show. `media()` owns image
-loading and native image takeover. Focused images retain native paint for their focus outline. Both use the existing WGSL `fsMain` contract.
+loading and native image takeover. `box()` paints a solid fill plus per-corner radii
+and hides only background/border color so children stay hittable. `text()` lays out
+MSDF from live character ranges after matching `fonts` on the layer; missing glyphs
+leave the element native. Focused images retain native paint for their focus outline.
+All use the existing WGSL `fsMain` contract.
 Image texture fitting reserves `value5–8`; other user slots remain available.
 The default image shader makes samples outside fitted UV bounds transparent for
 `contain`. Custom image shaders should do the same if they use that fit mode.
@@ -97,12 +134,15 @@ shader hot swapping is a separate engine task.
 | --- | --- |
 | Untransformed rectangular DOM bounds | CSS transforms, zoom, perspective |
 | Native root scrolling and fixed/sticky positioning | Transform-based smooth-scrolling adapters |
-| Rectangular ancestor overflow clips and nested scrolling | Rounded clips, masks, complex clip paths |
+| Rectangular ancestor overflow clips for media/bind and nested scrolling | Rounded clips, masks, complex clip paths |
 | Existing `<img>`, browser-selected currentSrc, source changes | Video, CSS background images |
 | `object-fit:fill/contain/cover`, two percentage object positions | `none`, `scale-down`, pixel/edge-offset positions |
 | Borderless, padding-free, square-corner images | Image borders, backgrounds, padding, radii, shadows, opacity transitions |
 | Opaque, unfiltered ancestry | Opacity groups, filters, blend modes |
-| User-authored decorative WGSL quads | Automatic CSS box painting, text/glyph layout |
+| User-authored decorative WGSL quads | Video, CSS background images as box fills |
+| Solid CSS box fills + radii (`box()`); no borders/shadows | Uniform borders, gradients, box-shadow |
+| Opaque, matching-face display text from DOM ranges (`text()` + `fonts`) | `dom.input()`, general shaping, selection, clipping, italic/RTL/vertical text, text-shadow |
+| Explicit `scan()` of media / bind / box / text marks | Unmarked HTML, `data-sh-input` until that API exists |
 
 Image resources are shared per URL within a session, refcounted, and released
 after the last binding. Pending uploads cannot reactivate a disposed binding;
@@ -157,7 +197,9 @@ that a GPU-displaced visual has a correspondingly displaced DOM hit target.
 
 The [DOM integration example](../examples/dom-integration.ts) provides a visual
 testing surface in the examples catalog: open `/?demo=dom-integration` in the
-Vite harness. It includes shader mixing, source swapping, image fitting,
+Vite harness. [DOM page scan](../examples/dom-page.ts) (`/?demo=dom-page`) is the
+attribute-registry recipe: mark images and decorative quads, call `scan()`, toggle
+GPU/DOM. Unmarked copy stays native. It includes shader mixing, source swapping, image fitting,
 native/GPU comparison, rounded-style fallback, nested scrolling, live bounds-read
 counts and nine executable lifecycle checks. Select either backend in the rail.
 Its poster editor includes an experimental GPU-painted input: a real HTML input
@@ -174,6 +216,35 @@ comparison, nested scrolling, unsupported style fallback, resource replacement,
 renderer loss, and executable lifecycle checks. `?backend=none` previews native
 content; the lifecycle checks separately exercise a failed backend initialization.
 
-Later work: supported CSS box materials and exact rounded geometry, richer clips,
-text via existing MSDF tooling, video uploads, then measured batching/streaming.
-These are intentionally not advertised as supported by this first entry.
+Later work: uniform borders, richer clips, video uploads, then `dom.input()` and
+measured batching/streaming. HTML-in-canvas remains experimental and is not this
+pipeline.
+
+### SVG media resolution
+
+For `.svg` URLs (including query strings) and SVG data URLs, `media()` rasterizes
+at a resolution derived from the element's displayed dimensions and the actual
+canvas pixel density. It uses 2× sampling headroom, mipmaps and power-of-two cache
+buckets (32–4096 pixels on the long edge). Resize or density changes refresh the
+resource when its bucket changes. Native image paint remains available while the
+replacement prepares. Raster images keep their original loading path. SVG
+responses served at extensionless URLs need explicit `loadTexture` preparation
+with `svgRasterSize` for this sizing policy.
+
+### Rendering failure and font ownership
+
+Text remains native until every glyph group submits a draw. Atlas HTTP errors,
+invalid metrics or tile bounds, mismatched texture dimensions, missing glyphs,
+and unmatched font weights keep native paint and report loading errors through
+`onError`. Font matching is exact by family and weight; a regular atlas never
+silently replaces bold text. Font uploads belong to the layer and are released
+even when `destroy()` happens during loading.
+
+DOM font atlases use `loadTexture(..., { data: true })` so distance values are not
+multiplied by PNG alpha. Text layout and atlas validation are loaded lazily.
+Translucent text, clipped text, transformed/italic/bidirectional text and runs
+with differing descendant colors currently retain native paint. This is a
+conservative subset, not a general browser text shaping implementation.
+
+Run `/dom-regressions.html?backend=webgpu` and `?backend=webgl2` in the Vite harness
+for pixel readback, vector sizing, font fallback, activation and teardown checks.

@@ -16,7 +16,7 @@ declare const __SHOOOSH_GL__: boolean;
  * Docs: docs/msdf.md · skill shooosh-msdf
  */
 
-import { getDefaultEngine, type EngineFrame } from "../engine/engine";
+import { getDefaultEngine, type EngineFrame, type WebGLEngine } from "../engine/engine";
 import { getElementClipData } from "./item.utils";
 import { compileProgramAsync, type AsyncProgram } from "../shaders/compile";
 import type { TextureLoaderResult } from "../loaders/texture-loader";
@@ -26,6 +26,9 @@ import { createPrimitiveLifecycle } from "./primitive-lifecycle";
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type MsdfGlyphsOptions = {
+  /** Called after a draw is submitted; native DOM can then relinquish paint. */
+  onDraw?: () => void;
+  onError?: (error: unknown) => void;
   texture: TextureLoaderResult;
   glyphData: Float32Array;
   glyphCount: number;
@@ -37,6 +40,8 @@ export type MsdfGlyphsOptions = {
   /** Render layer (default 10). Lower layers render first. */
   layer?: number;
   uni?: { value1?: number; value2?: number; value3?: number; value4?: number };
+  /** Explicit engine; otherwise the default engine is used. */
+  engine?: WebGLEngine;
 };
 
 export type MsdfGlyphsHandle = {
@@ -116,13 +121,10 @@ void main() {
   vec3 s = texture(uTexture, vAtlasUv).rgb;
   float sd = median3(s) - 0.5;
 
-  float widthPx = max(uUni.y, 1.0);
-  float glyphScreenPx = vDstWidth * widthPx;
-  float glyphAtlasPx  = abs(vSrcWidth) * uAtlasW;
-  float glyphMag      = glyphScreenPx / max(glyphAtlasPx, 0.0001);
-  // Canonical msdfgen coverage: saturates to exactly 0 outside the glyph even
-  // when minified (a widened smoothstep window leaks alpha across the quad).
-  float screenPxRange = max(uDistanceRange * glyphMag, 1.0);
+  // Derivatives measure actual framebuffer pixels, including device pixel ratio.
+  vec2 unitRange = vec2(uDistanceRange) / vec2(textureSize(uTexture, 0));
+  vec2 screenTexSize = 1.0 / max(fwidth(vAtlasUv), vec2(0.000001));
+  float screenPxRange = max(0.5 * dot(unitRange, screenTexSize), 1.0);
   float alpha         = clamp(sd * screenPxRange + 0.5, 0.0, 1.0);
 
   outColor = vec4(uColor * alpha * uAlpha, alpha * uAlpha);
@@ -256,7 +258,11 @@ function createMsdfGlyphsRenderer(
       // Poll for program readiness
       if (!program) {
         program = sp.asyncProgram.poll();
-        if (!program) return;
+        if (!program) {
+          if (sp.asyncProgram.status() === "failed") throw new Error("MSDF glyph shader failed");
+          (options.engine ?? getDefaultEngine())?.requestFrame();
+          return;
+        }
         loc_uUni          = gl.getUniformLocation(program, "uUni");
         loc_uElementNdc   = gl.getUniformLocation(program, "uElementNdc");
         loc_uBoxAspect    = gl.getUniformLocation(program, "uBoxAspect");
@@ -330,6 +336,7 @@ function createMsdfGlyphsRenderer(
 
       gl.bindVertexArray(vao);
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, glyphCount);
+      options.onDraw?.();
       gl.bindVertexArray(null);
 
       gl.disable(gl.BLEND);
@@ -342,7 +349,7 @@ function createMsdfGlyphsRenderer(
       glyphData = data;
       glyphCount = count;
       instanceDirty = true;
-      getDefaultEngine()?.requestFrame();
+      (options.engine ?? getDefaultEngine())?.requestFrame();
     },
 
     setUni(next) {
@@ -351,7 +358,7 @@ function createMsdfGlyphsRenderer(
       if (next.value2 !== undefined && next.value2 !== uni.value2) { uni.value2 = next.value2; changed = true; }
       if (next.value3 !== undefined && next.value3 !== uni.value3) { uni.value3 = next.value3; changed = true; }
       if (next.value4 !== undefined && next.value4 !== uni.value4) { uni.value4 = next.value4; changed = true; }
-      if (changed) getDefaultEngine()?.requestFrame();
+      if (changed) (options.engine ?? getDefaultEngine())?.requestFrame();
     },
 
     destroy() {
@@ -374,10 +381,12 @@ export function createMsdfGlyphs(
   let pendingGlyphData: { data: Float32Array; count: number } | null = null;
 
   const lifecycle = createPrimitiveLifecycle<MsdfGlyphsRenderer>({
+    engine: options.engine,
+    onError: options.onError,
     layer: options.layer ?? 10,
     createRenderer: (frame) => {
       if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && frame.backend === "webgpu") {
-        const createGpuRenderer = ensureGpuGlyphsFactory();
+        const createGpuRenderer = ensureGpuGlyphsFactory(options.engine);
         if (!createGpuRenderer) return null;
         return createGpuRenderer(element, currentOptions);
       }
@@ -398,7 +407,8 @@ export function createMsdfGlyphs(
       }
     },
     renderFrame: (renderer, frame) => {
-      renderer.render(frame);
+      try { renderer.render(frame); }
+      catch (error) { if (options.onError) options.onError(error); else throw error; }
     },
   });
 

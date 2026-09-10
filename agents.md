@@ -19,6 +19,18 @@ Common use cases:
 - WebGPU compute (`createCompute`); fluids as example shaders + loop (`examples/fluid-sim.ts` / `fluid-shaders.ts`)
 - Hot-swap a `.wgsl` file without remounting the scene (roadmap)
 
+## DOM, SVG and text work
+
+Start with [the agent rendering workflow](./docs/agent-dom-rendering.md), then
+[DOM API](./docs/dom.md) and [MSDF generation](./docs/msdf.md) as needed. Preserve
+native HTML semantics and supplied site styling. `scan()` registers marked
+bindings; it is not arbitrary HTML capture. `dom.input()` is not a public API.
+Use prepared WGSL/GLSL pairs for custom shaders and `{ data: true }` for standalone
+SDF/MSDF uploads. Never hide native content before a successful GPU draw.
+Verify both backends with the rendering regression harness; its exact commands
+and failure cases are in the workflow guide. Run package tests before the build,
+not concurrently with it. Keep optional DOM/text/tooling out of core imports.
+
 ## Using the optional model and rig APIs
 
 For consumer tasks, start with [docs/agent-usage.md](./docs/agent-usage.md).

@@ -1,69 +1,28 @@
 ---
-import "../styles/global.css"
-import { version } from "../../../package.json"
+import Layout from "../layouts/Layout.astro"
+import Nav from "../components/Nav.astro"
+import Hud from "../components/Hud.astro"
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
-    <title>shooosh — WGSL, WebGPU with WebGL2 fallback</title>
-    <meta
-      name="description"
-      content="WGSL-first site engine. WebGPU when available, WebGL2 when not. Scenes, DOM-tracked items, post-processing."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
-    />
-  </head>
-  <body>
-    <section class="hero">
-      <canvas id="scene"></canvas>
-      <div class="frame">
-        <header>
-          <span>shooosh</span>
-          <nav>
-            <a href="/examples">examples</a>
-            <a href="https://github.com/vallafederico/shooosh/tree/main/docs">docs</a>
-            <a href="https://www.npmjs.com/package/shooosh">npm</a>
-            <a href="https://github.com/vallafederico/shooosh">github</a>
-          </nav>
-        </header>
-        <div class="copy">
-          <h1>native<br />wgsl / webgpu</h1>
-          <p class="lede">
-            The engine already running on our sites. WebGPU when the browser
-            can, WebGL2 when it can’t. One canvas or a page-behind layer,
-            DOM-tracked quads, and a small post stack. Author in WGSL.
-          </p>
-          <pre>pnpm i shooosh</pre>
-        </div>
-        <footer>
-          <span>{version}</span>
-          <span>createScene · createItem · acquireLayer</span>
-        </footer>
-      </div>
-    </section>
-
-    <script>
-      import { createCanvasScene as createScene } from "shooosh"
-
-      import shader from "../hero.wgsl"
-
-      const canvas = document.querySelector<HTMLCanvasElement>("#scene")
-      if (canvas) {
-        createScene(canvas, {
-          screen: {
-            shaders: shader,
-            onFrame(self, frame) {
-              self.setUni({ value1: frame.now * 0.001 })
-            },
-          },
-        })
-      }
-    </script>
-  </body>
-</html>
+<Layout
+  title="shooosh — GPU graphics for human experiences"
+  description="Native WebGPU and WebGL utilities for a lightweight double pipeline, DOM sync and immersive experiences."
+>
+  <canvas class="home-canvas" data-module="webgl" data-dom="piecewise" aria-hidden="true"></canvas>
+  <Nav />
+  <Hud />
+  <main id="tastebuds-generated-page">
+    <div id="tastebuds-page-root">
+      <div class="tastebuds-layout-grid" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <section class="home-section">
+        <div class="home-plane" data-plane data-sh-bind></div>
+      </section>
+      <section class="home-section">
+        <div class="home-plane" data-plane data-sh-bind></div>
+      </section>
+      <section class="home-section">
+        <div class="home-plane" data-plane data-sh-bind></div>
+      </section>
+    </div>
+  </main>
+</Layout>

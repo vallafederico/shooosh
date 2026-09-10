@@ -8,6 +8,8 @@ import { generateIconSdf } from "./icons";
 import { generateFontAtlas } from "./fonts";
 
 const SAMPLE_FONTS = [
+  process.env.SHOOOSH_TEST_FONT ?? "",
+  "/System/Library/Fonts/Supplemental/Arial.ttf",
   "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
   "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
   "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
@@ -78,7 +80,7 @@ test.skipIf(!hasSharp)(
   },
 );
 
-test.skipIf(!fontPath || !hasBmfont)(
+test.skipIf(!fontPath || !hasBmfont || !hasSharp)(
   "generateFontAtlas writes a bmfont JSON + atlas PNG",
   async () => {
     const root = await mkdtemp(join(tmpdir(), "shooosh-msdf-font-"));
@@ -92,6 +94,9 @@ test.skipIf(!fontPath || !hasBmfont)(
     expect(existsSync(result.jsonPath)).toBe(true);
     expect(result.textures.length).toBeGreaterThan(0);
     expect(existsSync(result.textures[0]!)).toBe(true);
+    const sharp = (await import("sharp")).default;
+    // Ordinary premultiplied texture uploads must not alter RGB distances.
+    expect((await sharp(result.textures[0]!).metadata()).hasAlpha).toBe(false);
     const json = JSON.parse(await Bun.file(result.jsonPath).text()) as {
       chars?: unknown[];
     };

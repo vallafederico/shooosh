@@ -38,6 +38,17 @@ pnpm msdf -- fonts/Inter.ttf icons/ --out public/msdf
 - Author page shaders as WGSL. Atlas sampling runs on both backends — call `loadTexture` after the engine resolves so the handle matches it.
 - Do not add a Python / fonttools variable-font step unless the user asks.
 
+## Runtime integration
+
+- Load numeric atlases with `loadTexture(url, { engine, data: true })`; do not
+  premultiply distance RGB by alpha. Generated font PNGs are opaque.
+- For DOM display text use `createDomLayer({ fonts })` and `text()`/`scan()`.
+  Match CSS family, exact weight and character coverage; keep unsupported runs native.
+- Normal SVG artwork can use `dom.media(img)` directly; SDF baking is for
+  distance-field effects, not a prerequisite for sharp SVG display.
+- Follow [the agent rendering workflow](../../../docs/agent-dom-rendering.md)
+  for lifecycle, failure handling and both-backend verification.
+
 ## Next
 
 Mount the baked atlas: skill `shooosh-item` (`loadTexture`) or `createMsdfGlyphs`. Site canvas: `shooosh-site`. Copy [`examples/msdf-text.ts`](../../../examples/msdf-text.ts) / [`examples/sdf-icons.ts`](../../../examples/sdf-icons.ts).

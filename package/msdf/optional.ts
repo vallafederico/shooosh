@@ -10,7 +10,7 @@ export async function loadSharp() {
     return (await import("sharp")).default;
   } catch {
     throw new Error(
-      "shooosh/msdf icons need `sharp`. Install it in the project:\n  pnpm add -D sharp",
+      "shooosh/msdf asset generation needs `sharp`. Install it in the project:\n  pnpm add -D sharp",
     );
   }
 }

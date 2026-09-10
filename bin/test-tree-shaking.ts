@@ -49,8 +49,8 @@ const fixtures: Fixture[] = [
   { name: "scene", symbols: ["createScene"], gpu: true, budget: 21000 },
   { name: "scene+unused-rig", code: 'import {createScene} from "shooosh"; import * as unusedRig from "shooosh/rig"; globalThis.__fixture = [createScene];', gpu: true, sameSizeAs: "scene", budget: 21000 },
   { name: "item", symbols: ["createItem"], budget: 8700 },
-  { name: "dom", dom: true, gpu: true, budget: 15500 },
-  { name: "combined", symbols: ["createScene"], dom: true, gpu: true, budget: 26000 },
+  { name: "dom", dom: true, gpu: true, budget: 17000 },
+  { name: "combined", symbols: ["createScene"], dom: true, gpu: true, budget: 28000 },
   ...[
     ["gradient-run", "gradient.ts", "run", 21000],
     ["physics-3d", "physics-3d.ts", "run", 26000],

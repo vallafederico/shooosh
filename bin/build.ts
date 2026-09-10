@@ -21,8 +21,8 @@ import { shaderModule } from "../package/build/index"
 
 function builtinShaders(backend: "both" | "webgl2" | "webgpu"): BunPlugin {
   return { name: "builtin-shader-target", setup(builder) {
-    builder.onLoad({ filter: /dom\/image-shader\.ts$/ }, async () => ({
-      contents: shaderModule(await Bun.file("package/dom/image.wgsl").text(), { backend, minify: true }), loader: "ts",
+    builder.onLoad({ filter: /dom\/(image|box)-shader\.ts$/ }, async ({ path }) => ({
+      contents: shaderModule(await Bun.file(path.replace(/-shader\.ts$/, ".wgsl")).text(), { backend, minify: true }), loader: "ts",
     }))
   } }
 }

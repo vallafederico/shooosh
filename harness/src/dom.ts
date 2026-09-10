@@ -78,6 +78,18 @@ $("checks-button").onclick = async () => {
     await frame(); await frame(); check(pendingBinding.state === "disposed", "pending binding cannot revive after disposal");
     const before = dom.stats.bindings;
     check(dom.media(photo) === image && dom.stats.bindings === before, "duplicate registration is idempotent");
+    const marked = document.createElement("img");
+    marked.setAttribute("data-sh-media", "");
+    marked.src = original;
+    marked.style.cssText = "position:fixed;left:10px;top:40px;width:20px;height:20px";
+    root.append(marked);
+    const scanned = dom.scan({ media: "img[data-sh-media]", bind: false, observe: false });
+    await until(() => scanned.bindings.some(b => b.element === marked && b.state === "active"));
+    check(scanned.bindings.every(b => b.element.hasAttribute("data-sh-media")), "scan binds only marked images");
+    check(image.state === "active", "piecewise bindings survive a media-only scan");
+    scanned.destroy(); marked.remove();
+    check(marked.style.opacity === "", "scan destroy restores its images");
+    // Root scroll requires only the canvas read once geometry is cached.
     // Root scroll requires only the canvas read once geometry is cached.
     dom.invalidate(); await frame(); await frame();
     window.scrollTo(0,30); await frame(); await frame();

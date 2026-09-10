@@ -133,6 +133,7 @@ The whole public API runs on both backends. Where they differ:
 - `loadTexture` picks the backend from the running engine, so load textures **after** `createScene()` / `acquireLayer()` resolves. A WebGL2 handle passed to a WebGPU draw is ignored with a warning.
 - Texture fit: `loadTexture(src, { fit: "cover" })` + `createItem` / `createScreen` `{ texture, textureFit }`. Sample with `fitUv(vUv)`. Helpers: `resolveTextureUvTransform`, `applyTextureUv`, `textureFitToUni` (packs value5–8).
 - `loadTexture` does not flip by default — `vUv` is top-origin on both backends. Env/matcap maps (`dir.xy * 0.5 + 0.5`) use the same default upload.
+- For SVG URLs, `loadTexture(src, { svgRasterSize: 512 })` rasterizes the vector with a 512-pixel long edge, preserving aspect ratio (capped at 4096). This option does not resample raster images. Use a resolution appropriate to displayed size and device pixel ratio.
 - `createMouseTrail().getTextureHandle()` is shaped like a `loadTexture()` result on both backends — pass it straight to `createItem({ texture })`. The trail reallocates with the canvas, so re-read the handle after a resize.
 
 ## Node / Bun — `shooosh/msdf`
@@ -185,3 +186,21 @@ Use the [agent entry guide](./agent-usage.md) to select `shooosh-model/node`,
 references, explicit animation sampling and palettes independently of the
 renderer. Model import, texture conversion and rig extraction run on Node.
 These opt-in additions require shooosh 0.0.7 and shooosh-model 0.1.0; validate installed exports before use.
+
+For SDF/MSDF and other numeric image textures, use
+`loadTexture(url, { data: true })`. This disables decode color conversion and
+alpha premultiplication, preserving RGB distance channels on both backends.
+Prefer original PNG URLs: RGB information already lost in a premultiplied canvas
+or caller-created bitmap cannot be recovered. Ordinary artwork keeps the normal
+premultiplied-alpha upload. `flipY` applies exactly once on either backend.
+
+Engine `clearColor` takes straight RGBA; the renderer premultiplies RGB by alpha
+when clearing its target. RGB supplied with zero alpha therefore clears to
+transparent black without a colored fringe.
+
+For small mirrored text/icons or post-processing, `dpr: { scale: 2 }` renders at
+2× device DPR before display downsampling. Default scale is 1; optional `max`
+caps the scaled density. Browser zoom updates the density. Both backends limit
+canvas dimensions to supported texture/renderbuffer sizes while preserving
+aspect. A scale of 2 costs roughly four times as many framebuffer pixels; use it
+selectively, not as a default for every effect.

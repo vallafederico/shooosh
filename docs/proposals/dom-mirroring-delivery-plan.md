@@ -312,7 +312,7 @@ time; others inspect artifacts. Preserve unrelated uncommitted changes.
 | I: richer composition | Matrices/axis-aligned transforms first, coordinated scroll integration, explicit multiple regions, group opacity and complex clips | A/C/F; correct hit geometry and bounded memory; never equate numeric draw order with CSS stacking |
 | J: scale and batching | Order-safe instancing, shared materials, clip tables, typed instance data, WebGL2 equivalents | Profile before optimizing; stress traces and parity tests, no unsupported storage-buffer assumptions |
 | K: optional browser-native HTML capture | Feature-probed HTML-in-canvas adapter, native geometry/hit synchronization and fallback | Separate experimental path; supported browser/flag/version documented, never required for stable DOM mirroring |
-| L: DX and integrations | Explicit scan/attribute registry, per-binding debug overlays/reasons, framework/scroll-driver recipes, hot-swap compatibility | Stable core API first; no global shader lookup or named effect presets |
+| L: DX and integrations | Per-binding debug overlays/reasons, framework/scroll-driver recipes, hot-swap compatibility. `scan()` for current `media`/`bind` marks is available; extend it when box/input/text ship | Stable core API first; no global shader lookup or named effect presets |
 
 ## Final verification matrix
 

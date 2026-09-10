@@ -10,7 +10,7 @@ understand its limits and verify the result without guessing package APIs.
 | Import/optimize a model or texture | [Agent entry guide](./agent-usage.md) → [model reference](https://github.com/vallafederico/shooosh/blob/main/packages/model/README.md) |
 | Use bones or imported animation | [Rig API](./rig.md) → [rig example](../examples/rig-bones.md); utilities do not deform meshes automatically |
 | Add a visual look | [llms.txt](../llms.txt) → [example catalog](../examples/README.md) → [copy guide](../examples/agent-guide.md) → selected source and helpers |
-| Bind DOM images to GPU effects | [DOM guide](./dom.md) → [DOM lab](../examples/dom-integration.ts); distinguish public image APIs from the input prototype |
+| Mirror DOM, SVG or display text | [Agent rendering workflow](./agent-dom-rendering.md) → [DOM guide](./dom.md) → piecewise [lab](../examples/dom-integration.ts) or page [scan](../examples/dom-page.ts); distinguish public image APIs from the input prototype |
 | Add drag rotation | [Utility guide](./utility.md) → [glass recipe](../examples/refractive-glass.ts) |
 | Change the engine | [agents.md](../agents.md) → applicable bounded [task brief](./agent-tasks/); honor the user's selected scope |
 | Translate a shader | [Shader contract](./shader-contract.md) → [translation guide](./shader-translation.md) → relevant [skill](../llms.txt) |

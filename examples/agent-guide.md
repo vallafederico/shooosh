@@ -51,6 +51,7 @@ the intended backend path, not a claim of exhaustive visual parity or accessibil
 | [sss](./sss.ts) **WIP** | Canvas in a positioned, sized parent | [sss-shaders.ts](./sss-shaders.ts), [screen-space-scene.ts](./screen-space-scene.ts), [screen-space-lab.ts](./screen-space-lab.ts), [types.ts](./types.ts) | WebGPU only; see [pass guide](./screen-space-effects.md). |
 | [ssao](./ssao.ts) **WIP** | Canvas in a positioned, sized parent | [ssao-shaders.ts](./ssao-shaders.ts), [screen-space-scene.ts](./screen-space-scene.ts), [screen-space-lab.ts](./screen-space-lab.ts), [types.ts](./types.ts) | WebGPU only; explicit WebGL2 fallback. |
 | [dom-integration](./dom-integration.ts) | Empty host with explicit height | [dom-canvas-input.ts](./dom-canvas-input.ts), [dom-integration-art.ts](./dom-integration-art.ts), [dom-integration-style.ts](./dom-integration-style.ts), [types.ts](./types.ts) | Both; source-only lab including experimental input (see below). |
+| [dom-page](./dom-page.ts) | Empty host with explicit height | [dom-integration-art.ts](./dom-integration-art.ts), [types.ts](./types.ts) | Both; `scan()` over marked nodes only. Unmarked copy/input stay native unless marked `data-sh-box` / `data-sh-text`. |
 | [domain-warp](./domain-warp.ts) | Canvas | [handle.ts](./handle.ts), [types.ts](./types.ts) | Both; retain the shader and frame updates together. |
 | [fluid-ambient](./fluid-ambient.ts) | Canvas | [fluid-shaders.ts](./fluid-shaders.ts), [fluid-sim.ts](./fluid-sim.ts), [types.ts](./types.ts) | WebGPU simulation; WebGL2 clear color only. Automatic splats. |
 | [fluid-pointer](./fluid-pointer.ts) | Canvas | [fluid-shaders.ts](./fluid-shaders.ts), [fluid-sim.ts](./fluid-sim.ts), [types.ts](./types.ts) | WebGPU simulation; WebGL2 clear color only. Pointer adds splats. |
@@ -159,6 +160,10 @@ Read `run` and `onFrame` alongside the shader before changing a slot:
   PBR material slots are described in [pbr-shaders.ts](./pbr-shaders.ts).
 - MSDF and icon shaders use dimensions and distance-field spread slots. Keep those
   updates when resizing; a generic time/pointer callback would overwrite them.
+
+For DOM/SVG/text integration and regression diagnosis, start with the
+[agent rendering workflow](../docs/agent-dom-rendering.md). It covers native
+semantics, atlas uploads, exact font matching and both-backend regression checks.
 
 ## DOM lab boundary
 

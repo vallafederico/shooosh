@@ -11,6 +11,9 @@ Read [docs/site-patterns.md](../../../docs/site-patterns.md) and [docs/api.md](.
 
 - **App shell** (layout owns one canvas): `createScene` on a fixed, `pointer-events: none`, `z-index: -1`, `aria-hidden` canvas. aiuis does this.
 - **Isolated module / Webflow**: `await acquireLayer()` then `createItem`. Page background must be transparent.
+- **Mirror native media/boxes/display text**: optional `shooosh/dom`; follow
+  [the agent rendering workflow](../../../docs/agent-dom-rendering.md). Keep real
+  controls and their event handlers in HTML.
 - **Section hero**: `createScene` on that section’s canvas only.
 
 ## Init (SSR-safe)
@@ -32,7 +35,8 @@ await scene.init()
 - Cap DPR at 1.5–2 on marketing pages.
 - Pair `acquireLayer` with `releaseLayer` (Webflow page transitions leak otherwise).
 - `scene.destroy()` on unmount.
-- Author WGSL `fn fsMain`. Do not require `frame.gl`.
+- Author WGSL `fn fsMain` and prepare its GLSL pair with `shooosh/build`; raw WGSL
+  alone does not cover WebGL2. Do not require `frame.gl`.
 - Do not add Three or a second scene API.
 
 ## Next

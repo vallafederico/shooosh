@@ -1,5 +1,9 @@
 # Agent entry guide: models, textures and rigs
 
+For page mirroring, SVG sharpness or SDF/MSDF text, use the
+[agent rendering workflow](./agent-dom-rendering.md). This page covers the
+separate model/texture conversion and rig tools.
+
 Read this before selecting an import or inventing a renderer integration.
 These APIs require **shooosh 0.0.7+ and shooosh-model 0.1.0+**. Check the
 installed package's `exports`, declarations and CLI `--help`. In a checkout, build core before the model tools:

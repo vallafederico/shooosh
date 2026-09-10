@@ -1,0 +1,33 @@
+---
+import "../styles/global.css"
+import "../styles/routes.css"
+
+interface Props {
+  title: string
+  description: string
+}
+
+const { title, description } = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <slot name="head" />
+  </head>
+  <body>
+    <div data-taxi>
+      <div data-taxi-view data-module="wrapper">
+        <slot />
+      </div>
+    </div>
+    <script>
+      import "../app"
+    </script>
+  </body>
+</html>

@@ -45,7 +45,7 @@ test("Vite imports .wgsl as data with no compiler in the browser output", async 
   } finally { await rm(dir, { recursive: true, force: true }) }
 })
 test("committed built-in and example artifacts match authoring sources", async () => {
-  for (const [input, output] of [['package/dom/image.wgsl','package/dom/image-shader.ts'], ['examples/gradient.wgsl','examples/gradient-shader.ts']]) {
+  for (const [input, output] of [['package/dom/image.wgsl','package/dom/image-shader.ts'], ['package/dom/box.wgsl','package/dom/box-shader.ts'], ['examples/gradient.wgsl','examples/gradient-shader.ts']]) {
     const root = resolve(import.meta.dir, '../..')
     expect(await readFile(join(root, output), 'utf8')).toBe(shaderModule(await readFile(join(root, input), 'utf8')))
   }

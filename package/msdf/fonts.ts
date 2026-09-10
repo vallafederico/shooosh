@@ -11,7 +11,7 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
-import { loadBmfont } from "./optional";
+import { loadBmfont, loadSharp } from "./optional";
 
 export type FontFieldType = "sdf" | "msdf";
 
@@ -86,10 +86,14 @@ export async function generateFontAtlas(
   });
 
   const texturePaths: string[] = [];
+  const sharp = await loadSharp();
   for (const texture of textures) {
     const textureName = `${basename(texture.filename, ".png")}.png`;
     const texturePath = join(options.outDir, textureName);
-    await writeFile(texturePath, texture.texture);
+    // Distance fields are data, not translucent artwork. The generator copies
+    // SDF distance into alpha; premultiplied uploads would square RGB distance.
+    const opaque = await sharp(texture.texture).removeAlpha().png().toBuffer();
+    await writeFile(texturePath, opaque);
     texturePaths.push(texturePath);
   }
 

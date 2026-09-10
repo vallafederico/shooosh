@@ -25,6 +25,7 @@ This folder is what [the GitHub repo](https://github.com/vallafederico/shooosh) 
 | [Rig and bone utilities](./rig.md) | Optional CPU poses, clip sampling, sockets and palettes |
 | [Model and texture tools](https://github.com/vallafederico/shooosh/blob/main/packages/model/README.md) | Separate Node pipeline, typed parts, KTX2/WebP verification and local viewers |
 | [Interaction utilities](./utility.md) | Optional `shooosh/utility`: drag rotation and inertia |
+| [Agent DOM/rendering workflow](./agent-dom-rendering.md) | Select a painter, prepare shaders/atlases, diagnose regressions and verify both backends |
 | [DOM integration](./dom.md) | Optional `shooosh/dom`: cached shader bindings and safe image enhancement |
 | [WGSL ↔ GLSL](./shader-translation.md) | Fallback converter + mapping |
 | [MSDF](./msdf.md) | Node/Bun font atlas + icon SDF (`shooosh/msdf`) |

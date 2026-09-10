@@ -1,3 +1,4 @@
+import tailwindcss from "@tailwindcss/vite"
 import { shoooshShaders } from "../package/build/index.ts"
 import { defineConfig } from "astro/config"
 import { fileURLToPath } from "node:url"
@@ -6,7 +7,7 @@ export default defineConfig({
   site: "https://shooo.sh",
   devToolbar: { enabled: false },
   vite: {
-    plugins: [shoooshShaders()],
+    plugins: [shoooshShaders(), tailwindcss()],
     resolve: {
       alias: {
         "shooosh/compiler": fileURLToPath(new URL("../package/compiler/index.ts", import.meta.url)),

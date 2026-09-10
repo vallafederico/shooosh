@@ -1,0 +1,53 @@
+---
+import Layout from "../layouts/Layout.astro"
+---
+
+<Layout
+  title="shooosh — page scan"
+  description="Mark nodes, scan the page, GPU paints the rest. Unmarked HTML stays native."
+>
+  <canvas class="home-canvas" data-module="webgl" data-dom="scan" aria-hidden="true"></canvas>
+  <main class="page-dom">
+    <header class="page-dom-bar">
+      <a href="/">← piecewise home</a>
+      <div class="page-dom-mode" role="group" aria-label="Rendering mode">
+        <button type="button" data-dom-toggle="gpu" aria-pressed="true">GPU</button>
+        <button type="button" data-dom-toggle="native" aria-pressed="false">DOM</button>
+      </div>
+    </header>
+    <section class="page-dom-hero">
+      <p class="page-dom-eyebrow">shooosh / page mode</p>
+      <h1 data-sh-text>Mark the page.<br />Scan it once.</h1>
+      <p>
+        This view uses <code>dom.scan()</code> over media, bind, box and text marks.
+        The email field and the unmarked icon stay native HTML. GPU input paint is a
+        later <code>dom.input()</code> binding, not a screenshot of this form.
+      </p>
+    </section>
+    <section class="page-dom-grid">
+      <figure>
+        <img
+          data-sh-media
+          src="/landing/7afaa72cae936bbe34d1ea9a041b80340ab6cce650591ac80710baf2c3cf6882.svg"
+          alt="shooosh wordmark"
+        />
+        <figcaption>Marked image → <code>media()</code></figcaption>
+      </figure>
+      <div class="page-dom-plane" data-sh-bind></div>
+      <figure>
+        <img
+          src="/landing/51188a44adc4364b2d8dddaa72aeebe5d1831ca0e49d69c5aaefeb4f8597fc7c.svg"
+          alt="Unmarked GitHub icon stays native"
+        />
+        <figcaption>Unmarked image stays native</figcaption>
+      </figure>
+    </section>
+    <form class="page-dom-field" action="#" method="post">
+      <label>
+        Email stays a real input
+        <input type="email" name="email" placeholder="you@studio.site" autocomplete="email" />
+      </label>
+      <p>GPU input paint is a later <code>dom.input()</code> binding, not a screenshot of this form.</p>
+    </form>
+  </main>
+</Layout>

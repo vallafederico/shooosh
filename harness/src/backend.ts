@@ -3,7 +3,8 @@ export type BackendChoice = "auto" | "webgpu" | "webgl2"
 const CHOICES: BackendChoice[] = ["auto", "webgpu", "webgl2"]
 
 export function readBackendParam(): BackendChoice {
-  const value = new URLSearchParams(location.search).get("backend")
+  const requested = new URLSearchParams(location.search).get("backend")
+  const value = requested === "webgl" ? "webgl2" : requested
   if (value === "webgpu" || value === "webgl2" || value === "auto") return value
   return "auto"
 }

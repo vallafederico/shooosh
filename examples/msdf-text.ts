@@ -4,7 +4,7 @@
  * How to use (baked — preferred on sites):
  *   pnpm msdf -- fonts/Inter.ttf --out public/msdf
  *   const json = await (await fetch("/msdf/fonts/Inter.json")).json()
- *   const tex = await loadTexture("/msdf/fonts/Inter.png")
+ *   const tex = await loadTexture("/msdf/fonts/Inter.png", { data: true })
  *   // pack bmfont chars → glyphData (dst + src rects), then:
  *   createMsdfGlyphs(el, {
  *     texture: tex,
@@ -63,7 +63,7 @@ export function run(root: HTMLElement, options: ExampleRunOptions = {}): Example
 
     const el = root.querySelector<HTMLElement>("[data-msdf]") ?? root
     const atlas = makeDemoFontAtlas(TEXT)
-    const tex = await loadTexture(atlas.canvas)
+    const tex = await loadTexture(atlas.canvas, { data: true })
 
     const layout = () => {
       const rect = el.getBoundingClientRect()

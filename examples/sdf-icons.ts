@@ -5,7 +5,7 @@ import shader, { fragment } from "./sdf-icons.wgsl"
  *
  * How to use (baked SVG — preferred on sites):
  *   pnpm msdf -- icons/mark.svg --out public/msdf
- *   const tex = await loadTexture("/msdf/icons/mark.png")
+ *   const tex = await loadTexture("/msdf/icons/mark.png", { data: true })
  *   createItem(el, { texture: tex, shaders: shader, … })
  *
  * This demo uses makeIconSdfCanvas (same 0.5-edge encoding) so the harness
@@ -49,6 +49,7 @@ export function run(root: HTMLElement, options: ExampleRunOptions = {}): Example
     for (const [index, card] of cards.entries()) {
       const kind = ICONS[index % ICONS.length]!
       const tex = await loadTexture(makeIconSdfCanvas(kind, 256, SPREAD), {
+        data: true,
         fit: "contain",
       })
       items.push(

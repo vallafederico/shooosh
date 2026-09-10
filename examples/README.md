@@ -36,6 +36,7 @@ bundle and runtime checks but are not marked production-ready.
 | [textured-plane.ts](./textured-plane.ts) | `createScene` + `loadTexture` | Procedural atlas; sample `fitUv(vUv)` |
 | [textured-item.ts](./textured-item.ts) | `acquireLayer` + `createItem` + `loadTexture` | Shared texture on DOM cards (`fitUv`) |
 | [dom-integration.ts](./dom-integration.ts) | `shooosh/dom` · `createDomLayer` + `media` | Interactive lab: native/GPU comparison, image shaders, nested clipping, fallback and lifecycle checks |
+| [dom-page.ts](./dom-page.ts) | `shooosh/dom` · `createDomLayer` + `scan` | Page mode: mark `data-sh-media` / `data-sh-bind` / `data-sh-box` / `data-sh-text`, scan once, unmarked HTML stays native |
 | [physics-3d.ts](./physics-3d.ts) | Rapier 3D + `createObject` | Tumbling cubes, tray collisions and torque; full 3D transforms ([guide](./physics.md)) |
 | [physics-pile.ts](./physics-pile.ts) | Rapier 2D + `createObject` | Falling blocks, collisions, sleeping and impulses ([guide](./physics.md)) |
 | [physics-pendulum.ts](./physics-pendulum.ts) | Rapier 2D + `createObject` | Four revolute joints, damping and impulses ([guide](./physics.md)) |

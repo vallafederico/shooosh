@@ -3,7 +3,7 @@ import { resolve, dirname, relative, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const root = fileURLToPath(new URL("../../../", import.meta.url))
-const documents = ["llms.txt", "agents.md", "docs/agent-usage.md", "docs/rig.md", "packages/model/llms.txt", "packages/model/agents.md", "packages/model/README.md"]
+const documents = ["llms.txt", "agents.md", "docs/agent-usage.md", "docs/agent-dom-rendering.md", "docs/dom.md", "docs/msdf.md", "docs/rig.md", "packages/model/llms.txt", "packages/model/agents.md", "packages/model/README.md"]
 export function getStaticPaths() {
   return documents.map(agentDoc => ({ params: { agentDoc } }))
 }

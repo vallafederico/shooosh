@@ -14,25 +14,35 @@
  * Keep imports, listeners and scheduling inside the returned methods.
  */
 
-import { getDefaultEngine } from "../engine/engine";
+import { getDefaultEngine, type WebGLEngine } from "../engine/engine";
 
 /** Returns the factory once the dynamic import resolves; null while in flight. */
 export function createLazyGpuFactory<TFactory>(options: {
   label: string;
   load: () => Promise<TFactory>;
-}): () => TFactory | null {
+}): (engine?: WebGLEngine) => TFactory | null {
   let factory: TFactory | null = null;
   let loading: Promise<void> | null = null;
-  return () => {
+  let failure: unknown;
+  let failed = false;
+  const waiting = new Set<WebGLEngine>();
+  return (engine) => {
+    if (failed) throw failure;
     if (factory) return factory;
+    if (engine) waiting.add(engine);
     if (!loading) {
       loading = options
         .load()
         .then((fn) => {
           factory = fn;
           getDefaultEngine()?.requestFrame();
+          for (const target of waiting) target.requestFrame();
+          waiting.clear();
         })
         .catch((error) => {
+          failed = true; failure = error;
+          for (const target of waiting) target.requestFrame();
+          waiting.clear();
           console.warn(
             `shooosh: failed to load the WebGPU ${options.label} renderer:`,
             error,

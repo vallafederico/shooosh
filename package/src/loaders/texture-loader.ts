@@ -53,6 +53,8 @@ export type TextureUpload = {
 
 /** Backend-agnostic subset of TextureLoaderOptions an upload module needs. */
 export type TextureUploadOptions = {
+  /** Preserve numeric RGB channels (SDF/MSDF): no alpha premultiplication or color conversion. */
+  data?: boolean;
   label?: string;
   format?: string;
   usage?: number;
@@ -107,6 +109,8 @@ export type TextureLoaderResult = {
 export type TextureFitMode = "cover" | "contain" | "stretch";
 
 export type TextureLoaderOptions = TextureUploadOptions & {
+  /** URL SVGs only: raster long edge in pixels, preserving aspect (max 4096). */
+  svgRasterSize?: number;
   /** Upload to this engine without changing the page's default engine. */
   engine?: WebGLEngine;
   waitForEngine?: boolean;
@@ -144,13 +148,44 @@ async function waitForEngineController(timeoutMs: number) {
   return null;
 }
 
-async function decodeImageFromUrl(url: string, bitmapOptions: ImageBitmapOptions) {
+async function decodeImageFromUrl(url: string, bitmapOptions: ImageBitmapOptions, svgRasterSize?: number) {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch texture "${url}" (${response.status}).`);
   }
   const blob = await response.blob();
-  return createImageBitmap(blob, bitmapOptions);
+  if (svgRasterSize && blob.type.split(";")[0] === "image/svg+xml") {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      image.src = objectUrl;
+      await image.decode();
+      const edge = Math.min(4096, Math.max(1, Math.ceil(svgRasterSize)));
+      const scale = edge / Math.max(image.naturalWidth, image.naturalHeight, 1);
+      const raster = document.createElement("canvas");
+      raster.width = Math.max(1, Math.ceil(image.naturalWidth * scale));
+      raster.height = Math.max(1, Math.ceil(image.naturalHeight * scale));
+      const context = raster.getContext("2d");
+      if (!context) throw new Error("SVG rasterization requires a 2D canvas");
+      // Draw the vector at the target resolution, not a resized tiny bitmap.
+      context.drawImage(image, 0, 0, raster.width, raster.height);
+      return await createImageBitmap(raster, bitmapOptions);
+    } finally { URL.revokeObjectURL(objectUrl); }
+  }
+  try {
+    return await createImageBitmap(blob, bitmapOptions);
+  } catch {
+    // SVG (and some XML images) cannot be decoded from a Blob on Chromium.
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      image.src = objectUrl;
+      await image.decode();
+      return await createImageBitmap(image, bitmapOptions);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
 }
 
 async function decodeImageFromElement(
@@ -179,22 +214,26 @@ let warnedBitmapFlip = false;
 async function toImageBitmap(
   source: TextureSource,
   flipY: boolean,
+  svgRasterSize?: number,
+  data = false,
 ): Promise<{ bitmap: ImageBitmap; owned: boolean }> {
   const bitmapOptions: ImageBitmapOptions = {
-    premultiplyAlpha: "premultiply",
+    premultiplyAlpha: data ? "none" : "premultiply",
+    ...(data ? { colorSpaceConversion: "none" as const } : {}),
     ...(flipY ? { imageOrientation: "flipY" as const } : {}),
   };
   if (typeof source === "string") {
-    return { bitmap: await decodeImageFromUrl(source, bitmapOptions), owned: true };
+    return { bitmap: await decodeImageFromUrl(source, bitmapOptions, svgRasterSize), owned: true };
   }
   if (source instanceof ImageBitmap) {
-    if (!flipY) return { bitmap: source, owned: false };
+    if (!flipY && !data) return { bitmap: source, owned: false };
     // A finished ImageBitmap cannot be re-oriented in place; re-wrap it through
     // createImageBitmap. If the platform cannot, degrade to the unflipped
     // bitmap instead of failing the load.
     try {
       return { bitmap: await createImageBitmap(source, bitmapOptions), owned: true };
-    } catch {
+    } catch (error) {
+      if (data) throw error;
       if (!warnedBitmapFlip) {
         warnedBitmapFlip = true;
         console.warn(
@@ -290,6 +329,9 @@ export class TextureLoader {
     source: TextureSource,
     options: TextureLoaderOptions = {},
   ): Promise<TextureLoaderResult> {
+    if (options.svgRasterSize !== undefined && (!Number.isFinite(options.svgRasterSize) || options.svgRasterSize <= 0)) {
+      throw new Error("svgRasterSize must be a finite positive number");
+    }
     const waitForEngine = options.waitForEngine ?? true;
     const timeoutMs = options.waitTimeoutMs ?? 10000;
     const webglController =
@@ -305,7 +347,7 @@ export class TextureLoader {
     // (Older WebGL2 upload used UNPACK_FLIP_Y, but that is ignored for
     // ImageBitmap sources, so the effective default was always unflipped.)
     const wantsDecodeFlip = options.flipY === true;
-    const { bitmap, owned } = await toImageBitmap(source, wantsDecodeFlip);
+    const { bitmap, owned } = await toImageBitmap(source, wantsDecodeFlip, options.svgRasterSize, options.data);
     const width = Math.max(1, bitmap.width);
     const height = Math.max(1, bitmap.height);
 
@@ -313,7 +355,7 @@ export class TextureLoader {
     try {
     if ((typeof __SHOOOSH_GPU__ === "undefined" || __SHOOOSH_GPU__) && webglController.backend === "webgpu") {
       const { uploadWebGpuTexture } = await import("./texture-upload-webgpu");
-      upload = uploadWebGpuTexture(webglController, bitmap, options);
+      upload = uploadWebGpuTexture(webglController, bitmap, { ...options, flipY: false });
     } else if ((typeof __SHOOOSH_GL__ === "undefined" || __SHOOOSH_GL__)) {
       const gl = webglController.gl;
       if (!gl) {

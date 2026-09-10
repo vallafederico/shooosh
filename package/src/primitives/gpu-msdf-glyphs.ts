@@ -90,13 +90,10 @@ fn fsEntry(in: VsOut) -> @location(0) vec4f {
   let msd = textureSample(uTexture, uSampler, in.atlasUv).rgb;
   let sd = median3(msd) - 0.5;
 
-  let widthPx = max(uUni.values.y, 1.0);
-  let glyphScreenPx = in.dstWidth * widthPx;
-  let glyphAtlasPx = abs(in.srcWidth) * max(uUni.params.z, 1.0);
-  let glyphMag = glyphScreenPx / max(glyphAtlasPx, 0.0001);
-  // Canonical msdfgen coverage: saturates to exactly 0 outside the glyph even
-  // when minified (a widened smoothstep window leaks alpha across the quad).
-  let screenPxRange = max(uUni.params.y * glyphMag, 1.0);
+  // Derivatives measure actual framebuffer pixels, including device pixel ratio.
+  let unitRange = vec2f(uUni.params.y) / vec2f(textureDimensions(uTexture));
+  let screenTexSize = vec2f(1.0) / max(fwidth(in.atlasUv), vec2f(0.000001));
+  let screenPxRange = max(0.5 * dot(unitRange, screenTexSize), 1.0);
   let alpha = clamp(sd * screenPxRange + 0.5, 0.0, 1.0) * uUni.color.w;
   return vec4f(uUni.color.rgb * alpha, alpha);
 }
@@ -200,7 +197,11 @@ export function createGpuMsdfGlyphsRenderer(
       const frame = getGpuFrame();
       if (!frame || glyphCount === 0) return;
       const pipeline = program.poll();
-      if (!pipeline) return;
+      if (!pipeline) {
+        if (program.status() === "failed") throw new Error("MSDF glyph pipeline failed");
+        (options.engine ?? getDefaultEngine())?.requestFrame();
+        return;
+      }
 
       const clipData = getElementClipData(element, nextFrame.canvas, clipVertices);
       if (!clipData.isVisible) return;
@@ -247,12 +248,13 @@ export function createGpuMsdfGlyphsRenderer(
       pass.setVertexBuffer(0, quadBuffer);
       pass.setVertexBuffer(1, buffer);
       pass.draw(6, glyphCount);
+      options.onDraw?.();
     },
     setGlyphData(data, count) {
       glyphData = data;
       glyphCount = count;
       instanceDirty = true;
-      getDefaultEngine()?.requestFrame();
+      (options.engine ?? getDefaultEngine())?.requestFrame();
     },
     setUni(next) {
       // Same per-key change detection as the WebGL2 path — a no-op setUni must
@@ -262,7 +264,7 @@ export function createGpuMsdfGlyphsRenderer(
       if (next.value2 !== undefined && next.value2 !== uni.value2) { uni.value2 = next.value2; changed = true; }
       if (next.value3 !== undefined && next.value3 !== uni.value3) { uni.value3 = next.value3; changed = true; }
       if (next.value4 !== undefined && next.value4 !== uni.value4) { uni.value4 = next.value4; changed = true; }
-      if (changed) getDefaultEngine()?.requestFrame();
+      if (changed) (options.engine ?? getDefaultEngine())?.requestFrame();
     },
     destroy() {
       program.destroy();

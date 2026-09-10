@@ -193,8 +193,9 @@ export async function createWebGpuEngine(
     return sceneTarget;
   };
 
+  const maxCanvasDimension = (device as GpuDevice & { limits?: { maxTextureDimension2D?: number } }).limits?.maxTextureDimension2D ?? 8192;
   const resize = () => {
-    const { ratio, width, height } = computeCanvasSize(canvas, options.dpr?.max);
+    const { ratio, width, height } = computeCanvasSize(canvas, options.dpr?.max, options.dpr?.scale, maxCanvasDimension);
 
     const didResize = canvas.width !== width || canvas.height !== height;
     if (didResize) {
@@ -255,9 +256,9 @@ export async function createWebGpuEngine(
         {
           view: scene ? scene.view : getCanvasView(),
           clearValue: {
-            r: clearColor.r,
-            g: clearColor.g,
-            b: clearColor.b,
+            r: clearColor.r * clearColor.a,
+            g: clearColor.g * clearColor.a,
+            b: clearColor.b * clearColor.a,
             a: clearColor.a,
           },
           loadOp: "clear",
@@ -336,7 +337,7 @@ export async function createWebGpuEngine(
 
   const sizeTracker = createCanvasSizeTracker(
     canvas,
-    () => getEffectiveDevicePixelRatio(options.dpr?.max),
+    () => getEffectiveDevicePixelRatio(options.dpr?.max, options.dpr?.scale),
     () => loop.requestFrame(),
   );
 

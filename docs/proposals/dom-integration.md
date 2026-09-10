@@ -130,11 +130,10 @@ mutually exclusive options and explicit ownership. Destroy only owned engines.
 Root scopes discovery; it does not imply that arbitrary overflow or stacking is
 automatically reproduced.
 
-Bindings should expose `ready` resolving to an activation/fallback result,
-`setUni`, and idempotent `destroy`. Session destruction cancels pending work and
-restores active native visuals. Manual binding comes first; an idempotent
-`scan()`/attribute convenience layer can follow, using application-owned shader
-maps. No shader lookup from arbitrary remote attributes.
+Manual binding comes first; `scan()` is the attribute convenience layer for the
+current `media` / `bind` subset, using application-owned shader maps. No shader
+lookup from arbitrary remote attributes. Box, input, SVG and text markers wait
+on those bindings.
 
 ## Integration pipeline
 

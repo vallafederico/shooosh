@@ -1,6 +1,6 @@
 # MSDF / SDF generators
 
-[Documentation](./README.md)
+[Documentation](./README.md) · [Agent rendering workflow](./agent-dom-rendering.md)
 
 Node and Bun utilities for the atlases `createMsdfGlyphs` and SDF icon quads consume. **Not part of the browser package.** Do not import `shooosh/msdf` from a site bundle — it needs `sharp` and `msdf-bmfont-xml`.
 
@@ -82,7 +82,15 @@ await generateIconSdf("icons/mark.svg", {
 await generateMsdf(["fonts", "icons"], { outDir: "public/msdf" })
 ```
 
-`sharp` is loaded only when generating icons. `msdf-bmfont-xml` is loaded only when generating fonts. Missing either throws with an install line.
+`sharp` is loaded when generating icons or normalizing font atlas PNGs. `msdf-bmfont-xml` is loaded only when generating fonts. Missing either throws with an install line.
+
+Generated font atlas PNGs are opaque; RGB channels contain distance data. A
+distance-valued alpha channel is premultiplied during ordinary image uploads,
+corrupting coverage and thinning the strokes. Use `loadTexture(url, { engine,
+data: true })` for numeric atlases; DOM text does this automatically. Legacy
+atlases can also be regenerated or normalized by removing alpha without changing
+RGB. Do not apply ordinary color-image compression or premultiplication to them. Both glyph renderers calculate
+antialias coverage from framebuffer derivatives, including device pixel ratio.
 
 ## Do not
 

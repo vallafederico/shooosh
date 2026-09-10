@@ -58,7 +58,7 @@ export function createWebGl2Engine(
   let useHalfFloatTarget = Boolean(halfFloatExt || floatExt);
 
   const baseClearColor = resolveClearColor(options.clearColor);
-  gl.clearColor(baseClearColor.r, baseClearColor.g, baseClearColor.b, baseClearColor.a);
+  gl.clearColor(baseClearColor.r * baseClearColor.a, baseClearColor.g * baseClearColor.a, baseClearColor.b * baseClearColor.a, baseClearColor.a);
   applyCanvasBackdrop(canvas, baseClearColor);
 
   let clearColor = baseClearColor;
@@ -157,8 +157,9 @@ export function createWebGl2Engine(
     () => loop.requestFrame(),
   );
 
+  const maxCanvasDimension = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_RENDERBUFFER_SIZE));
   const resize = () => {
-    const { ratio, width, height } = computeCanvasSize(canvas, options.dpr?.max);
+    const { ratio, width, height } = computeCanvasSize(canvas, options.dpr?.max, options.dpr?.scale, maxCanvasDimension);
 
     const didResize = canvas.width !== width || canvas.height !== height;
     if (didResize) {
@@ -190,7 +191,7 @@ export function createWebGl2Engine(
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
-    gl.clearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+    gl.clearColor(clearColor.r * clearColor.a, clearColor.g * clearColor.a, clearColor.b * clearColor.a, clearColor.a);
     gl.clearDepth(1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -244,7 +245,7 @@ export function createWebGl2Engine(
 
   const sizeTracker = createCanvasSizeTracker(
     canvas,
-    () => getEffectiveDevicePixelRatio(options.dpr?.max),
+    () => getEffectiveDevicePixelRatio(options.dpr?.max, options.dpr?.scale),
     () => loop.requestFrame(),
   );
 

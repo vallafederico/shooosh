@@ -84,7 +84,7 @@ export function uploadWebGpuTexture(
     // keeps the destination premultiplied (a no-op conversion for loader
     // bitmaps, a real one for caller-supplied unpremultiplied bitmaps) — so
     // both backends match the library's premultiplied-alpha blending.
-    { texture: gpuTexture, premultipliedAlpha: true },
+    { texture: gpuTexture, premultipliedAlpha: !options.data },
     { width, height },
   );
 

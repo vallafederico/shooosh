@@ -17,6 +17,7 @@ import { ssao } from "./ssao"
 import { fabricSheen } from "./fabric-sheen"
 import { domainWarp } from "./domain-warp"
 import { domIntegration } from "./dom-integration"
+import { domPage } from "./dom-page"
 import { fluidAmbient } from "./fluid-ambient"
 import { fluidPointer } from "./fluid-pointer"
 import { gradient } from "./gradient"
@@ -60,6 +61,7 @@ export const examples: ExampleSpec[] = [
   texturedPlane,
   texturedItem,
   domIntegration,
+  domPage,
   itemFill,
   msdfText,
   sdfIcons,

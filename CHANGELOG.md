@@ -5,6 +5,16 @@ All notable changes to [shooosh](https://www.npmjs.com/package/shooosh) are docu
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `createDomLayer().scan()` page mode: bind marked `img[data-sh-media]`,
+  `[data-sh-bind]`, `[data-sh-box]` and `[data-sh-text]` descendants. Unmarked HTML
+  stays native; this is not HTML capture.
+- `createDomLayer().box()` solid fill + radii (hides only box paint) and
+  `text()` MSDF from live DOM ranges with an explicit `fonts` atlas registry.
+
 ## [0.0.7] — 2026-09-09
 
 ### Added
