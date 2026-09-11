@@ -22,8 +22,8 @@ export type GenerateFontAtlasOptions = {
   /** Glyph size in the atlas, px. Hairline faces want 256. Default 64. */
   fontSize?: number;
   /**
-   * `"sdf"` (default) is the site path — old msdfgen edge coloring beads on
-   * thin outlines. Use `"msdf"` only if you have verified the face.
+   * `"sdf"` is the default site path; `"msdf"` preserves sharp corners.
+   * Verify the chosen font and atlas at the intended display sizes.
    */
   fieldType?: FontFieldType;
   /** Distance field spread in px (`uPxRange` in the shader). Default 8. */

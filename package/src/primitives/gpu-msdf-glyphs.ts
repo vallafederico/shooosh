@@ -82,7 +82,7 @@ fn vsMain(
 }
 
 fn median3(c: vec3f) -> f32 {
-  return max(min(c.r, c.g), min(c.b, c.r));
+  return max(min(c.r, c.g), min(max(c.r, c.g), c.b));
 }
 
 @fragment

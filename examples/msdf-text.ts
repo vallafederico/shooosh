@@ -37,7 +37,7 @@ const TEXT = "shooosh"
 /** Stub for converter tests — live coverage is inside createMsdfGlyphs. */
 export const fragment = `fn fsMain() -> vec4f {
   let sample = textureSample(uTexture, uSampler, vUv).rgb;
-  let sd = max(min(sample.r, sample.g), min(sample.b, sample.r)) - 0.5;
+  let sd = max(min(sample.r, sample.g), min(max(sample.r, sample.g), sample.b)) - 0.5;
   let alpha = clamp(sd * 8.0 + 0.5, 0.0, 1.0);
   let acid = vec3f(0.847, 1.0, 0.243);
   return vec4f(acid * alpha, alpha);

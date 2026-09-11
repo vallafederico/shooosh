@@ -116,7 +116,7 @@ uniform float uAlpha;
 
 out vec4 outColor;
 
-float median3(vec3 c) { return max(min(c.r, c.g), min(c.b, c.r)); }
+float median3(vec3 c) { return max(min(c.r, c.g), min(max(c.r, c.g), c.b)); }
 
 void main() {
   vec3 s = texture(uTexture, vAtlasUv).rgb;
