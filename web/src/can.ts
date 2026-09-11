@@ -1,5 +1,5 @@
 /**
- * DOM-tracked PBR spray can. Copy with can.wgsl.
+ * DOM-tracked PBR spray can. Copy with studio-metal.wgsl.
  *
  * How to use:
  *   await scene.init()
@@ -11,10 +11,12 @@
  */
 import { createObject, loadTexture, type WebGLEngine } from "shooosh"
 import { createSpinner } from "shooosh/utility"
-import shader from "./can.wgsl"
+import shader from "./studio-metal.wgsl"
+import { modelFitScale } from "./lib/model-fit"
 
 const BASE_ROTATION_X = 0.16
 const BASE_ROTATION_Y = 0.42
+const CAMERA = { enabled: true, distance: 2.8, fov: 32, near: 0.1, far: 20 }
 
 async function loadMesh() {
   const [vertexRes, indexRes] = await Promise.all([
@@ -63,13 +65,30 @@ export async function mountCan(
     }),
   ])
 
+  // A rotation-invariant bound avoids resizing the object as the user spins it.
+  let radius = 0
+  for (let i = 0; i < mesh.vertices.length; i += mesh.vertexStride) {
+    radius = Math.max(radius, Math.hypot(mesh.vertices[i]!, mesh.vertices[i + 1]!, mesh.vertices[i + 2]!))
+  }
+  let fittedScale = 1
+  const resize = () => {
+    const box = plane.getBoundingClientRect()
+    const canvas = options.engine.canvas.getBoundingClientRect()
+    fittedScale = modelFitScale(radius, box.width, box.height, canvas.width, canvas.height, CAMERA.distance, CAMERA.fov)
+    options.engine.requestFrame()
+  }
+  resize()
+  const observer = new ResizeObserver(resize)
+  observer.observe(plane)
+  observer.observe(options.engine.canvas)
+
   const object = createObject(plane, {
     shape: { type: "custom", ...mesh },
-    camera: { enabled: true, distance: 2.8, fov: 32, near: 0.1, far: 20 },
+    camera: CAMERA,
     envMap: albedo.texture,
     maskMap: orm.texture,
     shaders: shader,
-    scale: 1.85,
+    scale: fittedScale,
     rotationX: BASE_ROTATION_X,
     rotationY: BASE_ROTATION_Y,
     onFrame(self, frame) {
@@ -77,6 +96,7 @@ export async function mountCan(
       const cursor = rotation.dragging ? "grabbing" : "grab"
       if (plane.style.cursor !== cursor) plane.style.cursor = cursor
       self.setTransform({
+        scale: fittedScale,
         rotationX: BASE_ROTATION_X + rotation.x,
         rotationY: BASE_ROTATION_Y + rotation.y,
       })
@@ -84,6 +104,7 @@ export async function mountCan(
   })
 
   return () => {
+    observer.disconnect()
     plane.removeEventListener("dblclick", reset)
     plane.style.touchAction = previousTouchAction
     plane.style.cursor = previousCursor

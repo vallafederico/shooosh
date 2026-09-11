@@ -7,7 +7,9 @@ let scroll: Scroll | undefined
 
 function bindGrid() {
   addEventListener("keydown", (event) => {
-    if (event.shiftKey && event.key.toLowerCase() === "g") {
+    const target = event.target
+    if (event.repeat || target instanceof HTMLElement && target.closest("input, textarea, select, [contenteditable]:not([contenteditable=false])")) return
+    if ((event.shiftKey || event.metaKey) && event.key.toLowerCase() === "g") {
       event.preventDefault()
       document.body.classList.toggle("tastebuds-show-grid")
     }

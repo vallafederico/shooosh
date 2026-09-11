@@ -313,12 +313,10 @@
         );
       }
       .tastebuds-show-grid .tastebuds-layout-row-grid { display: block; }
-      .tastebuds-show-grid #tastebuds-page-root :where(*) {
-        outline: 0.0625rem solid rgb(203 213 225 / 0.58);
-        outline-offset: -0.0625rem;
+      body.tastebuds-show-grid :where(*) {
+        outline: 1px solid rgb(110 110 110 / 0.5) !important;
+        outline-offset: -1px !important;
       }
-      .tastebuds-show-grid #tastebuds-page-root .tastebuds-layout-grid,
-      .tastebuds-show-grid #tastebuds-page-root .tastebuds-layout-grid *,
-      .tastebuds-show-grid #tastebuds-page-root .tastebuds-layout-row-grid {
-        outline: none;
+      body.tastebuds-show-grid :where(.tastebuds-layout-grid, .tastebuds-layout-grid *, .tastebuds-layout-row-grid) {
+        outline: none !important;
       }

@@ -70,3 +70,32 @@ sampling for frame time. Verify drag, release, direction changes and pinch zoom
 on a physical phone with both forced backends. Desktop checks cannot establish
 mobile smoothness, and this approach cannot eliminate stutter under main-thread
 or GPU overload.
+
+The homepage can fits a rotation-invariant mesh bounding sphere inside 92% of the
+DOM container's shorter edge. `lib/model-fit.ts` accounts for the camera and the
+engine's canvas-relative object placement. Mesh bounds are computed once; a
+ResizeObserver recalculates scale when the container or canvas changes size.
+Do not restore a fixed zoom multiplier or recompute the fit on scroll/rotation.
+
+The Features section uses the reconstructed Camaro. Run
+`node web/scripts/prepare-camaro.mjs <download-directory> <new-output-directory>`
+and serve the result at `web/public/camaro/`. Include this ignored asset directory
+in local prebuilt deployments. See the [reconstruction audit](../docs/audits/2026-09-11-camaro-reconstruction.md)
+for repaired source references, validation, static material approximations and
+verification limits. Drag or use arrow keys to rotate; Home/double-click resets.
+
+The can and Camaro share `src/studio-metal.wgsl`. Prepared Camaro parts can set
+`material.clearcoat` (0–1 coverage) and `material.clearcoatRoughness` (0.08–1)
+in `model.json`; `camaro.ts` passes these through object uniform values 1–2.
+The preparation script assigns a 0.65-strength coat with roughness 0.2 to the body-paint
+texture group containing the hood. Other parts default to no coat. This is an
+art-directed extension of the source's diffuse/Phong material, not imported
+clearcoat data. The shader adds a neutral dielectric GGX/studio reflection lobe
+and attenuates the base contribution beneath it; base ORM maps stay independent.
+This remains a site-owned material, using the existing object uniform API.
+
+`material.kind: 'glass'` selects a dark cool cabin tint, zero metalness and a
+smooth dielectric reflection (object uniform value 3). It suppresses paint
+clearcoat. Preparation assigns this only to groups consisting of window meshes.
+This is opaque tinted glass, not transmission/refraction or transparent cabin
+rendering; the distinction is intentional and should remain explicit to agents.

@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Text rendering benchmark</title>
+<style>body{font:16px system-ui;background:#17191d;color:#eee;margin:24px}label{display:inline-block;margin:8px}input,select,button{font:inherit;padding:6px}canvas{display:block;background:#000;width:800px;height:480px;margin-top:16px}pre{white-space:pre-wrap}#fixture,figure img{background:#000}figure{margin:16px 0}p{max-width:850px}</style>
+<h1>Text rendering benchmark</h1>
+<p>Harness only. CPU timings are not GPU execution timings. Matched Abel font: default SDF (or optional MSDF) versus free Slug reference coverage. Slug currently supports WebGL2; A/B runs in A–B–B–A order. GPU timing uses elapsed queries where available.</p>
+<label>Backend <select id="backend"><option>webgl2</option><option>webgpu</option></select></label>
+<label>Glyphs <input id="count" type="number" value="500" min="1" max="1500"></label>
+<label>Size <select id="size"><option>12</option><option selected>16</option><option>24</option><option>48</option><option>96</option></select></label>
+<label>DPR <select id="dpr"><option>1</option><option>2</option></select></label>
+<label>Adapter <select id="adapter"><option value="both">Compare SDF / Slug</option><option value="both-msdf">Compare MSDF / Slug</option><option value="builtin">shooosh baked SDF</option><option value="msdf">shooosh baked MSDF</option><option value="slug">Slug reference</option><option value="external">Local adapter</option></select></label>
+<label>Local module URL <input id="module" value="/text-bench-local/slug-adapter.js"></label>
+<button id="run">Run static + changing text</button> <button id="save" disabled>Export JSON</button>
+<p id="status" role="status">Ready. Free reference shaders, no commercial SDK required.</p>
+<div id="fixture"></div><pre id="summary"></pre><details><summary>Raw JSON report</summary><pre id="results"></pre></details><div id="captures"></div>
+<script type="module" src="/src/text-bench/main.ts"></script></html>

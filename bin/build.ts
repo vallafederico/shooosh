@@ -1,3 +1,4 @@
+import "./check-experiment-isolation";
 /**
  * Package build — ESM / CJS / IIFE + Node `shooosh/msdf`.
  *

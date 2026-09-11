@@ -90,6 +90,13 @@ Page-level Markdown: this repo is the docs until `/web` ships hosted `llms.txt` 
 6. Out of scope: tensors, neural nets, Dawn-in-the-package, vgpu’s `frame.pass` graph.
 7. Verify with `bun test package` and `bun run bin/build.ts`. For UI, use the Vite harness.
 
+## Build-time work and experiment isolation
+
+- Perform parsing, conversion, shader translation, asset packing and other input-independent work at build time. Runtime should load prepared data and perform only necessary input-dependent updates and draws.
+- Treat bundle size as a constraint: keep optional code out of core imports and verify consumer bundle budgets.
+- Put exploratory renderers and benchmarks in the private `experiment/` workspace, with separate builds and assets. Production library, web, examples and harness must not import it.
+- Run `bun bin/check-experiment-isolation.ts` when changing package boundaries; promoting an experiment to a public API requires explicit scope and bundle review.
+
 ## Conventions
 
 - Package source lives in `package/`. Root `package.json` is what npm publishes. File-level headers on those modules are agent docs — read them before inventing an API.

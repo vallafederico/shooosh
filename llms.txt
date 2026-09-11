@@ -106,3 +106,5 @@ Hosted docs: [agent manifest](https://shooosh-web.vercel.app/agents.md) · [mach
 - [GPGPU curl sphere](./examples/gpgpu-sphere.md): analytic 3D curl noise, GPU particle integration, pointer disturbance and depth-tested rendering.
 
 - [GPU simulation fallbacks and agent skills](./docs/gpgpu-fallbacks.md): WebGPU compute to WebGL2 transform feedback or render-target GPGPU, with validation guidance.
+
+- [Text benchmark harness](./docs/text-benchmark.md): matched-font SDF/MSDF vs free Slug reference on WebGL2, GPU timer queries and A/B captures; private experiment workspace only.

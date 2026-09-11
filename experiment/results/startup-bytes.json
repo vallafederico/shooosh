@@ -1,0 +1,261 @@
+{
+  "generatedAt": "2026-09-11T10:32:49.944Z",
+  "note": "Standalone experiment adapters plus measurement shell; font assets include current metadata dependency. Compression estimates, not measured HTTP transfer.",
+  "report": [
+    {
+      "renderer": "sdf",
+      "html": {
+        "path": "experiment/dist/startup-sdf/startup.html",
+        "raw": 720,
+        "gzip": 470,
+        "brotli": 328
+      },
+      "javascript": {
+        "raw": 48191,
+        "gzip": 20848,
+        "brotli": 18560
+      },
+      "fontAssets": {
+        "raw": 31120,
+        "gzip": 19908,
+        "brotli": 17516
+      },
+      "files": [
+        {
+          "path": "experiment/dist/startup-sdf/assets/shooosh-CRl39PUn.js",
+          "raw": 18493,
+          "gzip": 7204,
+          "brotli": 6434
+        },
+        {
+          "path": "experiment/dist/startup-sdf/assets/texture-upload-webgl2-m0mpVW-D.js",
+          "raw": 1206,
+          "gzip": 561,
+          "brotli": 505
+        },
+        {
+          "path": "experiment/dist/startup-sdf/assets/preload-helper-BXl3LOEh.js",
+          "raw": 1110,
+          "gzip": 650,
+          "brotli": 533
+        },
+        {
+          "path": "experiment/dist/startup-sdf/assets/gpu-api-DOJ2Gxiq.js",
+          "raw": 504,
+          "gzip": 342,
+          "brotli": 285
+        },
+        {
+          "path": "experiment/dist/startup-sdf/assets/gpu-msdf-glyphs-BiByWBWx.js",
+          "raw": 7871,
+          "gzip": 3355,
+          "brotli": 3047
+        },
+        {
+          "path": "experiment/dist/startup-sdf/assets/webgl2-engine-D5h_yEQz.js",
+          "raw": 3970,
+          "gzip": 1718,
+          "brotli": 1528
+        },
+        {
+          "path": "experiment/dist/startup-sdf/assets/webgpu-engine-CxmRW7Bj.js",
+          "raw": 3830,
+          "gzip": 1820,
+          "brotli": 1636
+        },
+        {
+          "path": "experiment/dist/startup-sdf/assets/startup-CmoOLFem.js",
+          "raw": 4471,
+          "gzip": 2151,
+          "brotli": 1868
+        },
+        {
+          "path": "experiment/dist/startup-sdf/assets/settle-loop-BH4k098K.js",
+          "raw": 2926,
+          "gzip": 1253,
+          "brotli": 1111
+        },
+        {
+          "path": "experiment/dist/startup-sdf/assets/texture-upload-webgpu-CrTfjW63.js",
+          "raw": 3810,
+          "gzip": 1794,
+          "brotli": 1613
+        }
+      ],
+      "assets": [
+        {
+          "path": "experiment/dist/startup-sdf/text-bench/abel-sdf.json",
+          "raw": 9995,
+          "gzip": 934,
+          "brotli": 741
+        },
+        {
+          "path": "experiment/dist/startup-sdf/text-bench/abel-sdf.png",
+          "raw": 18440,
+          "gzip": 18316,
+          "brotli": 16176
+        },
+        {
+          "path": "experiment/dist/startup-sdf/text-bench/abel-metadata.json",
+          "raw": 2685,
+          "gzip": 658,
+          "brotli": 599
+        }
+      ]
+    },
+    {
+      "renderer": "msdf",
+      "html": {
+        "path": "experiment/dist/startup-msdf/startup.html",
+        "raw": 720,
+        "gzip": 472,
+        "brotli": 349
+      },
+      "javascript": {
+        "raw": 48183,
+        "gzip": 20848,
+        "brotli": 18555
+      },
+      "fontAssets": {
+        "raw": 47420,
+        "gzip": 36356,
+        "brotli": 36077
+      },
+      "files": [
+        {
+          "path": "experiment/dist/startup-msdf/assets/shooosh-CRl39PUn.js",
+          "raw": 18493,
+          "gzip": 7204,
+          "brotli": 6434
+        },
+        {
+          "path": "experiment/dist/startup-msdf/assets/texture-upload-webgl2-m0mpVW-D.js",
+          "raw": 1206,
+          "gzip": 561,
+          "brotli": 505
+        },
+        {
+          "path": "experiment/dist/startup-msdf/assets/preload-helper-BXl3LOEh.js",
+          "raw": 1110,
+          "gzip": 650,
+          "brotli": 533
+        },
+        {
+          "path": "experiment/dist/startup-msdf/assets/gpu-api-DOJ2Gxiq.js",
+          "raw": 504,
+          "gzip": 342,
+          "brotli": 285
+        },
+        {
+          "path": "experiment/dist/startup-msdf/assets/gpu-msdf-glyphs-BiByWBWx.js",
+          "raw": 7871,
+          "gzip": 3355,
+          "brotli": 3047
+        },
+        {
+          "path": "experiment/dist/startup-msdf/assets/webgl2-engine-D5h_yEQz.js",
+          "raw": 3970,
+          "gzip": 1718,
+          "brotli": 1528
+        },
+        {
+          "path": "experiment/dist/startup-msdf/assets/webgpu-engine-CxmRW7Bj.js",
+          "raw": 3830,
+          "gzip": 1820,
+          "brotli": 1636
+        },
+        {
+          "path": "experiment/dist/startup-msdf/assets/settle-loop-BH4k098K.js",
+          "raw": 2926,
+          "gzip": 1253,
+          "brotli": 1111
+        },
+        {
+          "path": "experiment/dist/startup-msdf/assets/texture-upload-webgpu-CrTfjW63.js",
+          "raw": 3810,
+          "gzip": 1794,
+          "brotli": 1613
+        },
+        {
+          "path": "experiment/dist/startup-msdf/assets/startup-JcZgwT9q.js",
+          "raw": 4463,
+          "gzip": 2151,
+          "brotli": 1863
+        }
+      ],
+      "assets": [
+        {
+          "path": "experiment/dist/startup-msdf/text-bench/abel-msdf.json",
+          "raw": 9997,
+          "gzip": 935,
+          "brotli": 736
+        },
+        {
+          "path": "experiment/dist/startup-msdf/text-bench/abel-msdf.png",
+          "raw": 34738,
+          "gzip": 34763,
+          "brotli": 34742
+        },
+        {
+          "path": "experiment/dist/startup-msdf/text-bench/abel-metadata.json",
+          "raw": 2685,
+          "gzip": 658,
+          "brotli": 599
+        }
+      ]
+    },
+    {
+      "renderer": "slug",
+      "html": {
+        "path": "experiment/dist/startup-slug/startup.html",
+        "raw": 639,
+        "gzip": 433,
+        "brotli": 314
+      },
+      "javascript": {
+        "raw": 15104,
+        "gzip": 6380,
+        "brotli": 5615
+      },
+      "fontAssets": {
+        "raw": 789117,
+        "gzip": 9723,
+        "brotli": 5283
+      },
+      "files": [
+        {
+          "path": "experiment/dist/startup-slug/assets/slug-Dn0hi3Fh.js",
+          "raw": 9781,
+          "gzip": 3861,
+          "brotli": 3426
+        },
+        {
+          "path": "experiment/dist/startup-slug/assets/startup-CQi1U865.js",
+          "raw": 5323,
+          "gzip": 2519,
+          "brotli": 2189
+        }
+      ],
+      "assets": [
+        {
+          "path": "experiment/dist/startup-slug/text-bench/abel-metadata.json",
+          "raw": 2685,
+          "gzip": 658,
+          "brotli": 599
+        },
+        {
+          "path": "experiment/dist/startup-slug/text-bench/abel-curves.bin",
+          "raw": 524288,
+          "gzip": 5514,
+          "brotli": 2596
+        },
+        {
+          "path": "experiment/dist/startup-slug/text-bench/abel-bands.bin",
+          "raw": 262144,
+          "gzip": 3551,
+          "brotli": 2088
+        }
+      ]
+    }
+  ]
+}

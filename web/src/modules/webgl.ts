@@ -2,6 +2,7 @@ import { createCanvasScene, createMouseMonad, createPostProcessor } from "shooos
 import { createDomLayer, type DomLayer, type DomScan } from "shooosh/dom"
 import { bulgeEffect, bulgeEffectWgsl, bulgePointerY } from "../bulge-post"
 import { mountCan } from "../can"
+import { mountCamaro } from "../camaro"
 import vuvShader from "../vuv.wgsl"
 
 const landingFonts = [
@@ -36,6 +37,7 @@ export default function webgl(element: HTMLElement) {
   let layer: DomLayer | null = null
   let scan: DomScan | null = null
   let post: ReturnType<typeof createPostProcessor> | null = null
+  let stopCamaro: (() => void) | null = null
   let stopCan: (() => void) | null = null
   let stopScroll: (() => void) | undefined
   const mouse = createMouseMonad({ resetOnLeave: false, easing: 0.18 })
@@ -118,6 +120,9 @@ export default function webgl(element: HTMLElement) {
     if (!native) paintGpu()
     setMode(native)
 
+    const camaroPlane = document.querySelector<HTMLElement>("[data-camaro]")
+    if (camaroPlane) stopCamaro = mountCamaro(camaroPlane, { engine })
+
     const canPlane = document.querySelector<HTMLElement>("[data-can]")
     if (canPlane) {
       try {
@@ -145,6 +150,7 @@ export default function webgl(element: HTMLElement) {
     document.removeEventListener("click", onToggle)
     stopScroll?.()
     mouse.destroy()
+    stopCamaro?.()
     stopCan?.()
     stopCan = null
     post?.destroy()

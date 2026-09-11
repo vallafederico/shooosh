@@ -26,11 +26,25 @@ html.lenis body {
 }
 
 .home-section {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100svh;
   background: transparent;
+}
+
+.home-section-label {
+  position: absolute;
+  left: var(--space-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 80;
+  font-family: var(--type-xs-font-family);
+  font-size: calc(var(--type-xs-font-size) * 1.25);
+  font-weight: var(--type-xs-font-weight);
+  line-height: 1.2;
+  color: var(--color-background);
 }
 
 .home-plane {
@@ -39,11 +53,22 @@ html.lenis body {
 }
 
 .home-can {
+  width: 90svmin;
+  height: 90svmin;
   position: relative;
   z-index: 70;
   touch-action: none;
   cursor: grab;
   outline: none;
+}
+
+.home-camaro {
+  width: 135svmin;
+  height: 135svmin;
+  position: relative;
+  z-index: 70;
+  touch-action: none;
+  cursor: grab;
 }
 
 .home-canvas {
