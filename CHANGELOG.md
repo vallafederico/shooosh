@@ -9,6 +9,7 @@ Versions follow [SemVer](https://semver.org/).
 
 ### Added
 
+- Item `maps`: named extra textures (`{ uDepth: tex | null }`) sampled next to `uTexture` on both backends, filled or swapped later with `item.setMap(name, tex)` without recompiling. `ItemMaps` type export; `harness/maps.html` check.
 - `createDomLayer().scan()` page mode: bind marked `img[data-sh-media]`,
   `[data-sh-bind]`, `[data-sh-box]` and `[data-sh-text]` descendants. Unmarked HTML
   stays native; this is not HTML capture.

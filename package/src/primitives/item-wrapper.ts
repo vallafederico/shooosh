@@ -15,10 +15,13 @@
  * Docs: docs/site-patterns.md · skill shooosh-item
  *
  * With a texture, sample `fitUv(vUv)` for CSS-like cover/contain (value5–8).
+ * Extra textures go in named `maps` (`{ uDepth: null }`), filled when they
+ * load with `item.setMap("uDepth", tex)`.
  */
 
 import { ItemManager, type ItemOptions } from "./item";
 import type { UniValues } from "../engine/uni";
+import type { FullscreenPlaneTexture } from "./plane";
 
 export type CreateItemOptions = ItemOptions;
 export type ItemController = Item;
@@ -44,6 +47,11 @@ export class Item {
 
   getUni() {
     return this.manager.getUni();
+  }
+
+  /** Fill or empty a map slot declared in `maps` at creation (next frame, no recompile). */
+  setMap(name: string, texture: FullscreenPlaneTexture | null) {
+    this.manager.setMap(name, texture);
   }
 }
 

@@ -74,7 +74,7 @@ export {
   type CreateObjectOptions,
   type ObjectController,
 } from "./src/primitives/object-wrapper";
-export type { ItemOptions } from "./src/primitives/item";
+export type { ItemOptions, ItemMaps } from "./src/primitives/item";
 export type { ObjectOptions, ObjectShaders, ScreenPlacement } from "./src/primitives/object";
 export type { FullscreenPlaneShaders } from "./src/primitives/plane";
 export {

@@ -26,11 +26,17 @@ import {
 } from "../loaders/texture-loader";
 import { createLazyGpuFactory } from "./pending-attach";
 import { createPrimitiveLifecycle, type PrimitiveLifecycle } from "./primitive-lifecycle";
+import { isValidMapName } from "../shaders/wgsl-wrap";
 
 type ItemRenderer = {
   render: (frame: EngineFrame) => "pending" | "drawn" | "culled" | "failed";
+  /** A map slot's texture changed (`ItemManager.setMap`): rebind before the next draw. */
+  mapsChanged?: () => void;
   destroy: () => void;
 };
+
+/** An item's named map slots: a texture, or null until one is set. */
+export type ItemMaps = Record<string, FullscreenPlaneTexture | null>;
 
 const ensureGpuItemFactory = /* @__PURE__ */ createLazyGpuFactory({
   label: "item",
@@ -46,6 +52,15 @@ export type ItemOptions = {
   texture?: FullscreenPlaneTexture | null;
   /** CSS object-fit for uTexture. Default `"cover"`. Writes value5–8 each frame. */
   textureFit?: TextureFitMode;
+  /**
+   * Extra textures by name, for a fragment to sample next to `uTexture`:
+   * `{ uDepth: tex }` → `textureSample(uDepth, uSampler, fitUv(vUv))`. The
+   * names are the slots, fixed at creation; `null` declares a slot to fill
+   * later with `setMap` (a map that loads after the image). An empty slot
+   * samples one transparent texel (0, 0, 0, 0): gate the effect on a uniform
+   * set alongside `setMap`. Maps share `uSampler` and `uTexture`'s fit.
+   */
+  maps?: ItemMaps;
   onFrame?: (item: ItemManager, frame: EngineFrame) => ItemManager | void;
 };
 
@@ -57,7 +72,8 @@ export class ItemManager {
 
   constructor(element: HTMLElement, options: ItemOptions = {}, private integration?: ItemIntegration) {
     this.element = element;
-    this.options = options;
+    // Own the maps record: setMap writes into it, the renderers read it.
+    this.options = options.maps ? { ...options, maps: validMaps(options.maps) } : options;
     this.uni = ensureWatchableUni(options.uni ?? { value1: 1 });
     this.lifecycle = createPrimitiveLifecycle<ItemRenderer>({
       engine: integration?.engine,
@@ -91,6 +107,23 @@ export class ItemManager {
 
   setUni(next: Partial<UniValues>) {
     this.uni.set(next);
+    this.integration?.engine.requestFrame();
+  }
+
+  /**
+   * Fill (or empty, with null) a map slot declared in `maps` at creation.
+   * Takes effect on the next frame; the shader is not recompiled. Unknown
+   * names are ignored with a warning: the slots are fixed with the shader.
+   */
+  setMap(name: string, texture: FullscreenPlaneTexture | null) {
+    const maps = this.options.maps;
+    if (!maps || !(name in maps)) {
+      console.warn(`shooosh: setMap("${name}") on an item without that map slot; declare it in maps at creation.`);
+      return;
+    }
+    if (maps[name] === texture) return;
+    maps[name] = texture;
+    this.lifecycle.getRenderer()?.mapsChanged?.();
     this.integration?.engine.requestFrame();
   }
 
@@ -141,6 +174,9 @@ function createItemRenderer(
   let program: WebGLProgram | null = null;
   let uUniLoc: WebGLUniformLocation | null = null;
   let uTextureLoc: WebGLUniformLocation | null = null;
+  // Map slots the program samples, each on its own unit after uTexture's 0.
+  const mapNames = Object.keys(options.maps ?? {}).sort();
+  let mapLocs: Array<{ name: string; loc: WebGLUniformLocation }> = [];
 
   const vao = gl.createVertexArray();
   const vertexBuffer = gl.createBuffer();
@@ -174,6 +210,10 @@ function createItemRenderer(
         if (!program) return asyncProgram.status() === "failed" ? "failed" : "pending";
         uUniLoc = gl.getUniformLocation(program, "uUni");
         uTextureLoc = gl.getUniformLocation(program, "uTexture");
+        for (const name of mapNames) {
+          const loc = gl.getUniformLocation(program, name);
+          if (loc) mapLocs.push({ name, loc });
+        }
       }
 
       const clipData = integration?.geometry(clipVertices) ?? getElementClipData(element, nextFrame.canvas, clipVertices);
@@ -213,10 +253,22 @@ function createItemRenderer(
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
         gl.uniform1i(uTextureLoc, 0);
       }
+      for (let i = 0; i < mapLocs.length; i++) {
+        const { name, loc } = mapLocs[i]!;
+        const map = options.maps?.[name] ?? null;
+        gl.activeTexture(gl.TEXTURE1 + i);
+        gl.bindTexture(gl.TEXTURE_2D, glMapTexture(map) ?? emptyGlTexture(gl));
+        gl.uniform1i(loc, 1 + i);
+      }
       gl.bindVertexArray(vao);
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
       gl.bindVertexArray(null);
       gl.disable(gl.BLEND);
+      for (let i = mapLocs.length - 1; i >= 0; i--) {
+        gl.activeTexture(gl.TEXTURE1 + i);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+      }
+      gl.activeTexture(gl.TEXTURE0);
       if (glTexture) {
         gl.bindTexture(gl.TEXTURE_2D, null);
       }
@@ -228,6 +280,37 @@ function createItemRenderer(
       gl.deleteBuffer(indexBuffer);
       gl.deleteVertexArray(vao);
       asyncProgram.destroy();
+      mapLocs = [];
     },
   };
+}
+
+/** Copy a maps record, dropping slots whose names cannot be shader identifiers. */
+function validMaps(maps: ItemMaps): ItemMaps {
+  const out: ItemMaps = {};
+  for (const [name, texture] of Object.entries(maps)) {
+    if (isValidMapName(name)) out[name] = texture;
+    else console.warn(`shooosh: ignoring map "${name}"; map names are identifiers other than uTexture, uSampler, uUni, vUv and fitUv.`);
+  }
+  return out;
+}
+
+function glMapTexture(map: FullscreenPlaneTexture | null) {
+  if (!map) return null;
+  if (map.texture?.backend && map.texture.backend !== "webgl2") return null;
+  return (map.view as { texture?: WebGLTexture } | undefined)?.texture ?? null;
+}
+
+/** One transparent texel per context: what an empty map slot samples. */
+const emptyGlTextures = new WeakMap<WebGL2RenderingContext, WebGLTexture>();
+function emptyGlTexture(gl: WebGL2RenderingContext) {
+  let texture = emptyGlTextures.get(gl);
+  if (texture) return texture;
+  texture = gl.createTexture()!;
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  emptyGlTextures.set(gl, texture);
+  return texture;
 }

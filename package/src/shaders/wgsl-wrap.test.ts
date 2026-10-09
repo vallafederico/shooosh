@@ -76,3 +76,30 @@ test("no texture bindings without a texture", () => {
   expect(resolved.usesTexture).toBe(false)
   expect(resolved.code).not.toContain("var uTexture")
 })
+
+test("injects the item's named maps after uTexture, in name order, only when sampled", () => {
+  const fragment = `fn fsMain() -> vec4f {
+  let st = fitUv(vUv);
+  let mask = textureSample(uMask, uSampler, st).g;
+  let depth = textureSample(uDepth, uSampler, st).r;
+  return textureSample(uTexture, uSampler, st) * depth * mask;
+}`
+  const mod = resolveWgslModule({ fragment, kind: "item", hasTexture: true, maps: ["uMask", "uUnused", "uDepth"] })
+  expect(mod.usesTexture).toBe(true)
+  expect(mod.maps).toEqual(["uDepth", "uMask"])
+  expect(mod.code).toContain("@group(0) @binding(1) var uSampler: sampler;")
+  expect(mod.code).toContain("@group(0) @binding(2) var uTexture: texture_2d<f32>;")
+  expect(mod.code).toContain("@group(0) @binding(3) var uDepth: texture_2d<f32>;")
+  expect(mod.code).toContain("@group(0) @binding(4) var uMask: texture_2d<f32>;")
+  expect(mod.code).not.toContain("uUnused")
+})
+
+test("maps without uTexture still declare the sampler, and reserved names are not maps", () => {
+  const fragment = `fn fsMain() -> vec4f { return textureSample(uDepth, uSampler, vUv); }`
+  const mod = resolveWgslModule({ fragment, kind: "item", maps: ["uDepth", "uTexture", "2bad"] })
+  expect(mod.usesTexture).toBe(false)
+  expect(mod.maps).toEqual(["uDepth"])
+  expect(mod.code).toContain("@group(0) @binding(1) var uSampler: sampler;")
+  expect(mod.code).not.toContain("var uTexture")
+  expect(mod.code).toContain("@group(0) @binding(3) var uDepth: texture_2d<f32>;")
+})

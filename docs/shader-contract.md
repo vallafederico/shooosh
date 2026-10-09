@@ -27,6 +27,7 @@ fn fsMain() -> vec4f {
 | `uUni` | 16 floats packed as four `vec4`s. |
 | `uTexture` / `uSampler` | Bound when a texture is set and the fragment names `uTexture`. |
 | `fitUv(uv)` | Cover/contain helper — `uv * values1.xy + values1.zw`. Injected with `uTexture`. |
+| item `maps` (`uDepth`…) | Extra `texture_2d<f32>`s named by `createItem({ maps })`, sampled with `uSampler`. Bound from `@binding(3)` in name order, only the ones the fragment names. |
 
 On **WebGPU** the engine prepends `struct Uni { values0..3 }`, `vsMain`, and `var<private> vUv`, then calls `fsMain` from `fsEntry`.
 
@@ -69,6 +70,30 @@ fn fsMain() -> vec4f {
 ```
 
 JS helpers: `resolveTextureUvTransform`, `applyTextureUv`, `textureFitToUni`.
+
+### Item maps
+
+An item can sample more textures next to `uTexture`, for example a depth or mask
+map baked for the image. The `maps` names are the slots, fixed when the item is
+created. `null` declares a slot that gets filled later, when the map has loaded:
+
+```ts
+const item = createItem(img, { texture, shaders, maps: { uDepth: null } })
+// later, when the depth map has loaded:
+item.setMap("uDepth", await loadTexture(depthBitmap))
+item.setUni({ value4: 1 }) // the fragment's own "map ready" flag
+```
+
+```wgsl
+let depth = textureSample(uDepth, uSampler, fitUv(vUv)).r;
+```
+
+An empty slot samples one transparent texel `(0, 0, 0, 0)`, so gate the effect
+on a uniform set alongside `setMap`. `setMap` rebinds on the next frame without
+recompiling. Maps share `uTexture`'s sampler and fit, so bake them with the
+image's aspect ratio. On WebGL2 the translator declares a `sampler2D` for every
+texture passed to `textureSample`, and each map takes a texture unit after
+`uTexture`'s.
 
 ## Backends
 

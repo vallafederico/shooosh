@@ -149,3 +149,16 @@ test("renames GLSL reserved identifier `sample`", () => {
   expect(glsl).toContain("_sample, _sample, _sample")
   expect(glsl).not.toMatch(/(?<![_\w])sample(?![_\w])/)
 })
+
+test("declares a sampler2D for every sampled map, once", () => {
+  const glsl = convertWgslFragmentToGlsl(`fn fsMain() -> vec4f {
+  let st = fitUv(vUv);
+  let depth = textureSample(uDepth, uSampler, st).r;
+  let again = textureSample(uDepth, uSampler, vUv).r;
+  return textureSample(uTexture, uSampler, st) * (depth + again);
+}`, { includeUv: true })
+  expect(glsl).toContain("uniform sampler2D uTexture;")
+  expect(glsl.match(/uniform sampler2D uDepth;/g)?.length).toBe(1)
+  expect(glsl).toContain("texture(uDepth, st)")
+  expect(glsl).not.toContain("uSampler")
+})

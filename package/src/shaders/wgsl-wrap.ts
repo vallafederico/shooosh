@@ -10,6 +10,12 @@
  * names `uTexture`, because `layout: "auto"` drops unused bindings and the
  * bind group must match.
  *
+ * Named maps (an item's `maps`: `{ uDepth: … }`) are injected after them, at
+ * @binding(3) on in name order, as `texture_2d<f32>` sampled with `uSampler`:
+ * `textureSample(uDepth, uSampler, fitUv(vUv))`. Same rule: only the maps the
+ * fragment names are declared, and the sampler is declared for them even
+ * without `uTexture`.
+ *
  * `#version 300 es` is detected and ignored on WebGPU (debug fallback).
  * Convert those with convertGlslFragmentToWgsl instead.
  *
@@ -41,8 +47,10 @@ fn vsMain(@location(0) aPosition: vec2f, @location(1) aUv: vec2f) -> VsOut {
 var<private> vUv: vec2f;
 `;
 
-const TEXTURE_BINDINGS = `@group(0) @binding(1) var uSampler: sampler;
-@group(0) @binding(2) var uTexture: texture_2d<f32>;
+const SAMPLER_BINDING = `@group(0) @binding(1) var uSampler: sampler;
+`;
+
+const TEXTURE_BINDINGS = `@group(0) @binding(2) var uTexture: texture_2d<f32>;
 
 fn fitUv(uv: vec2f) -> vec2f {
   return uv * uUni.values1.xy + uUni.values1.zw;
@@ -108,6 +116,24 @@ export function referencesWgslTexture(source: string) {
   return /\buTexture\b/.test(source);
 }
 
+/** The first binding of an item's named maps; they follow in name order. */
+export const MAP_BINDING_START = 3;
+
+/** Names a map slot may not take: the injected bindings and WGSL's own words stay theirs. */
+const RESERVED_MAP_NAMES = new Set(["uUni", "uSampler", "uTexture", "vUv", "fitUv"]);
+
+/** True when `name` can be a map's WGSL/GLSL identifier. */
+export function isValidMapName(name: string) {
+  return /^[A-Za-z_]\w*$/.test(name) && !RESERVED_MAP_NAMES.has(name);
+}
+
+/** The declared map names a fragment samples, sorted: their binding order. */
+export function referencedWgslMaps(source: string, names: readonly string[]) {
+  return names
+    .filter((name) => isValidMapName(name) && new RegExp(`\\b${name}\\b`).test(source))
+    .sort();
+}
+
 export function defaultWgslFragment(debugUv: boolean) {
   if (debugUv) {
     return `fn fsMain() -> vec4f {
@@ -166,10 +192,18 @@ fn fsMain() -> vec4f {
 }
 
 /** Wrap a user `fn fsMain` so it can run as a WebGPU fragment entry. */
-export function wrapWgslFragment(source: string, options: { hasTexture?: boolean } = {}) {
+export function wrapWgslFragment(
+  source: string,
+  options: { hasTexture?: boolean; maps?: readonly string[] } = {},
+) {
   const stripped = source.replace(/\r/g, "").replace(/@fragment\s+/g, "");
-  const bindings = options.hasTexture ? TEXTURE_BINDINGS : "";
-  return `${UNI_AND_VERTEX}${bindings}${stripped}\n${FS_ENTRY}`;
+  const maps = options.maps ?? [];
+  const sampler = options.hasTexture || maps.length > 0 ? SAMPLER_BINDING : "";
+  const texture = options.hasTexture ? TEXTURE_BINDINGS : "";
+  const mapBindings = maps
+    .map((name, i) => `@group(0) @binding(${MAP_BINDING_START + i}) var ${name}: texture_2d<f32>;\n`)
+    .join("");
+  return `${UNI_AND_VERTEX}${sampler}${texture}${mapBindings}${stripped}\n${FS_ENTRY}`;
 }
 
 export type ResolveWgslOptions = {
@@ -178,11 +212,14 @@ export type ResolveWgslOptions = {
   kind?: "screen" | "item";
   /** A texture is bound — allow the fragment to sample uTexture. */
   hasTexture?: boolean;
+  /** Named map slots the item declares (`uDepth`…). */
+  maps?: readonly string[];
 };
 
 /**
  * Pick the fragment source, wrap it, and report whether the module ended up
- * using the texture bindings (the caller must match that in its bind group).
+ * using the texture bindings and which maps it declares, in binding order
+ * (the caller must match both in its bind group).
  */
 export function resolveWgslModule(options: ResolveWgslOptions) {
   const raw = options.fragment?.trim() ?? "";
@@ -202,9 +239,11 @@ export function resolveWgslModule(options: ResolveWgslOptions) {
           : defaultWgslFragment(Boolean(options.debugUv));
 
   const usesTexture = Boolean(options.hasTexture) && referencesWgslTexture(source);
+  const maps = referencedWgslMaps(source, options.maps ?? []);
   return {
-    code: wrapWgslFragment(source, { hasTexture: usesTexture }),
+    code: wrapWgslFragment(source, { hasTexture: usesTexture, maps }),
     usesTexture,
+    maps,
   };
 }
 

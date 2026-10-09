@@ -212,10 +212,15 @@ function convertWgslFragmentToGlslUncached(
   out = out.replace(/\bin\.uv\b/g, "vUv");
   out = out.replace(/\bin\.normal\b/g, "vNormal");
   out = out.replace(/\batan2\s*\(/g, "atan(");
-  // WGSL textureSample(tex, sampler, uv) → GLSL texture(tex, uv)
+  // WGSL textureSample(tex, sampler, uv) → GLSL texture(tex, uv). Every
+  // texture sampled becomes a sampler2D uniform below (an item's named maps).
+  const sampled = new Set<string>();
   out = out.replace(
     /\btextureSample\s*\(\s*([A-Za-z_]\w*)\s*,\s*[A-Za-z_]\w*\s*,\s*([^)]+)\)/g,
-    (_m, tex: string, uv: string) => `texture(${tex}, ${uv.trim()})`,
+    (_m, tex: string, uv: string) => {
+      sampled.add(tex);
+      return `texture(${tex}, ${uv.trim()})`;
+    },
   );
   // GLSL ES 3 reserved identifiers (e.g. `let sample = …`) — rename after
   // textureSample rewrite so `textureSample` / `uSampler` stay intact.
@@ -269,6 +274,10 @@ function convertWgslFragmentToGlslUncached(
   if (/\buTexture\b/.test(out)) samplers.push("uniform sampler2D uTexture;");
   if (/\buEnvMap\b/.test(out)) samplers.push("uniform sampler2D uEnvMap;");
   if (/\buMaskMap\b/.test(out)) samplers.push("uniform sampler2D uMaskMap;");
+  for (const tex of [...sampled].sort()) {
+    const declaration = `uniform sampler2D ${tex};`;
+    if (!samplers.includes(declaration) && !new RegExp(`\\bsampler2D\\s+${tex}\\b`).test(out)) samplers.push(declaration);
+  }
 
   const helpers: string[] = [];
   // Cover/contain helper — same as WGSL wrap when uTexture is bound.
