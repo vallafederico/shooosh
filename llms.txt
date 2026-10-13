@@ -29,6 +29,7 @@ rendering. No Node codecs or rig code leak into core browser imports.
 - [Model machine index](./packages/model/llms.txt) · [model agent guide](./packages/model/agents.md)
 - [Rig · bones & sockets](./examples/rig-bones.md): built-in arm or imported car; no mesh deformation.
 - [Car PBR studio](./examples/car-pbr.md): static textured model and material controls.
+- Object-scene recipes ([index](./examples/README.md#object-scene-recipes-guides-with-copy-sets-not-in-the-gallery)): [baked lighting](./examples/baked-lighting.md), [procedural environment](./examples/procedural-environment.md), [depth of field](./examples/depth-of-field.md), [drawn cables](./examples/drawn-cables.md), [live textures](./examples/live-texture.md), [physics interaction](./examples/physics-interaction.md); engine gaps in [proposals: object scenes](./docs/proposals/object-scenes.md).
 - [Tree-shaking verification](./docs/audits/2026-09-09-final-tree-shaking.md): exact unused-import and baseline size checks.
 
 ## When to use shooosh

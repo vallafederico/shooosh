@@ -99,6 +99,26 @@ They will not faithfully translate:
 
 If conversion fails, keep the last good shader and show the log. Do not invent a second scene API to paper over it.
 
+## Pitfalls seen in practice
+
+Seen while porting a large object scene (shooosh 0.0.6; `main` 0.0.8's
+`wgsl-compat.ts` still has no handling for them). Write WGSL that translates:
+
+- **Vector `select`.** Only scalar conditions translate. Use `mix(a, b, step(edge, x))`.
+- **Module-level `const`** keeps WGSL syntax in GLSL and fails. Inline the value or
+  return it from a function (`fn tint() -> vec3f { return vec3f(…); }`).
+- **Untyped `let` mixing scalars and vectors.** The translator guesses a
+  declaration's type from its expression and can guess wrong. Type them:
+  `let rim: f32 = …`, `let colour: vec3f = …`.
+- **`dpdx` / `dpdy`** aren't mapped (`fwidth` works). Derivative bumps need a
+  hand-written `fragmentGlsl`.
+- **Names that are GLSL built-ins**, such as a `let` called `dot` or `length`. Rename them.
+- **Shaders in TypeScript template strings** (post effects): a backtick in a
+  shader comment ends the string. Escape it or leave it out.
+
+Check both backends after every shader change (`?backend=webgl2`); the WebGL2 link
+log names the line.
+
 ## Agent skills
 
 - [wgsl-to-glsl](../.cursor/skills/wgsl-to-glsl/SKILL.md) — WebGPU / WGSL → WebGL
