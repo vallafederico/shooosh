@@ -14,6 +14,24 @@ These are repository recipes, not exports from the npm package.
 **WIP** entries are experimental: fabric/sheen, SSS and SSAO. They participate in
 bundle and runtime checks but are not marked production-ready.
 
+### Object-scene recipes (guides with copy sets; not in the gallery)
+
+From a production scene of baked, tumbling objects (unisn.co `/webgl`). Each guide
+lists its copy set, measurements and limits.
+
+| Guide | Copy | What it covers |
+| --- | --- | --- |
+| [baked-lighting.md](./baked-lighting.md) | — (Blender steps) | Per-light, per-object bakes in packed sheets; AVIF 4:4:4 vs KTX2 measured; mips; versioned assets |
+| [procedural-environment.md](./procedural-environment.md) | [procedural-environment.ts](./procedural-environment.ts) | An environment computed from a light list; reflections by direction; rim/backlight |
+| [depth-of-field.md](./depth-of-field.md) | [depth-of-field.ts](./depth-of-field.ts) | Depth in alpha; DOF, distance darkening and haze, grade, grain in one 3-pass effect (both backends) |
+| [drawn-cables.md](./drawn-cables.md) | [drawn-cables.ts](./drawn-cables.ts) | Verlet ropes drawn as overlapping rigid links, pinned to physics bodies |
+| [live-texture.md](./live-texture.md) | [live-texture.ts](./live-texture.ts) | Video or live canvases on objects (in-place texture writes); a CRT screen shader |
+| [physics-interaction.md](./physics-interaction.md) | excerpts | Pointer ray push/drag/spin, spring-back joints, rope joints, contact hooks, view stir, idle nudges, mouse-follow view |
+
+Engine gaps behind these recipes: [proposals: object scenes](../docs/proposals/object-scenes.md).
+
+### Gallery
+
 | File | Uses | What it draws |
 | --- | --- | --- |
 | [gpgpu-sphere.ts](./gpgpu-sphere.ts) | `createCompute` | Particle sphere with analytic 3D curl noise and mouse disturbance ([guide](./gpgpu-sphere.md)); both backends |

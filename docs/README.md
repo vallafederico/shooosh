@@ -27,7 +27,9 @@ This folder is what [the GitHub repo](https://github.com/vallafederico/shooosh) 
 | [Interaction utilities](./utility.md) | Optional `shooosh/utility`: drag rotation and inertia |
 | [Agent DOM/rendering workflow](./agent-dom-rendering.md) | Select a painter, prepare shaders/atlases, diagnose regressions and verify both backends |
 | [DOM integration](./dom.md) | Optional `shooosh/dom`: cached shader bindings and safe image enhancement |
-| [WGSL ↔ GLSL](./shader-translation.md) | Fallback converter + mapping |
+| [WGSL ↔ GLSL](./shader-translation.md) | Fallback converter + mapping, and pitfalls seen in practice |
+| [Object-scene recipes](../examples/README.md#object-scene-recipes-guides-with-copy-sets-not-in-the-gallery) | Baked lighting, environments, depth of field, drawn cables, live textures, physics interaction |
+| [Proposals: object scenes](./proposals/object-scenes.md) | Engine gaps found in a production object scene, with measurements and diffs |
 | [MSDF](./msdf.md) | Node/Bun font atlas + icon SDF (`shooosh/msdf`) |
 
 ## For coding agents
