@@ -7,6 +7,8 @@ Versions follow [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.9] — 2026-10-20
+
 ### Added
 
 - Item `maps`: named extra textures (`{ uDepth: tex | null }`) sampled next to `uTexture` on both backends, filled or swapped later with `item.setMap(name, tex)` without recompiling. `ItemMaps` type export; `harness/maps.html` check.
@@ -15,6 +17,16 @@ Versions follow [SemVer](https://semver.org/).
   stays native; this is not HTML capture.
 - `createDomLayer().box()` solid fill + radii (hides only box paint) and
   `text()` MSDF from live DOM ranges with an explicit `fonts` atlas registry.
+
+### Fixed
+
+- MSDF glyphs decode the median of the RGB distance channels correctly on both
+  renderers (corners and tight curves no longer break: holes in "a"/"e").
+
+### Changed
+
+- Bundle budgets for the DOM entry (18 kB gzip) and DOM + full scene (30 kB)
+  now account for `box()`, `text()` and `scan()`.
 
 ## [0.0.7] — 2026-09-09
 
